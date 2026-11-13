@@ -6,6 +6,7 @@ import type { EvenementRepreneurs } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const PASSAGE = {
   departement: "dans votre département",
@@ -46,7 +47,7 @@ export async function GET(requete: Request) {
 
         dire({ type: "encours", texte: "Recherche des sociétés du même métier, plus grandes que vous" });
         const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) =>
-          dire({
+          dire(p.echec ? { type: "journal", texte: `Le registre n'a pas répondu ${PASSAGE[p.profil]} : je continue sans`, etat: "alerte" } : {
             type: "journal",
             texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}`,
             etat: p.trouvees ? "ok" : "alerte",

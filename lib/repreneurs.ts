@@ -93,7 +93,7 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
   );
 }
 
-export type Passage = { profil: ProfilRepreneur; trouvees: number };
+export type Passage = { profil: ProfilRepreneur; trouvees: number; echec?: boolean };
 
 /** Classe les candidats de plusieurs passages, sans doublon, du meilleur au moins bon. */
 export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; societes: Societe[] }[], maximum = 10): Repreneur[] {
@@ -133,18 +133,29 @@ export async function trouverRepreneurs(
   const grandes = tranches.filter((t) => TRANCHES.indexOf(t) >= TRANCHES.indexOf("21"));
   const lots: { profil: ProfilRepreneur; societes: Societe[] }[] = [];
   let examinees = 0;
+  let tentes = 0;
+  let derniereErreur: unknown;
 
   const passage = async (profil: ProfilRepreneur, zone: { departement?: string; region?: string }, t: string[]) => {
     if (t.length === 0) return;
-    const societes = await chercherParActivite({ codeActivite: vendeur.codeActivite!, tranches: t, ...zone });
-    examinees += societes.length;
-    lots.push({ profil, societes });
-    suivre({ profil, trouvees: societes.length });
+    tentes++;
+    try {
+      const societes = await chercherParActivite({ codeActivite: vendeur.codeActivite!, tranches: t, ...zone });
+      examinees += societes.length;
+      lots.push({ profil, societes });
+      suivre({ profil, trouvees: societes.length });
+    } catch (e) {
+      // Un résultat partiel vaut mieux qu'une erreur : on continue avec les autres passages.
+      derniereErreur = e;
+      suivre({ profil, trouvees: 0, echec: true });
+    }
   };
 
   if (vendeur.departement) await passage("departement", { departement: vendeur.departement }, tranches);
   if (vendeur.region) await passage("region", { region: vendeur.region }, tranches);
   await passage("national", {}, grandes.length ? grandes : tranches);
+
+  if (tentes > 0 && lots.length === 0) throw derniereErreur;
 
   return { repreneurs: classer(vendeur, lots), examinees };
 }

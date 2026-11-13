@@ -6,6 +6,7 @@ import type { Evenement, LectureSite } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /** Limite simple par adresse : 10 analyses par minute. À remplacer par un stockage partagé en production. */
 const appels = new Map<string, number[]>();
@@ -68,6 +69,9 @@ export async function GET(requete: Request) {
         dire({ type: "journal", texte: `Société trouvée : ${societe.nom}`, etat: "ok" });
         dire({ type: "societe", societe });
 
+        if (societe.formeJuridique === "Association") {
+          dire({ type: "journal", texte: "C'est une association : elle ne se vend pas comme une société, ce parcours n'est pas fait pour elle", etat: "alerte" });
+        }
         if (!societe.active) dire({ type: "journal", texte: "Le registre indique une société cessée", etat: "alerte" });
 
         const annees = societe.finances.map((f) => f.annee);

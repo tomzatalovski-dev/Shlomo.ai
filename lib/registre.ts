@@ -98,10 +98,16 @@ async function appeler(parametres: Record<string, string>): Promise<Brut[] | nul
     try {
       const rep = await fetch(url, {
         headers: { accept: "application/json" },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(12_000),
         cache: "no-store",
       });
-      if (rep.status === 429 || rep.status >= 500) throw new Error(`Registre : réponse ${rep.status}`);
+      if (rep.status === 429) {
+        // Le registre limite le nombre d'appels : on attend ce qu'il demande, cinq secondes au plus.
+        const demande = Number(rep.headers.get("retry-after"));
+        await new Promise((r) => setTimeout(r, Math.min(Number.isFinite(demande) && demande > 0 ? demande * 1000 : 1500, 5000)));
+        throw new Error("Registre : trop d'appels");
+      }
+      if (rep.status >= 500) throw new Error(`Registre : réponse ${rep.status}`);
       if (!rep.ok) return null;
       const json = (await rep.json()) as { results?: Brut[] };
       return json.results ?? [];

@@ -45,3 +45,35 @@ describe("repreneurs", () => {
     expect(masques[0]).toMatchObject({ rang: 1, zone: "Dans votre département" });
   });
 });
+
+import { afterEach, vi } from "vitest";
+import { trouverRepreneurs } from "@/lib/repreneurs";
+
+describe("trouverRepreneurs quand le registre flanche", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const vendeur: Societe = { ...base, departement: "69", region: "84" };
+  const reponse = (r: unknown[]) => new Response(JSON.stringify({ results: r }), { status: 200 });
+  const brut = { siren: "200000007", nom_complet: "X", nature_juridique: "5710", activite_principale: "43.32A", tranche_effectif_salarie: "12", etat_administratif: "A", siege: {} };
+
+  it("garde les passages réussis quand un autre échoue", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (u: string) => (String(u).includes("region=") ? new Response("", { status: 500 }) : reponse([brut]))));
+    vi.useFakeTimers();
+    const passages: boolean[] = [];
+    const promesse = trouverRepreneurs(vendeur, (p) => passages.push(Boolean(p.echec)));
+    await vi.runAllTimersAsync();
+    const { repreneurs } = await promesse;
+    vi.useRealTimers();
+    expect(passages).toEqual([false, true, false]);
+    expect(repreneurs).toHaveLength(1);
+  });
+
+  it("signale la panne seulement si tous les passages échouent", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
+    vi.useFakeTimers();
+    const promesse = trouverRepreneurs(vendeur).catch((e) => e);
+    await vi.runAllTimersAsync();
+    const resultat = await promesse;
+    vi.useRealTimers();
+    expect(resultat).toBeInstanceOf(Error);
+  });
+});
