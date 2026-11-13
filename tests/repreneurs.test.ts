@@ -77,3 +77,12 @@ describe("trouverRepreneurs quand le registre flanche", () => {
     expect(resultat).toBeInstanceOf(Error);
   });
 });
+
+import { reveler } from "@/lib/repreneurs";
+
+describe("reveler", () => {
+  it("donne le nom et le SIREN, réservés au vendeur qui a signé", () => {
+    const liste = reveler(classer(base, [{ profil: "departement", societes: [soc("200000007")] }]));
+    expect(liste[0]).toMatchObject({ rang: 1, nom: "SOCIETE 200000007", siren: "200000007", ville: "LYON" });
+  });
+});

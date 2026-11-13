@@ -53,11 +53,24 @@ export type RepreneurMasque = {
   details: string[];
 };
 
+/** Ce que le vendeur reçoit une fois le mandat signé. */
+export type RepreneurRevele = {
+  rang: number;
+  nom: string;
+  siren: string;
+  ville?: string;
+  effectif?: string;
+  profil: string;
+  score: number;
+  raisons: string[];
+};
+
 export type EvenementRepreneurs =
   | { type: "journal"; texte: string; etat: "ok" | "alerte" }
   | { type: "encours"; texte: string }
   | { type: "vendeur"; nom: string; siren: string }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
+  | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }
   | { type: "fin" };
 

@@ -2,22 +2,26 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { EvenementRepreneurs, RepreneurMasque } from "@/lib/types";
+import type { EvenementRepreneurs, RepreneurMasque, RepreneurRevele } from "@/lib/types";
 
 type Ligne = { texte: string; etat: "ok" | "alerte" };
 
 function Repreneurs() {
-  const siren = useSearchParams().get("siren") ?? "";
+  const parametres = useSearchParams();
+  const siren = parametres.get("siren") ?? "";
+  const signe = parametres.get("signe") === "1";
+  const par = parametres.get("par") ?? "";
 
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [encours, setEncours] = useState<string | null>("Préparation de la recherche");
   const [vendeur, setVendeur] = useState<{ nom: string; siren: string } | null>(null);
   const [liste, setListe] = useState<RepreneurMasque[] | null>(null);
   const [examinees, setExaminees] = useState(0);
+  const [reveles, setReveles] = useState<RepreneurRevele[] | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
   useEffect(() => {
-    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}`);
+    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${signe ? "&mandat=test" : ""}`);
     let termine = false;
     const clore = () => {
       termine = true;
@@ -30,7 +34,11 @@ function Repreneurs() {
       if (e.type === "encours") setEncours(e.texte);
       else if (e.type === "journal") setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
       else if (e.type === "vendeur") setVendeur(e);
-      else if (e.type === "repreneurs") {
+      else if (e.type === "reveles") {
+        setReveles(e.liste);
+        setListe([]);
+        setExaminees(e.examinees);
+      } else if (e.type === "repreneurs") {
         setListe(e.liste);
         setExaminees(e.examinees);
       } else if (e.type === "erreur") {
@@ -43,7 +51,7 @@ function Repreneurs() {
       clore();
     };
     return () => flux.close();
-  }, [siren]);
+  }, [siren, signe]);
 
   const premiers = liste?.slice(0, 3) ?? [];
   const suivants = liste?.slice(3) ?? [];
@@ -51,7 +59,9 @@ function Repreneurs() {
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
-    : liste === null
+    : reveles && reveles.length > 0
+      ? "Mandat signé. Voici vos repreneurs."
+      : liste === null
       ? "Je cherche vos repreneurs."
       : n === 0
         ? "Le registre ne montre pas encore de repreneur évident."
@@ -89,12 +99,17 @@ function Repreneurs() {
         <main className="resultat">
           <div>
             <h1>{titre}</h1>
+            {reveles && reveles.length > 0 && (
+              <p className="sous">
+                Mandat de test signé par {par || "vous"}, sans valeur juridique. Les noms ne sont visibles que de vous, parmi {examinees} sociétés examinées.
+              </p>
+            )}
             {liste !== null && n > 0 && (
               <p className="sous">
                 Premier passage sur le registre : des sociétés de votre métier, plus grandes que vous, parmi {examinees} examinées. Le code d'activité du registre ne décrit pas toujours votre vrai métier : ce classement sera affiné par l'étude de votre marché. Les noms s'affichent après la signature du mandat.
               </p>
             )}
-            {liste !== null && n === 0 && !erreur && (
+            {liste !== null && n === 0 && !erreur && !(reveles && reveles.length > 0) && (
               <p className="sous">
                 Aucune société plus grande que vous n'apparaît sous votre code d'activité. L'étude de votre marché, à venir, cherchera aussi parmi les métiers voisins, les fournisseurs et les repreneurs individuels.
               </p>
@@ -118,6 +133,30 @@ function Repreneurs() {
                 </div>
               ))}
             </div>
+          )}
+
+          {reveles && reveles.length > 0 && (
+            <>
+              <div className="carte liste">
+                {reveles.map((r) => (
+                  <div key={r.siren} className="ligne">
+                    <span className="quoi">
+                      <b>{r.rang}. {r.nom}</b>
+                      <small>{[r.ville, r.effectif, ...r.raisons].filter(Boolean).join(" · ")}</small>
+                    </span>
+                    <span className="ou">
+                      {r.profil}
+                      <br />
+                      <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${r.siren}`} target="_blank" rel="noreferrer">Voir sa fiche publique</a>
+                    </span>
+                    <span className="note">{r.score}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="carte">
+                <p className="message">La suite arrive avec la prochaine version : trouver la bonne personne dans chaque société, puis préparer le message d'approche que vous validerez.</p>
+              </div>
+            </>
           )}
 
           {premiers.length > 0 && (
@@ -156,9 +195,9 @@ function Repreneurs() {
             <div className="carte mandat">
               <div>
                 <div className="grand">Signez le mandat pour voir les noms et lancer l'approche.</div>
-                <p className="sous">La signature en ligne arrive avec la prochaine version. Le score est calculé à partir des seules données du registre : il sera affiné par l'étude de votre marché.</p>
+                <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
               </div>
-              <button className="bouton" type="button" disabled>Signer le mandat</button>
+              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}`}>Signer le mandat</a>
             </div>
           )}
         </main>

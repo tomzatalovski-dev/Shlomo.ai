@@ -1,5 +1,5 @@
 import { chercherParActivite } from "./registre";
-import type { ProfilRepreneur, Repreneur, RepreneurMasque, Societe } from "./types";
+import type { ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
 
 /**
  * Premier passage, sans IA : les sociétés du même métier, plus grandes que le vendeur,
@@ -119,6 +119,20 @@ export function masquer(repreneurs: Repreneur[]): RepreneurMasque[] {
     score: r.score,
     raison: r.raisons[0],
     details: r.raisons.slice(1),
+  }));
+}
+
+/** Liste complète, réservée au vendeur qui a signé le mandat. */
+export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
+  return repreneurs.map((r, i) => ({
+    rang: i + 1,
+    nom: r.societe.nom,
+    siren: r.societe.siren,
+    ville: r.societe.ville,
+    effectif: r.societe.effectif,
+    profil: LIBELLE_PROFIL[r.profil],
+    score: r.score,
+    raisons: r.raisons,
   }));
 }
 

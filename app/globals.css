@@ -145,3 +145,11 @@ button, input, textarea { font: inherit; color: inherit; }
 .score { flex: none; }
 .score span { white-space: nowrap; }
 .bas > div:first-child { min-width: 0; }
+
+/* Mandat */
+a.bouton { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.termes { font-size: 16px; color: var(--encre); gap: 12px; line-height: 1.5; }
+.termes li { display: flex; }
+.case { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; min-height: 44px; }
+.case input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.ligne .ou a { color: var(--vert); }
