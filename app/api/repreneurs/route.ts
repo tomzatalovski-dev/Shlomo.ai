@@ -1,6 +1,6 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
-import { masquer, reveler, trouverRepreneurs } from "@/lib/repreneurs";
+import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { adresseDe, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
 
@@ -17,8 +17,7 @@ const PASSAGE = {
 export async function GET(requete: Request) {
   const parametres = new URL(requete.url).searchParams;
   const saisie = analyserSaisie(parametres.get("siren") ?? "");
-  // Version de test : la signature n'est ni vérifiée ni enregistrée. À remplacer par un vrai mandat lié à un compte.
-  const mandatSigne = parametres.get("mandat") === "test";
+
   const encodeur = new TextEncoder();
 
   const flux = new ReadableStream<Uint8Array>({
@@ -58,9 +57,9 @@ export async function GET(requete: Request) {
           });
         }, (total) => dire({ type: "metier", total }));
 
-        // Sans mandat, seule la version masquée quitte le serveur : ni nom, ni SIREN, ni ville.
-        if (mandatSigne) dire({ type: "reveles", liste: reveler(repreneurs), examinees });
-        else dire({ type: "repreneurs", liste: masquer(repreneurs), examinees });
+        // Seule la version masquée quitte le serveur ici : ni nom, ni SIREN, ni ville.
+        // Les noms ne sont remis que par la page de suivi, après un mandat enregistré.
+        dire({ type: "repreneurs", liste: masquer(repreneurs), examinees });
         dire({
           type: "journal",
           texte: repreneurs.length ? `${repreneurs.length} repreneur${repreneurs.length > 1 ? "s" : ""} classé${repreneurs.length > 1 ? "s" : ""}` : "Aucun repreneur retenu à ce stade",

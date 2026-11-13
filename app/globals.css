@@ -179,3 +179,10 @@ a.bouton { display: inline-flex; align-items: center; justify-content: center; t
 .examen { margin: 0; font-size: 14px; color: var(--gris); min-height: 20px; }
 .ligne.ecartee { color: var(--gris); }
 .ligne.ecartee .quoi b { text-decoration: line-through; font-weight: 500; }
+
+/* Suivi */
+.fil li { align-items: flex-start; }
+.fil li small { display: block; font-size: 12px; margin-top: 2px; }
+.etat { font-weight: 500; color: var(--encre); }
+.etat.fort { color: var(--vert); font-weight: 600; }
+.ligne .ou .lien { font-size: 14px; min-height: 0; }

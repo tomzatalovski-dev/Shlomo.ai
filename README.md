@@ -71,3 +71,21 @@ Limites de ce passage : il ne trouve que des sociétés du même code d'activit�
 ## Limite connue
 
 La vérification qu'un site est public se fait juste avant la lecture. Un attaquant qui contrôle son propre nom de domaine pourrait changer sa réponse entre les deux. À durcir avant une mise en ligne publique, en forçant la connexion vers l'adresse vérifiée.
+
+## Mémoire, mandat et suivi
+
+Depuis cette version, le site garde en mémoire ce qui suit la signature du mandat, dans une base Supabase (projet « Shlomo.ai », région Paris).
+
+- `app/mandat/page.tsx` et `app/api/mandat/route.ts` : la signature. Le serveur refait lui-même la recherche, puis enregistre le mandat et la liste des repreneurs présentés, chacun daté.
+- `app/suivi/page.tsx` : la page du vendeur après signature. Compteurs, liste nominative, fil d'actualité, et un bouton pour rayer un repreneur tant qu'il n'a pas été contacté.
+- `lib/base.ts` : seul fichier qui parle à la base.
+
+Règles tenues par la base elle-même :
+
+- Aucune table n'est lisible directement. Trois fonctions seulement sont ouvertes, et deux exigent le jeton secret du dossier, qui figure dans l'adresse de la page de suivi.
+- Le nom, le SIREN et la date d'une présentation ne peuvent plus être modifiés une fois enregistrés.
+- Chaque changement de statut d'un repreneur ajoute une ligne au fil d'actualité du vendeur.
+
+Pour faire avancer un dossier à la main : dans Supabase, table `presentations`, changer la colonne `statut` (`contacte`, `relance`, `a_repondu`, `interesse`, `confidentialite_signee`, `rendez_vous`, `sans_suite`). La page de suivi du vendeur se met à jour au rechargement.
+
+Limites : le mandat est une version de test sans valeur juridique, il n'y a pas encore de comptes, et aucun message n'est envoyé par le site.
