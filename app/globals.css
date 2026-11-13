@@ -140,3 +140,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .ligne .quoi small { display: block; color: var(--gris); font-size: 13px; margin-top: 2px; }
 .ligne .note { min-width: 32px; text-align: right; font-size: 17px; }
 .ligne .jauge { flex: 1 1 100%; }
+
+/* Retours du premier test réel */
+.score { flex: none; }
+.score span { white-space: nowrap; }
+.bas > div:first-child { min-width: 0; }

@@ -91,7 +91,7 @@ function Repreneurs() {
             <h1>{titre}</h1>
             {liste !== null && n > 0 && (
               <p className="sous">
-                Premier passage sur le registre : des sociétés de votre métier, plus grandes que vous, parmi {examinees} examinées. Les noms s'affichent après la signature du mandat.
+                Premier passage sur le registre : des sociétés de votre métier, plus grandes que vous, parmi {examinees} examinées. Le code d'activité du registre ne décrit pas toujours votre vrai métier : ce classement sera affiné par l'étude de votre marché. Les noms s'affichent après la signature du mandat.
               </p>
             )}
             {liste !== null && n === 0 && !erreur && (

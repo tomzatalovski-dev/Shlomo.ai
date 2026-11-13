@@ -29,3 +29,10 @@ describe("mapperSociete", () => {
     expect(s.finances).toEqual([]);
   });
 });
+
+describe("dirigeants", () => {
+  it("ne compte pas les commissaires aux comptes parmi les dirigeants", () => {
+    const s = mapperSociete({ siren: "123456782", dirigeants: [{ nom: "DUPONT", prenoms: "Claire", qualite: "Présidente de SAS" }, { denomination: "CABINET X", qualite: "Commissaire aux comptes titulaire" }] });
+    expect(s.dirigeants).toEqual([{ nom: "Claire DUPONT", qualite: "Présidente de SAS" }]);
+  });
+});

@@ -17,9 +17,9 @@ const MEDIANE: Record<string, number> = {
 };
 
 const LIBELLE_PROFIL: Record<ProfilRepreneur, string> = {
-  departement: "Concurrent de votre département",
-  region: "Concurrent de votre région",
-  national: "Groupe du même métier",
+  departement: "Même code d'activité, votre département",
+  region: "Même code d'activité, votre région",
+  national: "Même code d'activité, ailleurs en France",
 };
 
 const ZONE: Record<ProfilRepreneur, string> = {
@@ -50,12 +50,12 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
   const rapport = rapportDeTaille(vendeur, candidat);
   if (rapport !== undefined) {
     const fois = rapport >= 10 ? Math.round(rapport / 5) * 5 : Math.round(rapport);
-    raisons.push(fois >= 2 ? `Même métier, environ ${fois} fois votre effectif` : "Même métier, un peu plus grande que vous");
+    raisons.push(fois >= 2 ? `Environ ${fois} fois votre effectif` : "Un peu plus grande que vous");
     if (rapport >= 2 && rapport <= 12) score += 14;
     else if (rapport > 12 && rapport <= 60) score += 8;
     else score += 3;
   } else {
-    raisons.push("Même métier, plus grande que vous");
+    raisons.push("Plus grande que vous");
   }
 
   const dernier = candidat.finances.at(-1);

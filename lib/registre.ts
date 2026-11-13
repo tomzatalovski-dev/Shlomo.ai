@@ -47,7 +47,7 @@ export function mapperSociete(r: Brut): Societe {
           nom: (d.denomination ?? [d.prenoms, d.nom].filter(Boolean).join(" ")).trim(),
           qualite: d.qualite ?? undefined,
         }))
-        .filter((d: { nom: string }) => d.nom)
+        .filter((d: { nom: string; qualite?: string }) => d.nom && !/commissaire aux comptes/i.test(d.qualite ?? ""))
     : [];
 
   const finances =

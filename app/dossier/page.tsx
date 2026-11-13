@@ -162,7 +162,7 @@ function Dossier() {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Décrivez votre activité : ce que vous vendez, à qui, et ce qui vous distingue."
+                  placeholder="Facultatif : ce que vous vendez, à qui, et ce qui vous distingue. Cela m'aidera à mieux cibler."
                   disabled={valide}
                 />
               </div>
@@ -185,7 +185,7 @@ function Dossier() {
                   <button className="bouton" type="button" onClick={() => {
                       setValide(true);
                       window.location.assign(`/repreneurs?siren=${societe.siren}`);
-                    }} disabled={!description.trim()}>
+                    }}>
                     Tout est juste, je valide
                   </button>
                   <a className="lien" href="/">Ce n'est pas ma société</a>
