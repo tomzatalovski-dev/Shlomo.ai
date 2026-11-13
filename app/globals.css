@@ -116,3 +116,27 @@ button, input, textarea { font: inherit; color: inherit; }
 .carte.mandat { border: 1px solid var(--encre); flex-direction: row; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
 .carte.mandat > div { flex: 1 1 420px; }
 .grand { font-size: 26px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+
+/* Repassage des cartes : un contour fin, un seul rayon, le score en évidence */
+.carte { border: 1px solid #ebebef; border-radius: 20px; }
+.carte.vide { border: 1px dashed #c9c9cf; }
+.carte.mandat { border-color: var(--encre); }
+.chiffre b, .note, .score b { font-variant-numeric: tabular-nums; }
+.repreneur { padding: 24px; gap: 14px; }
+.repreneur.premier { border-color: var(--encre); }
+.repreneur .rang { justify-content: flex-start; align-items: center; gap: 10px; }
+.num { width: 26px; height: 26px; flex: none; border: 1px solid var(--encre); border-radius: 13px; display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--encre); }
+.repreneur .pourquoi { font-size: 20px; }
+.bas { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--trait); }
+.bas .masque { border: 0; padding: 0; margin: 0 0 2px; display: block; font-size: 14px; font-weight: 500; color: var(--encre); }
+.bas .meta { font-size: 13px; }
+.score { text-align: right; line-height: 1; }
+.score b { display: block; font-size: 34px; font-weight: 600; letter-spacing: -0.03em; }
+.score span { font-size: 12px; color: var(--gris); }
+.jauge { display: block; height: 3px; border-radius: 2px; background: #ededf0; overflow: hidden; }
+.jauge i { display: block; height: 100%; width: 0; background: var(--vert); transition: width 0.8s ease; }
+.ligne { align-items: center; padding: 16px 0; }
+.ligne .quoi b { display: block; font-weight: 600; font-size: 15px; }
+.ligne .quoi small { display: block; color: var(--gris); font-size: 13px; margin-top: 2px; }
+.ligne .note { min-width: 32px; text-align: right; font-size: 17px; }
+.ligne .jauge { flex: 1 1 100%; }

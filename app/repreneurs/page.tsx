@@ -123,12 +123,18 @@ function Repreneurs() {
           {premiers.length > 0 && (
             <div className="trio">
               {premiers.map((r) => (
-                <div key={r.rang} className="carte">
-                  <div className="rang"><span>N° {r.rang} · {r.profil}</span><span>Score {r.score}</span></div>
+                <div key={r.rang} className={r.rang === 1 ? "carte repreneur premier" : "carte repreneur"}>
+                  <div className="rang"><span className="num">{r.rang}</span><span>{r.profil}</span></div>
                   <p className="pourquoi">{r.raison}.</p>
-                  <p className="meta">{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
                   {r.details.length > 0 && <ul className="faits">{r.details.map((d) => <li key={d}>{d}</li>)}</ul>}
-                  <span className="masque">Nom masqué</span>
+                  <div className="bas">
+                    <div>
+                      <span className="masque">Nom masqué</span>
+                      <p className="meta">{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
+                    </div>
+                    <div className="score"><b>{r.score}</b><span>sur 100</span></div>
+                  </div>
+                  <span className="jauge" role="img" aria-label={`Score ${r.score} sur 100`}><i style={{ width: `${r.score}%` }} /></span>
                 </div>
               ))}
             </div>
@@ -138,7 +144,7 @@ function Repreneurs() {
             <div className="carte liste">
               {suivants.map((r) => (
                 <div key={r.rang} className="ligne">
-                  <span className="quoi">{r.raison}</span>
+                  <span className="quoi"><b>{r.raison}</b>{r.details.length > 0 && <small>{r.details.join(" · ")}</small>}</span>
                   <span className="ou">{[r.profil, r.effectif].filter(Boolean).join(" · ")}</span>
                   <span className="note">{r.score}</span>
                 </div>
