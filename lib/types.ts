@@ -65,10 +65,23 @@ export type RepreneurRevele = {
   raisons: string[];
 };
 
+/** Une société examinée, telle que l'écran peut la montrer pendant la recherche : jamais de nom. */
+export type CandidatMasque = {
+  effectif?: string;
+  anneeCreation?: number;
+  retenu: boolean;
+  motif?: string;
+  score?: number;
+  raison?: string;
+  details?: string[];
+};
+
 export type EvenementRepreneurs =
   | { type: "journal"; texte: string; etat: "ok" | "alerte" }
   | { type: "encours"; texte: string }
   | { type: "vendeur"; nom: string; siren: string }
+  | { type: "metier"; total: number }
+  | { type: "passage"; profil: ProfilRepreneur; libelle: string; candidats: CandidatMasque[]; echec?: boolean }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }

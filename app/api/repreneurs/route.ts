@@ -49,13 +49,14 @@ export async function GET(requete: Request) {
         dire({ type: "journal", texte: `Votre métier au registre : code ${vendeur.codeActivite}`, etat: "ok" });
 
         dire({ type: "encours", texte: "Recherche des sociétés du même métier, plus grandes que vous" });
-        const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) =>
+        const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) => {
+          dire({ type: "passage", profil: p.profil, libelle: p.libelle, candidats: p.candidats, echec: p.echec });
           dire(p.echec ? { type: "journal", texte: `Le registre n'a pas répondu ${PASSAGE[p.profil]} : je continue sans`, etat: "alerte" } : {
             type: "journal",
             texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}`,
             etat: p.trouvees ? "ok" : "alerte",
-          }),
-        );
+          });
+        }, (total) => dire({ type: "metier", total }));
 
         // Sans mandat, seule la version masquée quitte le serveur : ni nom, ni SIREN, ni ville.
         if (mandatSigne) dire({ type: "reveles", liste: reveler(repreneurs), examinees });

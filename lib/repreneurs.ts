@@ -1,5 +1,5 @@
-import { chercherParActivite } from "./registre";
-import type { ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
+import { chercherParActivite, compterMetier } from "./registre";
+import type { CandidatMasque, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
 
 /**
  * Premier passage, sans IA : les sociétés du même métier, plus grandes que le vendeur,
@@ -93,7 +93,17 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
   );
 }
 
-export type Passage = { profil: ProfilRepreneur; trouvees: number; echec?: boolean };
+export type Passage = { profil: ProfilRepreneur; libelle: string; trouvees: number; echec?: boolean; candidats: CandidatMasque[] };
+
+/** Dit, sans la nommer, ce qu'on a fait d'une société examinée. */
+export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur): CandidatMasque {
+  const fiche = { effectif: s.effectif, anneeCreation: s.anneeCreation };
+  if (!s.active) return { ...fiche, retenu: false, motif: "Société cessée" };
+  if (s.entrepreneurIndividuel) return { ...fiche, retenu: false, motif: "Entrepreneur individuel, pas une société" };
+  if (s.refuseProspection) return { ...fiche, retenu: false, motif: "Elle a demandé à ne pas être sollicitée" };
+  const note = noter(vendeur, s, profil);
+  return { ...fiche, retenu: true, score: note.score, raison: note.raisons[0], details: note.raisons.slice(1) };
+}
 
 /** Classe les candidats de plusieurs passages, sans doublon, du meilleur au moins bon. */
 export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; societes: Societe[] }[], maximum = 10): Repreneur[] {
@@ -140,8 +150,16 @@ export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
 export async function trouverRepreneurs(
   vendeur: Societe,
   suivre: (p: Passage) => void = () => {},
+  metier: (total: number) => void = () => {},
 ): Promise<{ repreneurs: Repreneur[]; examinees: number }> {
   if (!vendeur.codeActivite) return { repreneurs: [], examinees: 0 };
+
+  // Le nombre total de sociétés du métier donne l'échelle du tri. S'il manque, la recherche continue.
+  try {
+    const total = await compterMetier(vendeur.codeActivite);
+    if (total) metier(total);
+  } catch {}
+  const dejaVues = new Set<string>([vendeur.siren]);
 
   const tranches = tranchesAuDessus(vendeur.trancheEffectif);
   const grandes = tranches.filter((t) => TRANCHES.indexOf(t) >= TRANCHES.indexOf("21"));
@@ -157,11 +175,17 @@ export async function trouverRepreneurs(
       const societes = await chercherParActivite({ codeActivite: vendeur.codeActivite!, tranches: t, ...zone });
       examinees += societes.length;
       lots.push({ profil, societes });
-      suivre({ profil, trouvees: societes.length });
+      const candidats: CandidatMasque[] = [];
+      for (const s of societes) {
+        if (dejaVues.has(s.siren)) continue;
+        dejaVues.add(s.siren);
+        candidats.push(examiner(vendeur, s, profil));
+      }
+      suivre({ profil, libelle: LIBELLE_PROFIL[profil], trouvees: societes.length, candidats });
     } catch (e) {
       // Un résultat partiel vaut mieux qu'une erreur : on continue avec les autres passages.
       derniereErreur = e;
-      suivre({ profil, trouvees: 0, echec: true });
+      suivre({ profil, libelle: LIBELLE_PROFIL[profil], trouvees: 0, echec: true, candidats: [] });
     }
   };
 

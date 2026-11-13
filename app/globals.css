@@ -153,3 +153,29 @@ a.bouton { display: inline-flex; align-items: center; justify-content: center; t
 .case { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; min-height: 44px; }
 .case input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
 .ligne .ou a { color: var(--vert); }
+
+/* Mise en scène de l'agent */
+.apparait { animation: monte 0.5s ease both; }
+@keyframes monte { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .apparait { animation: none; } }
+.avance-bloc { display: flex; flex-direction: column; gap: 8px; }
+.avance-ligne { font-size: 13px; color: var(--gris); min-height: 18px; }
+.barre { height: 3px; border-radius: 2px; background: #e6e6ea; overflow: hidden; }
+.barre i { display: block; height: 100%; width: 0; background: var(--encre); transition: width 0.9s ease; }
+.chiffre.attente b { display: block; height: 20px; width: 70%; margin-top: 8px; border-radius: 6px; background: #e6e6ea; }
+.evolution { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; }
+.colonnes { display: flex; gap: 14px; align-items: flex-end; height: 78px; }
+.colonnes div { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; font-size: 12px; color: var(--gris); }
+.colonnes i { display: block; width: 34px; border-radius: 6px 6px 0 0; background: #d2d2d8; animation: pousse 0.8s ease both; transform-origin: bottom; }
+.colonnes i.fort { background: var(--encre); }
+@keyframes pousse { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.evolution .message { flex: 1 1 260px; font-size: 15px; }
+.entonnoir { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.entonnoir .chiffre { background: var(--carte); border: 1px solid #ebebef; position: relative; }
+.entonnoir .chiffre.cle { border-color: var(--encre); }
+.entonnoir .chiffre b { font-size: 30px; letter-spacing: -0.02em; }
+.entonnoir .chiffre:not(:last-child)::after { content: "→"; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 16px; text-align: center; color: var(--gris); font-size: 13px; z-index: 1; }
+@media (max-width: 760px) { .entonnoir .chiffre::after { display: none; } }
+.examen { margin: 0; font-size: 14px; color: var(--gris); min-height: 20px; }
+.ligne.ecartee { color: var(--gris); }
+.ligne.ecartee .quoi b { text-decoration: line-through; font-weight: 500; }

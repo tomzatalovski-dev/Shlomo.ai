@@ -2,72 +2,113 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { EvenementRepreneurs, RepreneurMasque, RepreneurRevele } from "@/lib/types";
+import type { CandidatMasque, EvenementRepreneurs, RepreneurMasque, RepreneurRevele } from "@/lib/types";
+import { Avance, Compteur, attendre, useFile } from "@/app/composants/scene";
 
 type Ligne = { texte: string; etat: "ok" | "alerte" };
+type Recent = CandidatMasque & { cle: number; libelle: string };
+
+const nombre = (n: number) => (n >= 10_000 ? "10 000 +" : n.toLocaleString("fr-FR"));
 
 function Repreneurs() {
   const parametres = useSearchParams();
   const siren = parametres.get("siren") ?? "";
   const signe = parametres.get("signe") === "1";
   const par = parametres.get("par") ?? "";
+  // Après la signature, la recherche a déjà été montrée : on la rejoue vite.
+  const rythme = signe ? 0.15 : 1;
 
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [encours, setEncours] = useState<string | null>("Préparation de la recherche");
+  const [avance, setAvance] = useState({ pct: 4, texte: "Préparation de la recherche" });
   const [vendeur, setVendeur] = useState<{ nom: string; siren: string } | null>(null);
+  const [metier, setMetier] = useState<number | null>(null);
+  const [compte, setCompte] = useState({ vues: 0, non: 0, oui: 0 });
+  const [examen, setExamen] = useState("");
+  const [recents, setRecents] = useState<Recent[]>([]);
   const [liste, setListe] = useState<RepreneurMasque[] | null>(null);
-  const [examinees, setExaminees] = useState(0);
   const [reveles, setReveles] = useState<RepreneurRevele[] | null>(null);
+  const [examinees, setExaminees] = useState(0);
   const [erreur, setErreur] = useState<string | null>(null);
+
+  // Chaque événement réel du serveur est joué à son tour, à un rythme lisible.
+  const jouer = useFile<EvenementRepreneurs>(async (e) => {
+    if (e.type === "encours") {
+      setEncours(e.texte);
+      setAvance((a) => ({ pct: Math.min(a.pct + 12, 85), texte: e.texte }));
+      await attendre(800 * rythme);
+    } else if (e.type === "journal") {
+      setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
+      await attendre(450 * rythme);
+    } else if (e.type === "vendeur") {
+      setVendeur(e);
+    } else if (e.type === "metier") {
+      setMetier(e.total);
+      await attendre(1300 * rythme);
+    } else if (e.type === "passage") {
+      if (e.echec || e.candidats.length === 0) return;
+      setAvance((a) => ({ pct: Math.min(a.pct + 14, 88), texte: `J'examine les sociétés : ${e.libelle.toLowerCase()}` }));
+      const pas = Math.max(180, Math.min(850, 9000 / e.candidats.length)) * rythme;
+      for (const c of e.candidats) {
+        setExamen(`J'examine une société de ${c.effectif ?? "taille non publiée"}${c.anneeCreation ? `, créée en ${c.anneeCreation}` : ""}…`);
+        await attendre(pas);
+        setCompte((n) => ({ vues: n.vues + 1, non: n.non + (c.retenu ? 0 : 1), oui: n.oui + (c.retenu ? 1 : 0) }));
+        setRecents((r) => [...r, { ...c, cle: Math.random(), libelle: e.libelle }].slice(-6));
+      }
+      setExamen("");
+    } else if (e.type === "repreneurs" || e.type === "reveles") {
+      setEncours("Classement des repreneurs");
+      setAvance({ pct: 94, texte: "Classement des repreneurs" });
+      await attendre(1500 * rythme);
+      setExaminees(e.examinees);
+      if (e.type === "reveles") {
+        setReveles(e.liste);
+        setListe([]);
+      } else setListe(e.liste);
+    } else if (e.type === "erreur") {
+      setErreur(e.message);
+      setEncours(null);
+    } else if (e.type === "fin") {
+      setAvance({ pct: 100, texte: "Recherche terminée" });
+      setEncours(null);
+    }
+  });
 
   useEffect(() => {
     const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${signe ? "&mandat=test" : ""}`);
     let termine = false;
-    const clore = () => {
-      termine = true;
-      setEncours(null);
-      flux.close();
-    };
-
     flux.onmessage = (m) => {
       const e = JSON.parse(m.data) as EvenementRepreneurs;
-      if (e.type === "encours") setEncours(e.texte);
-      else if (e.type === "journal") setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
-      else if (e.type === "vendeur") setVendeur(e);
-      else if (e.type === "reveles") {
-        setReveles(e.liste);
-        setListe([]);
-        setExaminees(e.examinees);
-      } else if (e.type === "repreneurs") {
-        setListe(e.liste);
-        setExaminees(e.examinees);
-      } else if (e.type === "erreur") {
-        setErreur(e.message);
-        clore();
-      } else if (e.type === "fin") clore();
+      if (e.type === "fin" || e.type === "erreur") {
+        termine = true;
+        flux.close();
+      }
+      jouer(e);
     };
     flux.onerror = () => {
-      if (!termine) setErreur("La connexion s'est interrompue. Rechargez la page pour relancer la recherche.");
-      clore();
+      flux.close();
+      if (!termine) jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page pour relancer la recherche." });
     };
     return () => flux.close();
-  }, [siren, signe]);
+  }, [siren, signe, jouer]);
 
   const premiers = liste?.slice(0, 3) ?? [];
   const suivants = liste?.slice(3) ?? [];
   const n = liste?.length ?? 0;
+  const aDesNoms = Boolean(reveles && reveles.length > 0);
+  const cherche = liste === null && !erreur;
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
-    : reveles && reveles.length > 0
+    : aDesNoms
       ? "Mandat signé. Voici vos repreneurs."
       : liste === null
-      ? "Je cherche vos repreneurs."
-      : n === 0
-        ? "Le registre ne montre pas encore de repreneur évident."
-        : n <= 3
-          ? `${n} repreneur${n > 1 ? "s" : ""} possible${n > 1 ? "s" : ""}.`
-          : `${n} repreneurs possibles. Voici les trois premiers.`;
+        ? "Je cherche vos repreneurs."
+        : n === 0
+          ? "Le registre ne montre pas encore de repreneur évident."
+          : n <= 3
+            ? `${n} repreneur${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}.`
+            : `${n} repreneurs retenus. Voici les trois meilleurs.`;
 
   return (
     <div className="page">
@@ -89,7 +130,7 @@ function Repreneurs() {
           <h2>{encours ? "Shlomo cherche vos repreneurs" : "Premier passage terminé"}</h2>
           <ul className="lignes" aria-live="polite">
             {lignes.map((l, i) => (
-              <li key={i} className={l.etat === "alerte" ? "alerte" : undefined}>{l.texte}</li>
+              <li key={i} className={l.etat === "alerte" ? "alerte apparait" : "apparait"}>{l.texte}</li>
             ))}
             {encours && <li className="encours">{encours}…</li>}
           </ul>
@@ -99,22 +140,23 @@ function Repreneurs() {
         <main className="resultat">
           <div>
             <h1>{titre}</h1>
-            {reveles && reveles.length > 0 && (
-              <p className="sous">
-                Mandat de test signé par {par || "vous"}, sans valeur juridique. Les noms ne sont visibles que de vous, parmi {examinees} sociétés examinées.
-              </p>
+            {cherche && <p className="sous">Je pars de toutes les sociétés de votre métier, et je ne garde que celles qui ont une raison de vous racheter.</p>}
+            {aDesNoms && (
+              <p className="sous">Mandat de test signé par {par || "vous"}, sans valeur juridique. Les noms ne sont visibles que de vous, parmi {examinees} sociétés examinées.</p>
             )}
             {liste !== null && n > 0 && (
               <p className="sous">
-                Premier passage sur le registre : des sociétés de votre métier, plus grandes que vous, parmi {examinees} examinées. Le code d'activité du registre ne décrit pas toujours votre vrai métier : ce classement sera affiné par l'étude de votre marché. Les noms s'affichent après la signature du mandat.
+                Premier passage sur le registre : des sociétés de votre code d'activité, plus grandes que vous. Ce code ne décrit pas toujours votre vrai métier : le classement sera affiné par l'étude de votre marché. Les noms s'affichent après la signature du mandat.
               </p>
             )}
-            {liste !== null && n === 0 && !erreur && !(reveles && reveles.length > 0) && (
+            {liste !== null && n === 0 && !erreur && !aDesNoms && (
               <p className="sous">
                 Aucune société plus grande que vous n'apparaît sous votre code d'activité. L'étude de votre marché, à venir, cherchera aussi parmi les métiers voisins, les fournisseurs et les repreneurs individuels.
               </p>
             )}
           </div>
+
+          {!erreur && <Avance pct={avance.pct} texte={avance.texte} />}
 
           {erreur && (
             <div className="carte">
@@ -123,22 +165,37 @@ function Repreneurs() {
             </div>
           )}
 
-          {liste === null && !erreur && (
-            <div className="trio">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="carte vide" aria-label="Recherche en cours">
-                  <span className="os" style={{ width: "45%" }} />
-                  <span className="os" style={{ width: "90%", height: 16 }} />
-                  <span className="os" style={{ width: "60%" }} />
+          {!erreur && (
+            <div className="entonnoir">
+              <div className="chiffre"><span>Sociétés de votre métier en France</span><b>{metier === null ? "…" : <Compteur valeur={metier} duree={1100} format={nombre} />}</b></div>
+              <div className="chiffre"><span>Examinées de près</span><b>{compte.vues}</b></div>
+              <div className="chiffre"><span>Écartées</span><b>{compte.non}</b></div>
+              <div className="chiffre cle"><span>Retenues</span><b>{compte.oui}</b></div>
+            </div>
+          )}
+
+          {cherche && <p className="examen" aria-live="off">{examen || " "}</p>}
+
+          {cherche && recents.length > 0 && (
+            <div className="carte liste">
+              {recents.map((c) => (
+                <div key={c.cle} className={c.retenu ? "ligne apparait" : "ligne ecartee apparait"}>
+                  <span className="quoi">
+                    <b>{c.retenu ? c.raison : "Écartée"}</b>
+                    <small>{c.retenu ? (c.details ?? []).join(" · ") : c.motif}</small>
+                  </span>
+                  <span className="ou">{[c.libelle, c.effectif].filter(Boolean).join(" · ")}</span>
+                  <span className="note">{c.retenu ? c.score : "—"}</span>
+                  {c.retenu && <span className="jauge"><i style={{ width: `${c.score}%` }} /></span>}
                 </div>
               ))}
             </div>
           )}
 
-          {reveles && reveles.length > 0 && (
+          {aDesNoms && (
             <>
-              <div className="carte liste">
-                {reveles.map((r) => (
+              <div className="carte liste apparait">
+                {reveles!.map((r) => (
                   <div key={r.siren} className="ligne">
                     <span className="quoi">
                       <b>{r.rang}. {r.nom}</b>
@@ -153,7 +210,7 @@ function Repreneurs() {
                   </div>
                 ))}
               </div>
-              <div className="carte">
+              <div className="carte apparait">
                 <p className="message">La suite arrive avec la prochaine version : trouver la bonne personne dans chaque société, puis préparer le message d'approche que vous validerez.</p>
               </div>
             </>
@@ -162,7 +219,7 @@ function Repreneurs() {
           {premiers.length > 0 && (
             <div className="trio">
               {premiers.map((r) => (
-                <div key={r.rang} className={r.rang === 1 ? "carte repreneur premier" : "carte repreneur"}>
+                <div key={r.rang} className={r.rang === 1 ? "carte repreneur premier apparait" : "carte repreneur apparait"} style={{ animationDelay: `${(r.rang - 1) * 0.25}s` }}>
                   <div className="rang"><span className="num">{r.rang}</span><span>{r.profil}</span></div>
                   <p className="pourquoi">{r.raison}.</p>
                   {r.details.length > 0 && <ul className="faits">{r.details.map((d) => <li key={d}>{d}</li>)}</ul>}
@@ -180,7 +237,7 @@ function Repreneurs() {
           )}
 
           {suivants.length > 0 && (
-            <div className="carte liste">
+            <div className="carte liste apparait">
               {suivants.map((r) => (
                 <div key={r.rang} className="ligne">
                   <span className="quoi"><b>{r.raison}</b>{r.details.length > 0 && <small>{r.details.join(" · ")}</small>}</span>
@@ -192,7 +249,7 @@ function Repreneurs() {
           )}
 
           {n > 0 && (
-            <div className="carte mandat">
+            <div className="carte mandat apparait">
               <div>
                 <div className="grand">Signez le mandat pour voir les noms et lancer l'approche.</div>
                 <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>

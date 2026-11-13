@@ -90,7 +90,7 @@ export function mapperSociete(r: Brut): Societe {
 export class RegistreIndisponible extends Error {}
 
 /** Appelle le registre, avec trois essais. Renvoie null si la demande est refusée. */
-async function appeler(parametres: Record<string, string>): Promise<Brut[] | null> {
+async function appeler(parametres: Record<string, string>): Promise<{ resultats: Brut[]; total: number } | null> {
   const url = `${BASE}/search?${new URLSearchParams(parametres)}`;
   let derniere: unknown;
 
@@ -109,8 +109,9 @@ async function appeler(parametres: Record<string, string>): Promise<Brut[] | nul
       }
       if (rep.status >= 500) throw new Error(`Registre : réponse ${rep.status}`);
       if (!rep.ok) return null;
-      const json = (await rep.json()) as { results?: Brut[] };
-      return json.results ?? [];
+      const json = (await rep.json()) as { results?: Brut[]; total_results?: number };
+      const resultats = json.results ?? [];
+      return { resultats, total: typeof json.total_results === "number" ? json.total_results : resultats.length };
     } catch (e) {
       derniere = e;
       await new Promise((r) => setTimeout(r, 600 * (essai + 1)));
@@ -121,8 +122,8 @@ async function appeler(parametres: Record<string, string>): Promise<Brut[] | nul
 
 /** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */
 export async function chercherSociete(siren: string): Promise<Societe | null> {
-  const resultats = await appeler({ q: siren, per_page: "1" });
-  const trouve = resultats?.find((r) => String(r.siren) === siren);
+  const reponse = await appeler({ q: siren, per_page: "1" });
+  const trouve = reponse?.resultats.find((r) => String(r.siren) === siren);
   return trouve ? mapperSociete(trouve) : null;
 }
 
@@ -144,6 +145,12 @@ export async function chercherParActivite(filtre: FiltreActivite): Promise<Socie
   if (filtre.departement) parametres.departement = filtre.departement;
   if (filtre.region) parametres.region = filtre.region;
 
-  const resultats = await appeler(parametres);
-  return (resultats ?? []).map(mapperSociete);
+  const reponse = await appeler(parametres);
+  return (reponse?.resultats ?? []).map(mapperSociete);
+}
+
+/** Nombre de sociétés actives sous un code d'activité, dans toute la France. */
+export async function compterMetier(codeActivite: string): Promise<number | undefined> {
+  const reponse = await appeler({ activite_principale: codeActivite, etat_administratif: "A", per_page: "1", minimal: "true" });
+  return reponse?.total;
 }
