@@ -2,7 +2,7 @@
 
 Site web qui aide un dirigeant français à trouver un repreneur pour sa société. Il saisit son site ou son numéro SIREN, et l'agent travaille sous ses yeux.
 
-Cette version contient la **première tranche** : la page d'accueil et l'étape 1 (comprendre la société), avec les vraies données du registre.
+Cette version contient deux tranches : la page d'accueil et l'étape 1 (comprendre la société), puis un premier passage de l'étape 4 (trouver les sociétés repreneuses), le tout avec les données du registre public.
 
 ## Lancer le site
 
@@ -26,10 +26,21 @@ Pour activer la rédaction de la description par IA, copier `.env.example` en `.
 5. Avec une clé d'IA et un site : rédige une description et des points forts, à partir du seul texte du site.
 6. Le dirigeant corrige la description et valide.
 
+## La recherche de repreneurs, premier passage
+
+Après validation de la fiche, le site cherche des repreneurs sans aucune IA, donc sans coût par recherche :
+
+1. Trois interrogations du registre : sociétés actives du même code d'activité et d'une tranche d'effectif supérieure, dans le département, dans la région, puis dans toute la France.
+2. Sont écartés : le vendeur, les sociétés cessées, les entrepreneurs individuels, et les sociétés qui ont refusé que leurs données servent à la prospection.
+3. Chaque candidate reçoit un score et des raisons tirés des seuls faits du registre : proximité, rapport de taille, résultat publié, chiffre d'affaires, ancienneté.
+4. Les dix meilleures sont classées. Le navigateur n'en reçoit qu'une version masquée : ni nom, ni SIREN, ni ville.
+
+Limites de ce passage : il ne trouve que des sociétés du même code d'activité. Les métiers voisins, les fournisseurs, les fonds et les repreneurs individuels viendront avec l'étude de marché (étapes 2 et 3). Le registre renvoie 25 sociétés par interrogation.
+
 ## Ce qui n'est pas encore là
 
-- Aucune base de données : la fiche validée n'est pas enregistrée.
-- Les étapes 2 à 6 (marché, profils, sociétés repreneuses, décideurs, approche).
+- Aucune base de données : ni la fiche validée ni la liste des repreneurs ne sont enregistrées.
+- Les étapes 2, 3, 5 et 6 (marché, profils, décideurs, approche).
 - Les comptes, le mandat, le paiement, tout envoi de message.
 - La limite d'appels est gardée en mémoire : elle ne tient pas sur plusieurs serveurs.
 
@@ -40,6 +51,10 @@ Pour activer la rédaction de la description par IA, copier `.env.example` en `.
 | `app/page.tsx` | Page d'accueil |
 | `app/dossier/page.tsx` | Écran de l'agent : journal à gauche, fiche à droite |
 | `app/api/analyse/route.ts` | L'analyse, envoyée au navigateur ligne par ligne |
+| `app/repreneurs/page.tsx` | Écran des repreneurs, noms masqués |
+| `app/api/repreneurs/route.ts` | La recherche de repreneurs, envoyée ligne par ligne |
+| `lib/repreneurs.ts` | Filtrage, notation, classement et masquage des repreneurs |
+| `lib/limite.ts` | Limite du nombre de recherches par adresse |
 | `lib/saisie.ts` | Compréhension de la saisie |
 | `lib/registre.ts` | Lecture du registre. Seul fichier à changer pour une autre source |
 | `lib/site.ts` | Lecture d'un site public |

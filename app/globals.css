@@ -96,3 +96,23 @@ button, input, textarea { font: inherit; color: inherit; }
   .saisie { border-radius: 24px; padding: 8px 8px 8px 20px; }
   .saisie .bouton { flex: 1 1 100%; }
 }
+
+/* Repreneurs */
+.etapes li.fait { border-color: var(--encre); color: var(--encre); }
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.trio .carte { padding: 28px; gap: 14px; }
+.rang { font-size: 13px; color: var(--gris); display: flex; justify-content: space-between; gap: 12px; }
+.pourquoi { font-size: 19px; line-height: 1.35; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.meta { font-size: 14px; color: var(--gris); margin: 0; }
+.faits { list-style: none; margin: 0; padding: 0; font-size: 14px; color: var(--gris); display: flex; flex-direction: column; gap: 4px; }
+.faits li::before { content: "✓"; color: var(--vert); margin-right: 8px; font-size: 12px; }
+.masque { font-size: 13px; color: var(--gris); border-top: 1px solid var(--trait); padding-top: 12px; margin-top: auto; }
+.carte.liste { padding: 12px 28px; gap: 0; }
+.ligne { display: flex; gap: 16px; align-items: baseline; padding: 14px 0; border-top: 1px solid #ededf0; font-size: 14px; flex-wrap: wrap; }
+.ligne:first-child { border-top: 0; }
+.ligne .quoi { flex: 1 1 280px; }
+.ligne .ou { flex: 0 1 260px; color: var(--gris); }
+.ligne .note { font-weight: 600; }
+.carte.mandat { border: 1px solid var(--encre); flex-direction: row; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.carte.mandat > div { flex: 1 1 420px; }
+.grand { font-size: 26px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }

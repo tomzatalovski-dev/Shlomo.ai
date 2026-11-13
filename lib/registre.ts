@@ -76,6 +76,11 @@ export function mapperSociete(r: Brut): Societe {
     anneeEffectif: r.annee_tranche_effectif_salarie ? Number(r.annee_tranche_effectif_salarie) : undefined,
     ville: r.siege?.libelle_commune ?? undefined,
     codePostal: r.siege?.code_postal ?? undefined,
+    departement: r.siege?.departement ?? undefined,
+    region: r.siege?.region ?? undefined,
+    trancheEffectif: r.tranche_effectif_salarie ? String(r.tranche_effectif_salarie) : undefined,
+    entrepreneurIndividuel: forme === "1000",
+    refuseProspection: r.opposition_diffusion_commerciale === true || r.statut_diffusion === "P",
     dirigeants,
     finances,
     source: "API Recherche d'entreprises (annuaire-entreprises.data.gouv.fr)",
@@ -84,9 +89,9 @@ export function mapperSociete(r: Brut): Societe {
 
 export class RegistreIndisponible extends Error {}
 
-/** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */
-export async function chercherSociete(siren: string): Promise<Societe | null> {
-  const url = `${BASE}/search?q=${encodeURIComponent(siren)}&per_page=1`;
+/** Appelle le registre, avec trois essais. Renvoie null si la demande est refusée. */
+async function appeler(parametres: Record<string, string>): Promise<Brut[] | null> {
+  const url = `${BASE}/search?${new URLSearchParams(parametres)}`;
   let derniere: unknown;
 
   for (let essai = 0; essai < 3; essai++) {
@@ -99,12 +104,40 @@ export async function chercherSociete(siren: string): Promise<Societe | null> {
       if (rep.status === 429 || rep.status >= 500) throw new Error(`Registre : réponse ${rep.status}`);
       if (!rep.ok) return null;
       const json = (await rep.json()) as { results?: Brut[] };
-      const trouve = json.results?.find((r) => String(r.siren) === siren);
-      return trouve ? mapperSociete(trouve) : null;
+      return json.results ?? [];
     } catch (e) {
       derniere = e;
       await new Promise((r) => setTimeout(r, 600 * (essai + 1)));
     }
   }
   throw new RegistreIndisponible(String(derniere));
+}
+
+/** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */
+export async function chercherSociete(siren: string): Promise<Societe | null> {
+  const resultats = await appeler({ q: siren, per_page: "1" });
+  const trouve = resultats?.find((r) => String(r.siren) === siren);
+  return trouve ? mapperSociete(trouve) : null;
+}
+
+export type FiltreActivite = {
+  codeActivite: string;
+  tranches: string[];
+  departement?: string;
+  region?: string;
+};
+
+/** Liste les sociétés actives d'un même code d'activité, dans une zone et des tranches d'effectif données. */
+export async function chercherParActivite(filtre: FiltreActivite): Promise<Societe[]> {
+  const parametres: Record<string, string> = {
+    activite_principale: filtre.codeActivite,
+    tranche_effectif_salarie: filtre.tranches.join(","),
+    etat_administratif: "A",
+    per_page: "25",
+  };
+  if (filtre.departement) parametres.departement = filtre.departement;
+  if (filtre.region) parametres.region = filtre.region;
+
+  const resultats = await appeler(parametres);
+  return (resultats ?? []).map(mapperSociete);
 }

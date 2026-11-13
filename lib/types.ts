@@ -20,10 +20,46 @@ export type Societe = {
   anneeEffectif?: number;
   ville?: string;
   codePostal?: string;
+  departement?: string;
+  region?: string;
+  /** Code de tranche d'effectif de l'INSEE, par exemple "11" pour 10 à 19 salariés. */
+  trancheEffectif?: string;
+  entrepreneurIndividuel?: boolean;
+  /** La société a demandé que ses données ne servent pas à la prospection : on ne la propose jamais. */
+  refuseProspection?: boolean;
   dirigeants: Dirigeant[];
   finances: ExerciceFinancier[];
   source: string;
 };
+
+export type ProfilRepreneur = "departement" | "region" | "national";
+
+/** Repreneur complet, tel que le serveur le connaît. Ne quitte jamais le serveur avant le mandat. */
+export type Repreneur = {
+  societe: Societe;
+  profil: ProfilRepreneur;
+  score: number;
+  raisons: string[];
+};
+
+/** Ce que le navigateur reçoit avant la signature du mandat : ni nom, ni SIREN, ni ville. */
+export type RepreneurMasque = {
+  rang: number;
+  profil: string;
+  zone: string;
+  effectif?: string;
+  score: number;
+  raison: string;
+  details: string[];
+};
+
+export type EvenementRepreneurs =
+  | { type: "journal"; texte: string; etat: "ok" | "alerte" }
+  | { type: "encours"; texte: string }
+  | { type: "vendeur"; nom: string; siren: string }
+  | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
+  | { type: "erreur"; message: string }
+  | { type: "fin" };
 
 export type LectureSite = {
   domaine: string;

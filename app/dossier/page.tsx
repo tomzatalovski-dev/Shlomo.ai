@@ -72,7 +72,7 @@ function Dossier() {
     : besoinSiren
       ? "Il me manque votre numéro SIREN."
       : valide
-        ? "Fiche validée."
+        ? "Fiche validée. Je cherche vos repreneurs."
         : fini
           ? "Voici ce que j'ai compris de votre société."
           : "Je lis votre société.";
@@ -107,7 +107,7 @@ function Dossier() {
           <div>
             <h1>{titre}</h1>
             {fini && !valide && <p className="sous">Vérifiez d'un coup d'œil. La description est modifiable.</p>}
-            {valide && <p className="sous">Les étapes 2 à 6 arrivent avec la prochaine version. Votre fiche n'est pas encore enregistrée sur nos serveurs.</p>}
+            {valide && <p className="sous">J'ouvre la recherche de vos repreneurs.</p>}
           </div>
 
           {erreur && (
@@ -182,7 +182,10 @@ function Dossier() {
 
               {fini && !valide && (
                 <div className="actions">
-                  <button className="bouton" type="button" onClick={() => setValide(true)} disabled={!description.trim()}>
+                  <button className="bouton" type="button" onClick={() => {
+                      setValide(true);
+                      window.location.assign(`/repreneurs?siren=${societe.siren}`);
+                    }} disabled={!description.trim()}>
                     Tout est juste, je valide
                   </button>
                   <a className="lien" href="/">Ce n'est pas ma société</a>
