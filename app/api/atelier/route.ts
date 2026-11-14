@@ -61,14 +61,14 @@ export async function GET(requete: Request) {
                 continue;
               }
               const decideur = fiche ? choisirDecideur(fiche.dirigeants) : null;
-              dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite: decideur?.qualite });
+              dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "redaction" });
-              const texte = await redigerMessage({ repreneur: p.nom, decideur: decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], interdits });
+              const texte = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], interdits });
               dire({ type: "message", agent, siren: p.siren, texte });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });
-              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite: decideur?.qualite, message: texte });
+              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite, message: texte });
               dire(garde ? { type: "pret", agent, siren: p.siren } : { type: "echec", agent, siren: p.siren });
             } catch {
               dire({ type: "echec", agent, siren: p.siren });

@@ -17,7 +17,7 @@ describe("mapperSociete", () => {
       finances: { "2023": { ca: 1800000, resultat_net: 160000 }, "2022": { ca: 1500000, resultat_net: null } },
     });
     expect(s).toMatchObject({ nom: "ATELIER EXEMPLE", active: true, formeJuridique: "SAS", anneeCreation: 2009, effectif: "10 à 19 salariés", ville: "LYON" });
-    expect(s.dirigeants).toEqual([{ nom: "Claire DUPONT", qualite: "Présidente" }, { nom: "HOLDING X", qualite: "Associé" }]);
+    expect(s.dirigeants).toEqual([{ nom: "Claire DUPONT", qualite: "Présidente" }, { nom: "HOLDING X", qualite: "Associé", societe: true }]);
     expect(s.finances).toEqual([{ annee: 2022, chiffreAffaires: 1500000, resultat: undefined }, { annee: 2023, chiffreAffaires: 1800000, resultat: 160000 }]);
   });
   it("n'invente rien quand le registre ne dit rien", () => {

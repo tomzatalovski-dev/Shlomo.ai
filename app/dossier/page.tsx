@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Evenement, Metier, Proposition, ResumeIA, Societe } from "@/lib/types";
 import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/scene";
+import { MULTIPLE_BAS, MULTIPLE_HAUT, estimer, fourchette } from "@/lib/estimation";
 
 type Ligne = { texte: string; etat: "ok" | "alerte" };
 
@@ -28,6 +29,7 @@ function Dossier() {
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [metier, setMetier] = useState<{ libelle?: string; liste: (Metier & { total?: number })[] } | null>(null);
   const [activites, setActivites] = useState(0);
+  const [resultatSaisi, setResultatSaisi] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [fini, setFini] = useState(false);
   const [valide, setValide] = useState(false);
@@ -111,6 +113,10 @@ function Dossier() {
   const dernier = societe?.finances.at(-1);
   const avant = societe && societe.finances.length >= 2 ? societe.finances.at(-2) : undefined;
   const hausse = dernier?.chiffreAffaires && avant?.chiffreAffaires ? Math.round((dernier.chiffreAffaires / avant.chiffreAffaires - 1) * 100) : undefined;
+
+  const estimation = societe ? estimer(societe.finances) : null;
+  const saisi = Number(resultatSaisi.replace(/[^\d]/g, ""));
+  const aLaMain = saisi > 0 ? fourchette(saisi) : null;
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
@@ -231,6 +237,38 @@ function Dossier() {
                     Chiffre d'affaires {hausse !== undefined && hausse >= 0 ? `en hausse de ${hausse} %` : `en baisse de ${Math.abs(hausse ?? 0)} %`} entre {avant.annee} et {dernier.annee}
                     {avant.resultat !== undefined && dernier.resultat !== undefined ? `, résultat passé de ${euros(avant.resultat)} à ${euros(dernier.resultat)}` : ""}.
                   </p>
+                </div>
+              )}
+
+              {fini && estimation && (
+                <div className="valeur apparait">
+                  <p className="source">Ordre de grandeur de valeur</p>
+                  {estimation.possible ? (
+                    <>
+                      <p className="fourchette"><Compteur valeur={estimation.bas} format={euros} /> à <Compteur valeur={estimation.haut} format={euros} /></p>
+                      <p className="message">
+                        Résultat net moyen de {euros(estimation.resultatMoyen)} ({estimation.annees.join(", ")}), multiplié par {MULTIPLE_BAS} à {MULTIPLE_HAUT}. C'est un point de départ, pas une évaluation : la trésorerie, les dettes et votre rémunération ne sont pas prises en compte.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="message">
+                        {estimation.raison === "sans_comptes"
+                          ? "Vos comptes ne sont pas publiés : je ne donne pas de chiffre au hasard. Indiquez votre résultat net annuel moyen pour obtenir un ordre de grandeur."
+                          : "Votre dernier résultat publié est négatif : un multiple du résultat ne dirait rien. Si l'année était exceptionnelle, indiquez votre résultat net d'une année normale."}
+                      </p>
+                      <div className="rappel">
+                        <label className="cache" htmlFor="resultat">Résultat net annuel moyen, en euros</label>
+                        <input id="resultat" inputMode="numeric" placeholder="Résultat net annuel, en euros" value={resultatSaisi} onChange={(e) => setResultatSaisi(e.target.value)} />
+                      </div>
+                      {aLaMain && (
+                        <>
+                          <p className="fourchette">{euros(aLaMain.bas)} à {euros(aLaMain.haut)}</p>
+                          <p className="message">Votre chiffre, multiplié par {MULTIPLE_BAS} à {MULTIPLE_HAUT}. C'est un point de départ, pas une évaluation : la trésorerie, les dettes et votre rémunération ne sont pas prises en compte.</p>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 

@@ -224,3 +224,9 @@ a.choix { text-decoration: none; color: inherit; }
 a.choix:hover b { text-decoration: underline; }
 a.choix { justify-content: space-between; align-items: center; }
 a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top: 2px; }
+
+/* Ordre de grandeur de valeur, sur la fiche */
+.valeur { border: 1px solid var(--trait); border-radius: 16px; padding: 18px 20px; display: grid; gap: 8px; }
+.valeur .fourchette { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -0.02em; white-space: nowrap; }
+.valeur .message { font-size: 14px; }
+@media (max-width: 520px) { .valeur .fourchette { font-size: 22px; white-space: normal; } }

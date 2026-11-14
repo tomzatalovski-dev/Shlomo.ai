@@ -10,6 +10,10 @@ describe("décideur", () => {
     expect(choisirDecideur([{ nom: "JEAN DUPONT" }])?.nom).toBe("Jean Dupont");
     expect(choisirDecideur([])).toBeNull();
   });
+  it("préfère une personne à une société dirigeante, et signale une société seule", () => {
+    expect(choisirDecideur([{ nom: "TESSI", qualite: "Président de SAS", societe: true }, { nom: "MARIE DURAND", qualite: "Directeur Général" }])).toEqual({ nom: "Marie Durand", qualite: "Directeur Général" });
+    expect(choisirDecideur([{ nom: "TESSI", qualite: "Président de SAS", societe: true }])).toEqual({ nom: "TESSI", qualite: "Président de SAS", societe: true });
+  });
   it("met les noms en forme", () => expect(nomLisible("ÉLODIE DE LA TOUR")).toBe("Élodie De La Tour"));
 });
 

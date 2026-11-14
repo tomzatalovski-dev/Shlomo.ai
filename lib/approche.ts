@@ -12,14 +12,22 @@ export function nomLisible(nom: string): string {
     .trim();
 }
 
-/** Choisit, parmi les dirigeants du registre, la personne qui décide d'un rachat. */
-export function choisirDecideur(dirigeants: Dirigeant[]): { nom: string; qualite?: string } | null {
+/**
+ * Choisit, parmi les dirigeants du registre, qui décide d'un rachat.
+ * Une personne passe toujours avant une société dirigeante : on écrit à quelqu'un, pas à une holding.
+ */
+export function choisirDecideur(dirigeants: Dirigeant[]): { nom: string; qualite?: string; societe?: boolean } | null {
   if (dirigeants.length === 0) return null;
+  const personnes = dirigeants.filter((d) => !d.societe);
+  if (personnes.length === 0) {
+    const d = dirigeants[0];
+    return { nom: d.nom, qualite: d.qualite, societe: true };
+  }
   for (const fonction of ORDRE) {
-    const trouve = dirigeants.find((d) => d.qualite && fonction.test(d.qualite));
+    const trouve = personnes.find((d) => d.qualite && fonction.test(d.qualite));
     if (trouve) return { nom: nomLisible(trouve.nom), qualite: trouve.qualite };
   }
-  return { nom: nomLisible(dirigeants[0].nom), qualite: dirigeants[0].qualite };
+  return { nom: nomLisible(personnes[0].nom), qualite: personnes[0].qualite };
 }
 
 export type FaitsApproche = {
