@@ -34,7 +34,8 @@ export async function resumer(societe: Societe, texteSite: string): Promise<Resu
     signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
       model: MODELE,
-      max_tokens: 1200,
+      // Le modèle réfléchit avant de répondre, et sa réflexion compte dans ce plafond.
+      max_tokens: 4000,
       system: CONSIGNE,
       messages: [
         {
@@ -75,10 +76,13 @@ export async function ecrire(consigne: string, contenu: string, maximum = 600): 
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
     signal: AbortSignal.timeout(25_000),
-    body: JSON.stringify({ model: MODELE, max_tokens: maximum, system: consigne, messages: [{ role: "user", content: contenu }] }),
+    // Marge pour la réflexion du modèle, qui compte dans le plafond.
+    body: JSON.stringify({ model: MODELE, max_tokens: maximum + 2500, system: consigne, messages: [{ role: "user", content: contenu }] }),
   });
   if (!rep.ok) throw new Error(`Modèle d'IA : réponse ${rep.status}`);
-  const json = (await rep.json()) as { content?: { type: string; text?: string }[] };
+  const json = (await rep.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string };
+  // Une réponse coupée par le plafond est incomplète : mieux vaut pas de texte qu'un texte tronqué.
+  if (json.stop_reason === "max_tokens") throw new ReponseIllisible("réponse coupée");
   const texte = (json.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
   return texte || null;
 }
