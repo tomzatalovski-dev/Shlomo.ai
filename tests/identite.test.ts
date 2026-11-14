@@ -21,7 +21,9 @@ describe("retrouver la société du site", () => {
     expect(choisirSociete(fiches, "Atelier Morel, 12 rue du Lac, 74000 Annecy").sure?.siren).toBe("111111118");
     const sansAdresse = choisirSociete(fiches, "Menuiserie sur mesure");
     expect(sansAdresse.sure).toBeUndefined();
-    expect(sansAdresse.propositions.map((p) => p.siren)).toEqual(["111111118", "222222226"]);
+    expect(sansAdresse.propositions.map((p) => p.siren)).toEqual(["111111118"]);
+    const homonymes = [1, 2, 3, 4].map((i) => soc(`90000000${i}`, "ALAN"));
+    expect(choisirSociete([{ candidat: "Alan", societes: homonymes }], "Assurance santé").propositions).toEqual([]);
   });
   it("ne propose pas une société sans rapport ni un indépendant", () => {
     expect(correspondance(soc("1", "BOULANGERIE DUPONT"), "Atelier Morel", "")).toBe(0);

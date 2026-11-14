@@ -54,7 +54,7 @@ export function correspondance(s: Societe, candidat: string, texteSite: string):
 /**
  * Choisit la société du site parmi les fiches du registre.
  * `sure` n'est donné que si une seule fiche porte ce nom exact et que son adresse figure sur le site.
- * Sinon, les meilleures fiches sont proposées au vendeur, qui choisit.
+ * Sinon, les fiches plausibles sont proposées au vendeur, qui choisit ; s'il n'y en a pas, il saisit son SIREN.
  */
 export function choisirSociete(fiches: { candidat: string; societes: Societe[] }[], texteSite: string): { sure?: Societe; propositions: Societe[] } {
   const notes = new Map<string, { societe: Societe; note: number }>();
@@ -70,5 +70,9 @@ export function choisirSociete(fiches: { candidat: string; societes: Societe[] }
   const classees = [...notes.values()].sort((a, b) => b.note - a.note || taille(b.societe) - taille(a.societe));
   const [premiere, seconde] = classees;
   const sure = premiere && premiere.note >= 4 && (!seconde || seconde.note < premiere.note) ? premiere.societe : undefined;
-  return { sure, propositions: classees.filter((c) => c.note >= 2).slice(0, 3).map((c) => c.societe) };
+  // On ne propose que ce qui a une vraie chance d'être la bonne : l'adresse figure sur le site,
+  // ou le nom exact n'est porté que par une ou deux sociétés. Trois homonymes au hasard n'aident personne.
+  const exactes = classees.filter((c) => c.note >= 3);
+  const proposees = classees.filter((c) => c.note >= 4 || (c.note === 3 && exactes.length <= 2));
+  return { sure, propositions: proposees.slice(0, 3).map((c) => c.societe) };
 }
