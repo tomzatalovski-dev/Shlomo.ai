@@ -70,7 +70,7 @@ function json<T>(texte: string | null): T | null {
 
 /** Une faute du banc : `arretee` vaut vrai quand le garde-fou l'a stoppée avant l'envoi. */
 export type FauteEssai = Faute & { arretee: boolean };
-export type TourEssai = Tour & { situation?: string; lecture?: string; fautes?: FauteEssai[]; repli?: boolean };
+export type TourEssai = Tour & { situation?: string; lecture?: string; fautes?: FauteEssai[]; repli?: boolean; ecartes?: string[] };
 export type Essai = { version: string; persona: string; tours: TourEssai[]; fautes: FauteEssai[]; graves: number; rendezVous: boolean; note: number | null; avis: string };
 
 const ECHANGES_MAX = 3;
@@ -102,7 +102,7 @@ export async function jouer(persona: Persona, suivre: (tour: TourEssai) => void 
     const r = await repondre(dossier, tours.map(({ de, texte }) => ({ de, texte })));
     const duTour: FauteEssai[] = [...r.arretees.map((f) => ({ ...f, arretee: true })), ...r.fautes.map((f) => ({ ...f, arretee: false }))];
     fautes.push(...duTour);
-    const deShlomo: TourEssai = { de: "shlomo", texte: r.texte, situation: r.situation, lecture: r.lecture, fautes: duTour, repli: r.repli };
+    const deShlomo: TourEssai = { de: "shlomo", texte: r.texte, situation: r.situation, lecture: r.lecture, fautes: duTour, repli: r.repli, ecartes: r.ecartes.length ? r.ecartes : undefined };
     tours.push(deShlomo);
     suivre(deShlomo);
   }

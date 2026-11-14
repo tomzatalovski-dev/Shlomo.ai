@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-type Tour = { de: "shlomo" | "repreneur"; texte: string; situation?: string; repli?: boolean; fautes?: { detail: string; grave: boolean; arretee?: boolean }[] };
+type Tour = { de: "shlomo" | "repreneur"; texte: string; situation?: string; repli?: boolean; ecartes?: string[]; fautes?: { detail: string; grave: boolean; arretee?: boolean }[] };
 type Partie = { id: string; nom: string; tours: Tour[]; etat: "attente" | "encours" | "fini" | "erreur"; graves?: number; rendezVous?: boolean; note?: number | null; message?: string };
 
 /** Lance les douze conversations, trois à la fois, et les montre pendant qu'elles se jouent. */
@@ -67,6 +67,7 @@ export default function Lancer({ code, personas }: { code: string; personas: { i
                   <small>{t.de === "shlomo" ? `Shlomo${t.situation ? ` · ${t.situation}` : ""}${t.repli ? " · réponse d'attente" : ""}` : p.nom}</small>
                   <p>{t.texte}</p>
                   {t.fautes?.map((f, j) => <small key={j} className="faute">{f.grave ? (f.arretee ? "Arrêté par le garde-fou : " : "Faute grave envoyée : ") : "À soigner : "}{f.detail}</small>)}
+                  {t.ecartes?.map((x, j) => <small key={`e${j}`} className="faute">Texte arrêté : « {x} »</small>)}
                 </div>
               ))}
             </details>

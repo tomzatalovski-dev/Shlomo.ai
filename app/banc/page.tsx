@@ -98,6 +98,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
                       <small>{t.de === "shlomo" ? `Shlomo${t.situation ? ` · ${t.situation}` : ""}${t.repli ? " · réponse d'attente" : ""}` : nomDe(e.persona)}</small>
                       <p>{t.texte}</p>
                       {t.fautes?.map((f, j) => <small key={j} className="faute">{f.grave ? (f.arretee ? "Arrêté par le garde-fou : " : "Faute grave envoyée : ") : "À soigner : "}{f.detail}</small>)}
+                      {t.ecartes?.map((x, j) => <small key={`e${j}`} className="faute">Texte arrêté : « {x} »</small>)}
                     </div>
                   ))}
                   {e.avis && <p className="source">Arbitre : {e.avis}</p>}

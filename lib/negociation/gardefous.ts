@@ -35,10 +35,12 @@ export function montants(texte: string): number[] {
   return trouves;
 }
 
-const AUTRES = /\b(autres?|plusieurs|d'autres)\s+(repreneurs?|acqu[ée]reurs?|candidats?|acheteurs?|soci[ée]t[ée]s int[ée]ress[ée]es)\b|\bvous n'[êe]tes pas (le )?seul\b|\bconcurrence\b/i;
+// Affirmer qu'il y a d'autres repreneurs. Dire qu'il n'y en a pas (« aucun autre repreneur ») n'est pas visé.
+const AUTRES = /(?<!\b(?:aucun|aucune|pas d'|pas de|sans|ni)\s)\b(autres|plusieurs|d'autres)\s+(repreneurs?|acqu[ée]reurs?|candidats?|acheteurs?|soci[ée]t[ée]s int[ée]ress[ée]es)\b|\bvous n'[êe]tes pas (le )?seul\b|\ben concurrence avec\b/i;
 // Seule l'affirmation qu'une offre existe est visée, pas le mot « offre » : « ce qui rendrait votre offre forte » est permis.
 const OFFRE = /\b(avons|a|ont|ai)\s+(d[ée]j[àa]\s+)?re[çc]u\s+(une|des|plusieurs|deux|trois|d'autres)\s+offres?\b|\boffres?\s+(d[ée]j[àa]\s+)?(re[çc]ues?|concurrentes?)\b|\boffres?\s+(a|ont)\s+[ée]t[ée]\s+re[çc]ues?\b|\bd'autres offres\b|\boffre\s+(est\s+)?sur la table\b/i;
-const LIMITE = /\b(date limite|dernier d[ée]lai|avant le \d|d'ici (lundi|mardi|mercredi|jeudi|vendredi|la fin de (la )?semaine|quelques jours)|remise des offres)\b/i;
+// Annoncer une échéance pour les offres. Les délais que le négociateur se donne (« je reviens vers vous d'ici jeudi ») ne sont pas visés.
+const LIMITE = /\b(date limite|dernier d[ée]lai|date butoir)\b|\bremise des offres\s+(est|sera|a [ée]t[ée])?\s*(fix[ée]e|pr[ée]vue|attendue)\b|\boffres?\s+(sont\s+|est\s+)?attendues?\s+(avant|pour|d'ici)\b|\b(d[ée]cider|vous positionner|r[ée]pondre)\s+(avant le|d'ici)\b/i;
 
 /**
  * Vérifie un message du négociateur contre les faits du dossier.

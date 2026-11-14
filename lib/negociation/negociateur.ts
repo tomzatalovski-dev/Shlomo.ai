@@ -15,6 +15,8 @@ export type Reponse = {
   fautes: Faute[];
   /** Fautes des tentatives que les garde-fous ont arrêtées avant l'envoi. */
   arretees: Faute[];
+  /** Textes arrêtés, gardés pour comprendre ce que l'IA a tenté et corriger le manuel ou le garde-fou. */
+  ecartes: string[];
   /** Vrai si le message de l'IA a été écarté et remplacé par une réponse d'attente. */
   repli: boolean;
 };
@@ -67,6 +69,7 @@ export async function repondre(dossier: Dossier, echanges: Tour[]): Promise<Repo
   const contenu = `<dossier>${JSON.stringify(vue(dossier))}</dossier>\n<echanges>${JSON.stringify(echanges)}</echanges>`;
   let defauts: Faute[] = [];
   const arretees: Faute[] = [];
+  const ecartes: string[] = [];
 
   for (let essai = 0; essai < 2; essai++) {
     const lu = lire(
@@ -74,10 +77,11 @@ export async function repondre(dossier: Dossier, echanges: Tour[]): Promise<Repo
     );
     if (!lu) continue;
     const fautes = verifier(lu.reponse, dossier, dernier);
-    if (!fautes.some((f) => f.grave)) return { situation: lu.situation, lecture: lu.lecture, texte: `${lu.reponse}\n\n${SIGNATURE}`, fautes, arretees, repli: false };
+    if (!fautes.some((f) => f.grave)) return { situation: lu.situation, lecture: lu.lecture, texte: `${lu.reponse}\n\n${SIGNATURE}`, fautes, arretees, ecartes, repli: false };
     defauts = fautes;
     arretees.push(...fautes);
+    ecartes.push(lu.reponse.slice(0, 900));
   }
   // Deux tentatives fautives ou illisibles : rien de risqué ne part, une personne reprend la main.
-  return { situation: "", lecture: "", texte: `${ATTENTE}\n\n${SIGNATURE}`, fautes: [], arretees, repli: true };
+  return { situation: "", lecture: "", texte: `${ATTENTE}\n\n${SIGNATURE}`, fautes: [], arretees, ecartes, repli: true };
 }

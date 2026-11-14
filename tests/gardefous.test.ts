@@ -44,6 +44,8 @@ describe("garde-fous du négociateur", () => {
     expect(regles("D'autres repreneurs ont déjà pris rendez-vous.")).toContain("concurrence");
     expect(regles("Nous avons reçu une offre.")).toContain("concurrence");
     expect(regles("La date limite est vendredi.")).toContain("echeance");
+    expect(regles("Il faudra vous positionner d'ici vendredi.")).toContain("echeance");
+    expect(regles("À ce jour, aucun autre repreneur n'est en discussion. Je reviens vers vous d'ici jeudi, et je vous propose un appel avant le 20.")).toEqual([]);
     expect(regles("Voici ce qui rendrait votre offre forte : un calendrier clair. Vous pourrez remettre une offre après l'accord.")).toEqual([]);
   });
   it("les autorise quand le dossier les établit", () => {
