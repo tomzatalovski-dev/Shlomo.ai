@@ -52,7 +52,8 @@ export type Presentation = {
 export type Suivi = {
   societe: { siren: string; nom: string };
   jeton_fiche?: string;
-  fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null } | null;
+  presentation?: string | null;
+  fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null; site?: string | null; activite?: string | null; anneeCreation?: number | null } | null;
   mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string } | null;
   presentations: Presentation[];
   evenements: { texte: string; cree_le: string }[];
@@ -106,7 +107,7 @@ export async function enregistrerApproche(jeton: string, siren: string, approche
 }
 
 /** Ce que la présentation anonyme montre à un repreneur : jamais de nom, de SIREN ni de ville. */
-export type FicheAnonyme = { activite?: string | null; region?: string | null; effectif?: string | null; anneeCreation?: number | null; chiffreAffaires?: number | null; resultatPositif?: boolean | null };
+export type FicheAnonyme = { activite?: string | null; region?: string | null; effectif?: string | null; anneeCreation?: number | null; chiffreAffaires?: number | null; resultatPositif?: boolean | null; raison?: string | null; presentation?: string | null };
 
 export async function lireFiche(jeton: string): Promise<FicheAnonyme | null> {
   if (!jetonValide(jeton)) return null;
@@ -117,4 +118,25 @@ export async function lireFiche(jeton: string): Promise<FicheAnonyme | null> {
 export async function manifesterInteret(jeton: string, demande: { nom: string; societe: string; contact: string }): Promise<boolean> {
   if (!jetonValide(jeton)) return false;
   return appeler<boolean>("manifester_interet", { p_jeton: jeton, p_nom: demande.nom, p_societe: demande.societe, p_contact: demande.contact });
+}
+
+export type Etape = "fiche_vue" | "repreneurs_vus" | "mandat_ouvert" | "mandat_signe" | "approches_pretes" | "presentation_ouverte" | "interet";
+
+/** Note qu'une étape du parcours a été atteinte. Ne lève jamais d'erreur : la mesure ne doit rien casser. */
+export async function mesurer(etape: Etape, cle: string): Promise<void> {
+  try {
+    await appeler<boolean>("enregistrer_mesure", { p_etape: etape, p_cle: cle });
+  } catch {}
+}
+
+/** Nombre de dossiers ayant atteint chaque étape sur la période. Renvoie null si le code de pilotage est faux. */
+export async function lireEntonnoir(code: string, jours = 30): Promise<Partial<Record<Etape, number>> | null> {
+  if (!jetonValide(code)) return null;
+  return appeler<Partial<Record<Etape, number>> | null>("lire_entonnoir", { p_code: code, p_jours: jours });
+}
+
+/** Enregistre, une seule fois, la présentation anonyme rédigée par l'IA. */
+export async function enregistrerPresentation(jeton: string, texte: string): Promise<boolean> {
+  if (!jetonValide(jeton)) return false;
+  return appeler<boolean>("enregistrer_presentation", { p_jeton: jeton, p_texte: texte });
 }

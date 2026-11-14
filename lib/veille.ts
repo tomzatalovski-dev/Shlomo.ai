@@ -32,7 +32,19 @@ export function nettoyerVeille(brut: unknown): { site?: string; signaux: Signal[
   return { site: DOMAINE.test(domaine) && domaine.length <= 80 ? domaine : undefined, signaux };
 }
 
-export type Veille = { site?: string; signaux: Signal[]; requetes: string[]; pages: PageLue[] };
+export type Veille = { site?: string; signaux: Signal[]; requetes: string[]; pages: PageLue[]; ecartes: number };
+
+const adresseNue = (url: string) => url.trim().replace(/^https?:\/\/(www\.)?/, "").replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
+
+/**
+ * Contrôle de provenance : un fait n'est gardé que si sa source est l'une des pages réellement reçues par la recherche.
+ * Une adresse que le modèle aurait composée de lui-même fait tomber le fait.
+ */
+export function verifierProvenance(signaux: Signal[], pages: { url: string }[]): { gardes: Signal[]; ecartes: number } {
+  const recues = new Set(pages.map((p) => adresseNue(p.url)));
+  const gardes = signaux.filter((s) => recues.has(adresseNue(s.source)));
+  return { gardes, ecartes: signaux.length - gardes.length };
+}
 
 /** Réduit une page reçue à ce que l'écran peut montrer : un titre court et un nom de domaine. */
 export function pagesLues(pages: { titre: string; url: string }[]): PageLue[] {
@@ -62,11 +74,13 @@ export async function veiller(repreneur: { nom: string; siren: string; ville?: s
     if (!trace) return null;
     const suite = { requetes: trace.requetes.map((r) => r.slice(0, 120)).slice(0, 4), pages: pagesLues(trace.pages) };
     const objet = trace.texte?.match(/\{[\s\S]*\}/);
-    if (!objet) return { signaux: [], ...suite };
+    if (!objet) return { signaux: [], ecartes: 0, ...suite };
     try {
-      return { ...nettoyerVeille(JSON.parse(objet[0])), ...suite };
+      const propre = nettoyerVeille(JSON.parse(objet[0]));
+      const { gardes, ecartes } = verifierProvenance(propre.signaux, trace.pages);
+      return { site: propre.site, signaux: gardes, ecartes, ...suite };
     } catch {
-      return { signaux: [], ...suite };
+      return { signaux: [], ecartes: 0, ...suite };
     }
   } catch {
     return null;

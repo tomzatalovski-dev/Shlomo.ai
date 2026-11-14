@@ -1,6 +1,8 @@
 import { chercherSociete } from "@/lib/registre";
-import { BaseIndisponible, enregistrerApproche, jetonValide, lireSuivi, type Presentation } from "@/lib/base";
-import { choisirDecideur, redigerMessage } from "@/lib/approche";
+import { BaseIndisponible, enregistrerApproche, enregistrerPresentation, jetonValide, lireSuivi, mesurer, type Presentation } from "@/lib/base";
+import { presenter } from "@/lib/fiche";
+import { lireSite } from "@/lib/site";
+import { choisirDecideur, redigerEtRelire } from "@/lib/approche";
 import { veiller } from "@/lib/veille";
 import { iaActive } from "@/lib/ia";
 import { adresseDe, tropDappels } from "@/lib/limite";
@@ -82,11 +84,15 @@ export async function GET(requete: Request) {
               if (iaActive()) {
                 dire({ type: "etape", agent, siren: p.siren, etape: "veille" });
                 veille = await veiller({ nom: p.nom, siren: p.siren, ville: p.ville });
-                dire({ type: "signaux", agent, siren: p.siren, site: veille?.site, signaux: veille?.signaux ?? [], requetes: veille?.requetes, pages: veille?.pages });
+                dire({ type: "signaux", agent, siren: p.siren, site: veille?.site, signaux: veille?.signaux ?? [], requetes: veille?.requetes, pages: veille?.pages, ecartes: veille?.ecartes });
               }
 
               dire({ type: "etape", agent, siren: p.siren, etape: "redaction" });
-              const redige = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.filter((x) => x.genre !== "alerte").map((x) => x.texte), interdits });
+              const { texte: redige, issue, problemes } = await redigerEtRelire({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.filter((x) => x.genre !== "alerte").map((x) => x.texte), interdits });
+              if (issue !== "modele") {
+                dire({ type: "etape", agent, siren: p.siren, etape: "relecture" });
+                dire({ type: "relecture", agent, siren: p.siren, issue, problemes });
+              }
               const texte = lienFiche ? `${redige}\n\nPrésentation anonyme de la société, sans nom ni ville : ${lienFiche}` : redige;
               dire({ type: "message", agent, siren: p.siren, texte });
 
@@ -98,7 +104,18 @@ export async function GET(requete: Request) {
             }
           }
         };
-        await Promise.all(Array.from({ length: AGENTS }, (_, i) => travailler(i + 1)));
+        // En parallèle des agents : la présentation anonyme de la société, écrite une fois à partir de son site.
+        const presentation = async () => {
+          if (suivi.presentation || !suivi.fiche?.site || !iaActive()) return;
+          dire({ type: "presentation", etat: "debut" });
+          const site = await lireSite(suivi.fiche.site).catch(() => null);
+          const texte = site ? await presenter(site.texte, { nom: suivi.societe.nom, ville: suivi.fiche.ville, site: suivi.fiche.site, activite: suivi.fiche.activite }) : null;
+          if (texte && (await enregistrerPresentation(jeton, texte).catch(() => false))) dire({ type: "presentation", etat: "prete", texte });
+          else dire({ type: "presentation", etat: "sans" });
+        };
+
+        await Promise.all([presentation(), ...Array.from({ length: AGENTS }, (_, i) => travailler(i + 1))]);
+        await mesurer("approches_pretes", suivi.societe.siren);
         dire({ type: "fin" });
       } catch (e) {
         dire({ type: "erreur", message: e instanceof BaseIndisponible ? "Le dossier est momentanément indisponible. Rechargez la page dans quelques minutes." : "Un imprévu a interrompu la préparation. Rechargez la page." });

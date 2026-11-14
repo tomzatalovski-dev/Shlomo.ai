@@ -1,8 +1,9 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { reveler, trouverRepreneurs } from "@/lib/repreneurs";
-import { BaseIndisponible, signerMandat } from "@/lib/base";
+import { BaseIndisponible, mesurer, signerMandat } from "@/lib/base";
 import { lireMetiers } from "@/lib/metiers";
+import { RAISONS } from "@/lib/fiche";
 import { adresseDe, tropDappels } from "@/lib/limite";
 
 export const runtime = "nodejs";
@@ -18,10 +19,14 @@ const refus = (message: string, statut = 400) => Response.json({ erreur: message
 export async function POST(requete: Request) {
   if (tropDappels(`mandat:${adresseDe(requete)}`, 4)) return refus("Trop de signatures en peu de temps. Réessayez dans une minute.", 429);
 
-  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown } | null;
+  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown; site?: unknown; raison?: unknown } | null;
   const saisie = analyserSaisie(typeof corps?.siren === "string" ? corps.siren : "");
   const signataire = typeof corps?.signataire === "string" ? corps.signataire.trim().slice(0, 120) : "";
   if (saisie.type !== "siren") return refus("Numéro SIREN manquant ou invalide.");
+  // Le site sert à rédiger la présentation anonyme ; la raison vient d'une liste fermée.
+  const siteSaisi = analyserSaisie(typeof corps?.site === "string" ? corps.site : "");
+  const site = siteSaisi.type === "site" ? siteSaisi.domaine : undefined;
+  const raison = typeof corps?.raison === "string" && corps.raison in RAISONS ? corps.raison : undefined;
   if (signataire.length < 3) return refus("Indiquez votre nom et votre prénom.");
 
   try {
@@ -46,11 +51,14 @@ export async function POST(requete: Request) {
         chiffreAffaires: vendeur.finances.at(-1)?.chiffreAffaires,
         resultatPositif: vendeur.finances.at(-1)?.resultat === undefined ? undefined : vendeur.finances.at(-1)!.resultat! > 0,
         activite: metiers.find((m) => m.lien === "meme" && m.libelle)?.libelle,
+        site,
+        raison,
       },
       signataire,
       autorisation: corps?.autorisation === true,
       repreneurs: reveler(repreneurs),
     });
+    await mesurer("mandat_signe", vendeur.siren);
     return Response.json({ jeton });
   } catch (e) {
     if (e instanceof RegistreIndisponible) return refus("Le registre des entreprises ne répond pas. Réessayez dans quelques minutes.", 503);

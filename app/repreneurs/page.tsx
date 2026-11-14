@@ -14,7 +14,9 @@ function Repreneurs() {
   const parametres = useSearchParams();
   const siren = parametres.get("siren") ?? "";
   const metiers = parametres.get("m") ?? "";
+  const site = parametres.get("site") ?? "";
   const suite = metiers ? `&m=${encodeURIComponent(metiers)}` : "";
+  const versMandat = `${suite}${site ? `&site=${encodeURIComponent(site)}` : ""}`;
   const signe = parametres.get("signe") === "1";
   const par = parametres.get("par") ?? "";
   // Après la signature, la recherche a déjà été montrée : on la rejoue vite.
@@ -256,7 +258,7 @@ function Repreneurs() {
                 <div className="grand">Signez le mandat pour voir les noms et lancer l'approche.</div>
                 <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
               </div>
-              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${suite}`}>Signer le mandat</a>
+              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${versMandat}`}>Signer le mandat</a>
             </div>
           )}
         </main>

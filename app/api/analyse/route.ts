@@ -4,6 +4,7 @@ import { lireSite } from "@/lib/site";
 import { iaActive, lireNom, resumer } from "@/lib/ia";
 import { choisirSociete, nomsCandidats } from "@/lib/identite";
 import { composerMetiers } from "@/lib/metiers";
+import { mesurer } from "@/lib/base";
 import type { Evenement, LectureSite, Societe } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -151,6 +152,7 @@ export async function GET(requete: Request) {
           dire({ type: "journal", texte: "Rédaction par IA non activée sur ce serveur", etat: "alerte" });
         }
 
+        await mesurer("fiche_vue", societe.siren);
         dire({ type: "fin" });
       } catch (e) {
         dire({

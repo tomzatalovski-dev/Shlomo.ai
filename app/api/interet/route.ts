@@ -1,4 +1,4 @@
-import { BaseIndisponible, jetonValide, manifesterInteret } from "@/lib/base";
+import { BaseIndisponible, jetonValide, manifesterInteret, mesurer } from "@/lib/base";
 import { adresseDe, tropDappels } from "@/lib/limite";
 
 export const runtime = "nodejs";
@@ -17,6 +17,7 @@ export async function POST(requete: Request) {
   if (!jetonValide(jeton) || nom.length < 3 || contact.length < 5) return refus("Demande incomplète.");
   try {
     const recu = await manifesterInteret(jeton, { nom, societe: texte(corps?.societe, 160), contact });
+    if (recu) await mesurer("interet", jeton);
     return recu ? Response.json({ recu: true }) : refus("Cette présentation n'est plus disponible.", 404);
   } catch (e) {
     return refus("L'enregistrement a échoué. Réessayez dans un instant.", e instanceof BaseIndisponible ? 503 : 500);

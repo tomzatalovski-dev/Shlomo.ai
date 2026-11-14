@@ -18,3 +18,18 @@ describe("présentation anonyme", () => {
     expect(lignesFiche({}).map((l) => l.libelle)).toEqual(["Activité"]);
   });
 });
+
+import { motsDuNom, trahit } from "@/lib/fiche";
+
+describe("anonymat de la présentation rédigée", () => {
+  const societe = { nom: "ATELIER MOREL (MENUISERIE MOREL)", ville: "ANNECY", site: "www.morel-agencement.fr" };
+  it("retient les mots du nom qui trahiraient la société", () => {
+    expect(motsDuNom(societe.nom)).toEqual(["morel", "menuiserie"]);
+    expect(motsDuNom(societe.nom, "Travaux de menuiserie bois")).toEqual(["morel"]);
+  });
+  it("refuse un texte qui cite le nom, la ville ou le domaine", () => {
+    expect(trahit("La société Morel fabrique des agencements sur mesure.", societe)).toBe(true);
+    expect(trahit("Installée près d'Annecy, la société travaille pour l'hôtellerie.", societe)).toBe(true);
+    expect(trahit("La société conçoit et pose des agencements sur mesure pour des hôtels.", societe)).toBe(false);
+  });
+});

@@ -112,3 +112,10 @@ Après la signature, `/atelier?d=<jeton>` montre trois agents qui préparent les
 - Écrans d'agents (`/atelier`) : ils rejouent ce que chaque recherche a réellement fait, c'est-à-dire les requêtes lancées, les pages reçues, les faits retenus. Rien n'est simulé.
 - Présentation anonyme (`/fiche?f=<jeton de fiche>`) : activité, région, effectif, ancienneté en tranche, chiffre d'affaires à un chiffre significatif. Ni nom, ni SIREN, ni ville. Le jeton de fiche est distinct du jeton du vendeur.
 - Un repreneur intéressé laisse ses coordonnées (`interets`, lisible seulement dans Supabase). Le vendeur voit qu'une demande est arrivée, jamais de qui.
+
+## Mesure, relecture et présentation rédigée
+
+- Mesure (`mesures`, `enregistrer_mesure`) : une ligne par étape, par dossier et par jour, sans donnée personnelle. Le serveur note chaque étape ; seul l'ouverture du mandat est signalée par le navigateur. Lecture sur `/pilotage?c=<code de pilotage>` (le code est dans la table `reglages`).
+- Provenance (`verifierProvenance`) : un fait public n'est gardé que si sa source est une page réellement reçue par la recherche.
+- Relecture (`redigerEtRelire`) : un second appel à l'IA relit chaque message contre les faits autorisés. Un défaut entraîne une réécriture, puis une seconde relecture ; en cas de nouvel échec, le modèle fixe remplace le message. Une réponse illisible du relecteur ne vaut jamais validation.
+- Présentation anonyme (`presenter`) : trois phrases écrites à partir du site du vendeur. Le texte est rejeté s'il contient un mot du nom, la ville ou le nom de domaine. La raison de la cession vient d'une liste fermée.

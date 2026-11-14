@@ -31,3 +31,18 @@ describe("message", () => {
     expect(citeLeVendeur("Une société basée à ANNECY.", faits.interdits)).toBe(true);
   });
 });
+
+import { lireRelecture } from "@/lib/approche";
+
+describe("relecture par un second agent", () => {
+  it("lit un verdict bien formé", () => {
+    expect(lireRelecture('{"verdict":"valide","problemes":[]}')).toEqual({ verdict: "valide", problemes: [] });
+    expect(lireRelecture('Voici : {"verdict":"a_corriger","problemes":["Le message dit Monsieur."]}')).toEqual({ verdict: "a_corriger", problemes: ["Le message dit Monsieur."] });
+  });
+  it("ne tient jamais une réponse illisible pour une validation", () => {
+    expect(lireRelecture(null)).toBeNull();
+    expect(lireRelecture("tout va bien")).toBeNull();
+    expect(lireRelecture('{"verdict":"parfait"}')).toBeNull();
+    expect(lireRelecture('{"verdict":"a_corriger","problemes":[]}')).toBeNull();
+  });
+});

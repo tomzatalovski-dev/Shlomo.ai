@@ -323,7 +323,8 @@ function Dossier() {
                     onClick={() => {
                       setValide(true);
                       const m = metier?.liste.map(({ code, libelle, lien }) => ({ code, libelle, lien }));
-                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}`);
+                      const domaine = site?.domaine ?? "";
+                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}${domaine ? `&site=${encodeURIComponent(domaine)}` : ""}`);
                     }}
                   >
                     Tout est juste, je valide

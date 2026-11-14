@@ -1,17 +1,23 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 function Mandat() {
   const parametres = useSearchParams();
   const siren = parametres.get("siren") ?? "";
   const metiers = parametres.get("m") ?? "";
+  const site = parametres.get("site") ?? "";
+  const [raison, setRaison] = useState("");
   const [nom, setNom] = useState("");
   const [accord, setAccord] = useState(false);
   const [autorisation, setAutorisation] = useState(true);
   const [attente, setAttente] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Mesure du parcours : la page du mandat a été ouverte pour ce dossier.
+  useEffect(() => {
+    if (/^\d{9}$/.test(siren)) fetch("/api/mesure", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ siren }), keepalive: true }).catch(() => {});
+  }, [siren]);
   const pret = accord && nom.trim().length > 2 && !attente;
 
   async function signer() {
@@ -20,7 +26,7 @@ function Mandat() {
     const rep = await fetch("/api/mandat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siren, signataire: nom.trim(), autorisation, metiers }),
+      body: JSON.stringify({ siren, signataire: nom.trim(), autorisation, metiers, site, raison }),
     }).catch(() => null);
     const json = rep ? ((await rep.json().catch(() => null)) as { jeton?: string; erreur?: string } | null) : null;
     if (rep?.ok && json?.jeton) window.location.assign(`/${autorisation ? "atelier" : "suivi"}?d=${json.jeton}`);
@@ -73,6 +79,16 @@ function Mandat() {
               <span>J'autorise Shlomo à approcher les repreneurs pour mon compte, sans me nommer. Je n'aurai rien à valider ensuite.</span>
             </label>
 
+            <div className="champ">
+              <label htmlFor="raison">Pourquoi vendez-vous ? Facultatif : les repreneurs répondent mieux quand ils le savent.</label>
+              <select id="raison" value={raison} onChange={(e) => setRaison(e.target.value)}>
+                <option value="">Je préfère ne pas le dire</option>
+                <option value="retraite">Départ à la retraite</option>
+                <option value="projet">Nouveau projet</option>
+                <option value="recentrage">Recentrage sur d'autres activités</option>
+              </select>
+            </div>
+
             {erreur && <p className="message" role="alert">{erreur}</p>}
 
             <div className="actions">
@@ -84,7 +100,7 @@ function Mandat() {
               >
                 {attente ? "Enregistrement…" : "Je signe"}
               </button>
-              <a className="lien" href={`/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}`}>Revenir à la liste</a>
+              <a className="lien" href={`/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}`}>Revenir à la liste</a>
             </div>
           </div>
         </main>

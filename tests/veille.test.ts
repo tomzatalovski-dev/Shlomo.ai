@@ -20,3 +20,15 @@ describe("veille sur un repreneur", () => {
     expect(nettoyerVeille({ site: "pas un domaine", signaux: "non" })).toEqual({ site: undefined, signaux: [] });
   });
 });
+
+import { verifierProvenance } from "@/lib/veille";
+
+describe("provenance des faits", () => {
+  const fait = (source: string) => ({ texte: "A racheté une société en 2024", source });
+  it("ne garde que les faits dont la source a réellement été reçue", () => {
+    const pages = [{ url: "https://www.exemple.fr/actualites/rachat/" }, { url: "https://presse.fr/article?id=4" }];
+    const { gardes, ecartes } = verifierProvenance([fait("https://exemple.fr/actualites/rachat"), fait("https://presse.fr/article?id=9#haut"), fait("https://invente.fr/page")], pages);
+    expect(gardes.map((s) => s.source)).toEqual(["https://exemple.fr/actualites/rachat"]);
+    expect(ecartes).toBe(2);
+  });
+});

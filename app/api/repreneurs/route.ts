@@ -1,6 +1,7 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
+import { mesurer } from "@/lib/base";
 import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
@@ -70,6 +71,7 @@ export async function GET(requete: Request) {
           texte: repreneurs.length ? `${repreneurs.length} repreneur${repreneurs.length > 1 ? "s" : ""} classé${repreneurs.length > 1 ? "s" : ""}` : "Aucun repreneur retenu à ce stade",
           etat: repreneurs.length ? "ok" : "alerte",
         });
+        await mesurer("repreneurs_vus", vendeur.siren);
         dire({ type: "fin" });
       } catch (e) {
         dire({

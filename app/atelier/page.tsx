@@ -9,7 +9,7 @@ import { ordonner, prioriteDe } from "@/lib/priorite";
 type Colonne = "nom" | "decideur" | "message" | "etat";
 type Poste = { siren: string; colonne: Colonne };
 type Direct = { agent: number; pour: string; texte: string };
-type Trace = { genre: "requete" | "page" | "fait" | "info"; texte: string; detail?: string; cle: number };
+type Trace = { genre: "requete" | "page" | "fait" | "info" | "relu" | "relu corrige"; texte: string; detail?: string; cle: number };
 type Ecran = { cible?: string; etat: string; actif: boolean; traces: Trace[] };
 
 const AGENTS = [1, 2, 3];
@@ -36,6 +36,9 @@ function Atelier() {
   const [direct, setDirect] = useState<Direct | null>(null);
   const [ecrans, setEcrans] = useState<Record<number, Ecran>>({});
   const [pagesLues, setPagesLues] = useState(0);
+  const [relus, setRelus] = useState(0);
+  const [corriges, setCorriges] = useState(0);
+  const [presentation, setPresentation] = useState<{ etat: "debut" | "prete" | "sans"; texte: string } | null>(null);
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [fini, setFini] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -70,6 +73,7 @@ function Atelier() {
         regler(e.agent, { etat: "cherche sur le web ce qu'elle a annoncé" });
       }
       if (e.etape === "redaction") regler(e.agent, { etat: "rédige le message" });
+      if (e.etape === "relecture") regler(e.agent, { etat: "fait relire le message par un second agent" });
       if (e.etape === "enregistrement") regler(e.agent, { etat: "range l'approche dans votre suivi" });
       await attendre(e.etape === "registre" || e.etape === "veille" ? 650 : 350);
     } else if (e.type === "signaux") {
@@ -98,6 +102,7 @@ function Atelier() {
         tracer(e.agent, { genre: "fait", texte: signal.genre === "alerte" ? `À vérifier : ${signal.texte}` : signal.texte });
         await attendre(350);
       }
+      if (e.ecartes) tracer(e.agent, { genre: "info", texte: `${e.ecartes} fait${e.ecartes > 1 ? "s écartés" : " écarté"} : la source citée n'est pas une page que j'ai lue` });
       if (!e.signaux.length) tracer(e.agent, { genre: "info", texte: "Rien de sûr à retenir : je n'invente pas." });
       changer(e.siren, { site: e.site, signaux: e.signaux });
       noter(e.agent, e.signaux.length ? `a trouvé ${e.signaux.length} fait${e.signaux.length > 1 ? "s" : ""} public${e.signaux.length > 1 ? "s" : ""} sur ${nomDe(e.siren)}` : `n'a rien trouvé de sûr sur ${nomDe(e.siren)}`);
@@ -113,6 +118,30 @@ function Atelier() {
       regler(e.agent, { etat: "la laisse de côté : elle refuse le démarchage", actif: false });
       noter(e.agent, `laisse ${nomDe(e.siren)} de côté : la société a demandé à ne pas être démarchée`);
       await attendre(600);
+    } else if (e.type === "relecture") {
+      if (e.issue === "valide") {
+        setRelus((n) => n + 1);
+        tracer(e.agent, { genre: "relu", texte: "Relecture : message validé par le second agent" });
+      } else if (e.issue === "corrige" || e.issue === "remplace") {
+        setRelus((n) => n + 1);
+        setCorriges((n) => n + 1);
+        tracer(e.agent, { genre: "relu corrige", texte: `Relecture : ${e.issue === "corrige" ? "message corrigé" : "message remplacé par le modèle sûr"}${e.problemes[0] ? ` (${e.problemes[0]})` : ""}` });
+        noter(e.agent, `a ${e.issue === "corrige" ? "corrigé" : "remplacé"} le message pour ${nomDe(e.siren)} après relecture`);
+      } else {
+        tracer(e.agent, { genre: "info", texte: "Relecture indisponible : message à relire par l'équipe" });
+      }
+      await attendre(450);
+    } else if (e.type === "presentation") {
+      if (e.etat === "prete" && e.texte) {
+        for (let i = 0; i < e.texte.length; i += 5) {
+          setPresentation({ etat: "debut", texte: e.texte.slice(0, i + 5) });
+          await attendre(14);
+        }
+        setPresentation({ etat: "prete", texte: e.texte });
+      } else {
+        setPresentation({ etat: e.etat, texte: "" });
+      }
+      await attendre(300);
     } else if (e.type === "message") {
       const pour = nomDe(e.siren);
       noter(e.agent, `écrit à ${pour}`);
@@ -228,9 +257,17 @@ function Atelier() {
                 <div className="chiffre"><span>Décideurs identifiés</span><b><Compteur valeur={decideurs} duree={400} /></b></div>
                 <div className="chiffre"><span>Pages web lues</span><b><Compteur valeur={pagesLues} duree={300} /></b></div>
                 <div className="chiffre"><span>Faits publics trouvés</span><b><Compteur valeur={utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0)} duree={400} /></b></div>
+                <div className="chiffre"><span>Messages relus par un second agent</span><b><Compteur valeur={relus} duree={400} />{corriges > 0 && <small className="part"> dont {corriges} corrigé{corriges > 1 ? "s" : ""}</small>}</b></div>
                 <div className="chiffre"><span>Messages rédigés</span><b><Compteur valeur={messages} duree={400} /></b></div>
                 <div className="chiffre cle"><span>Prêtes à partir</span><b><Compteur valeur={pretes} duree={400} /></b></div>
               </div>
+
+              {presentation && presentation.etat !== "sans" && (
+                <div className="carte apparait">
+                  <p className="source">{presentation.etat === "prete" ? "Présentation anonyme de votre société, remise aux repreneurs" : "Un agent lit votre site et rédige la présentation anonyme de votre société"}</p>
+                  {presentation.texte && <p className="lettre" style={{ minHeight: 0 }}>{presentation.texte}{presentation.etat !== "prete" && <span className="curseur" />}</p>}
+                </div>
+              )}
 
               {Object.keys(ecrans).length > 0 && (
                 <div className="ecrans">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { lireFiche } from "@/lib/base";
+import { lireFiche, mesurer } from "@/lib/base";
 import { lignesFiche } from "@/lib/fiche";
 import Demande from "./Demande";
 
@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "Société à céder, présentation a
 export default async function Page({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
   const jeton = (await searchParams).f ?? "";
   const fiche = await lireFiche(jeton).catch(() => null);
+  if (fiche) await mesurer("presentation_ouverte", jeton);
 
   return (
     <div className="page">
@@ -29,6 +30,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
                 <h1>Une société est à céder.</h1>
                 <p className="sous">Présentation anonyme, à l'attention des repreneurs contactés par Shlomo. Le nom vous sera communiqué après un accord de confidentialité.</p>
               </div>
+              {fiche.presentation && (
+                <div className="carte">
+                  <p className="source">La société, en quelques lignes</p>
+                  <p className="lettre" style={{ minHeight: 0 }}>{fiche.presentation}</p>
+                </div>
+              )}
               <div className="carte">
                 <dl className="fiche">
                   {lignesFiche(fiche).map((l) => (
