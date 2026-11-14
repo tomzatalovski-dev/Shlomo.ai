@@ -130,7 +130,8 @@ export type Evenement =
   | { type: "fin" };
 
 /** Un fait public trouvé sur un repreneur, avec la page où il a été lu. */
-export type Signal = { texte: string; source: string };
+/** `genre` dit ce que le fait change : un rachat passé, une croissance, ou une alerte (société en difficulté). */
+export type Signal = { texte: string; source: string; genre?: "rachat" | "croissance" | "alerte" };
 
 /** Une page reçue pendant une recherche, telle que l'écran la montre. */
 export type PageLue = { titre: string; domaine: string };

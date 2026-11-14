@@ -65,11 +65,14 @@ export async function GET(requete: Request) {
                 continue;
               }
               let decideur = fiche ? choisirDecideur(fiche.dirigeants) : null;
-              // Le dirigeant inscrit est une société : on remonte à la personne qui la dirige.
-              if (decideur?.societe && decideur.siren) {
+              // Le dirigeant inscrit est une société : on remonte, sur deux niveaux au plus, à la personne qui la dirige.
+              const chaine: string[] = [];
+              for (let niveau = 0; niveau < 2 && decideur?.societe && decideur.siren; niveau++) {
                 const holding = await chercherSociete(decideur.siren).catch(() => null);
-                const personne = holding ? choisirDecideur(holding.dirigeants) : null;
-                if (personne && !personne.societe) decideur = { nom: personne.nom, qualite: `${personne.qualite ?? "Dirigeant"} de ${holding!.nom}, qui dirige la société` };
+                const suivant = holding ? choisirDecideur(holding.dirigeants) : null;
+                if (!holding || !suivant) break;
+                chaine.push(holding.nom);
+                decideur = suivant.societe ? suivant : { nom: suivant.nom, qualite: `${suivant.qualite ?? "Dirigeant"} de ${chaine.at(-1)}, qui dirige la société` };
               }
               const qualite = decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite;
               dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite });
@@ -83,7 +86,7 @@ export async function GET(requete: Request) {
               }
 
               dire({ type: "etape", agent, siren: p.siren, etape: "redaction" });
-              const redige = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.map((x) => x.texte), interdits });
+              const redige = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.filter((x) => x.genre !== "alerte").map((x) => x.texte), interdits });
               const texte = lienFiche ? `${redige}\n\nPrésentation anonyme de la société, sans nom ni ville : ${lienFiche}` : redige;
               dire({ type: "message", agent, siren: p.siren, texte });
 

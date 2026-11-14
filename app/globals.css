@@ -236,22 +236,23 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .signal a { color: var(--gris); }
 
 /* Les trois écrans d'agents : ce que chacun fait réellement, en direct */
-.ecrans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.ecran { --ton: var(--vert); background: var(--carte); border: 1px solid #ebebef; border-radius: 16px; padding: 14px 16px; min-height: 230px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; transition: border-color 0.3s ease; }
+.ecrans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.ecran { --ton: var(--vert); background: var(--carte); border: 1px solid #ebebef; border-radius: 16px; padding: 14px 16px; height: 270px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; transition: border-color 0.3s ease; }
 .ecran.actif { border-color: var(--ton); }
 .ecran-tete { margin: 0; display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; }
 .ecran-tete > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ecran-etat { margin: 0; font-size: 12px; color: var(--gris); display: flex; align-items: center; gap: 6px; }
 .pouls { width: 7px; height: 7px; border-radius: 50%; background: var(--ton); animation: pouls 1.1s ease-in-out infinite; flex: none; }
 @keyframes pouls { 50% { opacity: 0.25; transform: scale(0.7); } }
-.ecran ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 5px; }
+.ecran ul { list-style: none; margin: 6px 0 0; padding: 0; flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 5px; }
+.ecran li { flex: none; }
 .trace { font-size: 12px; line-height: 1.4; color: var(--gris); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: monte 0.25s ease both; }
-.trace b { color: var(--encre); font-weight: 600; }
+.trace b { display: inline; color: var(--encre); font-weight: 600; }
 .trace.requete { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--encre); background: #f5f5f7; border-radius: 8px; padding: 5px 8px; }
 .trace.requete::before { content: "› "; color: var(--ton); }
 .trace.fait { color: var(--encre); white-space: normal; padding-left: 8px; border-left: 2px solid var(--ton); }
 .trace.info { color: var(--encre); white-space: normal; }
-@media (max-width: 900px) { .ecrans { grid-template-columns: 1fr; } .ecran { min-height: 0; } }
+@media (max-width: 900px) { .ecrans { grid-template-columns: 1fr; } .ecran { height: 220px; } }
 
 /* Présentation anonyme remise aux repreneurs */
 .corps.seul { display: block; max-width: 720px; margin: 0 auto; }
@@ -263,3 +264,9 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .champ input { width: 100%; border: 1px solid var(--contour); border-radius: 14px; padding: 12px 16px; font-size: 16px; background: #fff; }
 .champ input:focus { outline: 0; border-color: var(--encre); }
 .message.alerte { color: #a23b2a; }
+
+/* Tableau de prospection : l'état et le lien tiennent sur une ligne */
+.tableau td:nth-child(3), .tableau td:nth-child(4), .tableau th:nth-child(3), .tableau th:nth-child(4) { white-space: nowrap; }
+.signal.alerte { border-left-color: #b4690e; color: var(--gris); }
+.pastille { display: inline-block; margin-left: 8px; padding: 1px 8px; border: 1px solid var(--vert); border-radius: 10px; color: var(--vert); font-size: 11px; font-weight: 600; vertical-align: 2px; white-space: nowrap; }
+.trace.fait.alerte { border-left-color: #b4690e; }

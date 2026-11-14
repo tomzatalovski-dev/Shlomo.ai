@@ -8,7 +8,8 @@ Faits utiles : une acquisition ou une fusion déjà réalisée, une levée de fo
 Faits sans intérêt, à ne pas retenir : la date d'enregistrement du siège ou d'un établissement, l'adresse, la forme juridique, le nom du dirigeant, un chiffre d'affaires sans évolution.
 Réponds uniquement par un objet JSON :
 {"site": "nom de domaine officiel de la société, ou chaîne vide",
- "signaux": [{"fait": "une phrase de vingt mots au plus, avec l'année si elle est connue", "source": "adresse complète de la page"}]}
+ "signaux": [{"fait": "une phrase de vingt mots au plus, avec l'année si elle est connue", "source": "adresse complète de la page", "genre": "rachat, croissance ou alerte"}]}
+"rachat" : la société en a déjà racheté ou absorbé une autre. "croissance" : ouverture, investissement, levée de fonds, hausse d'activité. "alerte" : la société est en difficulté (pertes, procédure de sauvegarde, redressement) ou a elle-même été rachetée ; ces faits comptent, car une société en difficulté rachète rarement.
 Trois signaux au plus. Une liste vide vaut mieux qu'un fait douteux.`;
 
 const DOMAINE = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/;
@@ -23,7 +24,8 @@ export function nettoyerVeille(brut: unknown): { site?: string; signaux: Signal[
       const texte = typeof s?.fait === "string" ? s.fait.replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 180) : "";
       const source = typeof s?.source === "string" ? s.source.trim() : "";
       if (texte.length < 12 || !/^https:\/\/[^\s"<>]{4,280}$/.test(source)) continue;
-      signaux.push({ texte, source });
+      const genre = s?.genre === "rachat" || s?.genre === "croissance" || s?.genre === "alerte" ? s.genre : undefined;
+      signaux.push(genre ? { texte, source, genre } : { texte, source });
       if (signaux.length === 3) break;
     }
   }

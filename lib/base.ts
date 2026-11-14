@@ -1,3 +1,4 @@
+import type { Signal } from "./types";
 /**
  * Mémoire du site : base Supabase, appelée uniquement depuis le serveur.
  * Aucune table n'est lisible directement. Tout passe par trois fonctions de la base,
@@ -45,7 +46,7 @@ export type Presentation = {
   message?: string | null;
   canal?: "a_envoyer" | "refus_demarchage" | null;
   site?: string | null;
-  signaux?: { texte: string; source: string }[] | null;
+  signaux?: Signal[] | null;
 };
 
 export type Suivi = {
@@ -90,7 +91,7 @@ export async function exclureRepreneur(jeton: string, siren: string, exclu: bool
 }
 
 /** Enregistre l'approche préparée pour un repreneur (une seule fois). Avec refus, note qu'il ne veut pas être démarché. */
-export async function enregistrerApproche(jeton: string, siren: string, approche: { decideur?: string; qualite?: string; message?: string; refus?: boolean; site?: string; signaux?: { texte: string; source: string }[] }): Promise<boolean> {
+export async function enregistrerApproche(jeton: string, siren: string, approche: { decideur?: string; qualite?: string; message?: string; refus?: boolean; site?: string; signaux?: Signal[] }): Promise<boolean> {
   if (!jetonValide(jeton) || !/^\d{9}$/.test(siren)) return false;
   return appeler<boolean>("enregistrer_approche", {
     p_jeton: jeton,

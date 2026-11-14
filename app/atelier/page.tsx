@@ -94,7 +94,7 @@ function Atelier() {
         await attendre(200);
       }
       for (const signal of e.signaux) {
-        tracer(e.agent, { genre: "fait", texte: signal.texte });
+        tracer(e.agent, { genre: "fait", texte: signal.genre === "alerte" ? `À vérifier : ${signal.texte}` : signal.texte });
         await attendre(350);
       }
       if (!e.signaux.length) tracer(e.agent, { genre: "info", texte: "Rien de sûr à retenir : je n'invente pas." });
@@ -256,10 +256,10 @@ function Atelier() {
                     {lignes.map((l) => (
                       <tr key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "eteint" : undefined}>
                         {cellule(l, "nom", <>
-                          <b>{l.rang}. {l.nom}</b>
+                          <b>{l.rang}. {l.nom}{l.signaux?.some((x) => x.genre === "rachat") && <span className="pastille">A déjà racheté</span>}{l.signaux?.some((x) => x.genre === "alerte") && <span className="pastille" style={{ color: "#b4690e", borderColor: "#b4690e" }}>À vérifier</span>}</b>
                           <small>{[l.ville, l.effectif, l.site].filter(Boolean).join(" · ")}</small>
                           {l.signaux?.map((x) => (
-                            <small key={x.source + x.texte} className="signal apparait">{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
+                            <small key={x.source + x.texte} className={`signal apparait${x.genre === "alerte" ? " alerte" : ""}`}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
                           ))}
                         </>)}
                         {cellule(l, "decideur", l.decideur ? <><b>{l.decideur}</b><small>{l.qualite}</small></> : l.decideur === "" ? <small>Non publié</small> : <i className="vide" />)}

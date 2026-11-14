@@ -106,7 +106,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                   <small>{[p.ville, p.effectif, ...p.raisons].filter(Boolean).join(" · ")}</small>
                   {p.decideur && <small>Décideur : {p.decideur}{p.qualite ? `, ${p.qualite}` : ""}</small>}
                   {p.signaux?.map((x) => (
-                    <small key={x.source + x.texte} className="signal">{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
+                    <small key={x.source + x.texte} className={x.genre === "alerte" ? "signal alerte" : "signal"}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
                   ))}
                   {p.message && (
                     <details className="pli">

@@ -6,14 +6,14 @@ describe("veille sur un repreneur", () => {
     const v = nettoyerVeille({
       site: "https://www.Exemple.fr/accueil",
       signaux: [
-        { fait: "A racheté la société Durand Menuiserie en 2024", source: "https://exemple.fr/actualites/rachat" },
+        { fait: "A racheté la société Durand Menuiserie en 2024", source: "https://exemple.fr/actualites/rachat", genre: "rachat" },
         { fait: "Trop court", source: "https://exemple.fr" },
         { fait: "Ouverture d'une agence à Lyon annoncée en 2025", source: "http://pas-https.fr/x" },
         { fait: "Lien <script>douteux</script> dans la phrase, année 2023", source: "javascript:alert(1)" },
       ],
     });
     expect(v.site).toBe("exemple.fr");
-    expect(v.signaux).toEqual([{ texte: "A racheté la société Durand Menuiserie en 2024", source: "https://exemple.fr/actualites/rachat" }]);
+    expect(v.signaux).toEqual([{ texte: "A racheté la société Durand Menuiserie en 2024", source: "https://exemple.fr/actualites/rachat", genre: "rachat" }]);
   });
   it("ne garde rien d'une réponse sans forme", () => {
     expect(nettoyerVeille(null)).toEqual({ site: undefined, signaux: [] });
