@@ -45,7 +45,7 @@ export function Compteur({ valeur, duree = 900, format = String }: { valeur: num
     const debut = performance.now();
     let image = 0;
     const pas = (t: number) => {
-      const p = Math.min(1, (t - debut) / duree);
+      const p = Math.max(0, Math.min(1, (t - debut) / duree));
       const v = Math.round(de + (valeur - de) * (1 - Math.pow(1 - p, 3)));
       setAffiche(v);
       if (p < 1) image = requestAnimationFrame(pas);

@@ -109,3 +109,28 @@ export type Evenement =
   | { type: "besoin_siren"; message: string }
   | { type: "erreur"; message: string }
   | { type: "fin" };
+
+/** Une ligne du tableau de prospection : un repreneur et l'état de son approche. */
+export type LigneAtelier = {
+  siren: string;
+  nom: string;
+  rang: number;
+  ville?: string | null;
+  effectif?: string | null;
+  etat: "a_faire" | "pret" | "refus" | "raye" | "contacte" | "echec";
+  decideur?: string | null;
+  qualite?: string | null;
+  message?: string | null;
+};
+
+/** Événements envoyés au navigateur pendant la préparation des approches. */
+export type EvenementAtelier =
+  | { type: "plan"; societe: string; lignes: LigneAtelier[] }
+  | { type: "etape"; agent: number; siren: string; etape: "registre" | "redaction" | "enregistrement" }
+  | { type: "decideur"; agent: number; siren: string; nom?: string; qualite?: string }
+  | { type: "refus"; agent: number; siren: string }
+  | { type: "message"; agent: number; siren: string; texte: string }
+  | { type: "pret"; agent: number; siren: string }
+  | { type: "echec"; agent: number; siren: string }
+  | { type: "erreur"; message: string }
+  | { type: "fin" };

@@ -55,3 +55,19 @@ export async function resumer(societe: Societe, texteSite: string): Promise<Resu
     throw new ReponseIllisible(`JSON invalide, début « ${objet[0].slice(0, 120)} »`);
   }
 }
+
+/** Demande un texte libre au modèle. Renvoie null sans clé. Lève une erreur si le modèle ne répond pas. */
+export async function ecrire(consigne: string, contenu: string, maximum = 600): Promise<string | null> {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  if (!cle) return null;
+  const rep = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
+    signal: AbortSignal.timeout(25_000),
+    body: JSON.stringify({ model: MODELE, max_tokens: maximum, system: consigne, messages: [{ role: "user", content: contenu }] }),
+  });
+  if (!rep.ok) throw new Error(`Modèle d'IA : réponse ${rep.status}`);
+  const json = (await rep.json()) as { content?: { type: string; text?: string }[] };
+  const texte = (json.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
+  return texte || null;
+}

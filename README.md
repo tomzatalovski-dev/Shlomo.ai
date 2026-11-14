@@ -89,3 +89,12 @@ Règles tenues par la base elle-même :
 Pour faire avancer un dossier à la main : dans Supabase, table `presentations`, changer la colonne `statut` (`contacte`, `relance`, `a_repondu`, `interesse`, `confidentialite_signee`, `rendez_vous`, `sans_suite`). La page de suivi du vendeur se met à jour au rechargement.
 
 Limites : le mandat est une version de test sans valeur juridique, il n'y a pas encore de comptes, et aucun message n'est envoyé par le site.
+
+## Prospection après le mandat
+
+Après la signature, `/atelier?d=<jeton>` montre trois agents qui préparent les approches : fiche du repreneur au registre, choix du décideur (`lib/approche.ts`), rédaction du message par l'IA, enregistrement en base (`enregistrer_approche`).
+
+- Le message ne cite jamais le vendeur : s'il contient son nom ou sa ville, il est remplacé par un modèle fixe. Sans clé d'IA, le modèle fixe sert aussi.
+- Une société qui s'est opposée au démarchage au registre est laissée de côté.
+- Rien n'est envoyé par le site. L'équipe relit, envoie, puis change `presentations.statut` dans Supabase ; la page de suivi se met à jour.
+- Limite connue : toute personne qui détient le jeton peut enregistrer une approche (une seule fois par repreneur). La relecture avant envoi couvre ce risque.

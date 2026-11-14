@@ -104,12 +104,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                 <span className="quoi">
                   <b>{p.rang}. {p.nom}</b>
                   <small>{[p.ville, p.effectif, ...p.raisons].filter(Boolean).join(" · ")}</small>
+                  {p.decideur && <small>Décideur : {p.decideur}{p.qualite ? `, ${p.qualite}` : ""}</small>}
+                  {p.message && (
+                    <details className="pli">
+                      <summary>Lire le message préparé</summary>
+                      <p className="lettre">{p.message}</p>
+                    </details>
+                  )}
                 </span>
                 <span className="ou">
-                  <b className={INTERESSES.includes(p.statut) ? "etat fort" : "etat"}>{p.exclu ? "Rayé à votre demande" : STATUT[p.statut]}</b>
+                  <b className={INTERESSES.includes(p.statut) ? "etat fort" : "etat"}>{p.exclu ? "Rayé à votre demande" : p.canal === "refus_demarchage" ? "Ne veut pas être démarché" : p.statut === "identifie" && p.canal === "a_envoyer" ? "Approche prête" : STATUT[p.statut]}</b>
                   <br />
                   <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
-                  {p.statut === "identifie" && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
+                  {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
                 </span>
                 <span className="note">{p.score ?? ""}</span>
               </div>
@@ -119,10 +126,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           <div className="carte">
             <p className="message">
               {autorise
-                ? "Prochaine étape : l'approche des trois premiers repreneurs non rayés, par un message qui ne cite ni votre nom ni votre ville. À ce stade du projet, les messages sont préparés et envoyés par l'équipe Shlomo, et chaque étape s'inscrit ici."
+                ? "Les agents préparent, pour chaque repreneur, le nom du décideur et un message qui ne cite ni votre nom ni votre ville. À ce stade du projet, l'équipe Shlomo relit chaque message et l'envoie elle-même ; chaque étape s'inscrit ici."
                 : "Pour lancer l'approche, il faudra signer un mandat qui l'autorise."}
             </p>
-            <p className="source">Vous pouvez rayer un repreneur tant qu'il n'a pas été contacté. C'est facultatif.</p>
+            {autorise && <div className="actions"><a className="lien" href={`/atelier?d=${jeton}`}>Voir les agents au travail</a></div>}
+            <p className="source">Vous pouvez rayer un repreneur tant que son approche n'est pas préparée. C'est facultatif.</p>
           </div>
         </main>
       </div>

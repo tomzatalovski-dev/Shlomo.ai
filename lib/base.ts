@@ -40,10 +40,15 @@ export type Presentation = {
   statut: StatutPresentation;
   exclu: boolean;
   presente_le: string;
+  decideur?: string | null;
+  qualite?: string | null;
+  message?: string | null;
+  canal?: "a_envoyer" | "refus_demarchage" | null;
 };
 
 export type Suivi = {
   societe: { siren: string; nom: string };
+  fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null } | null;
   mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string } | null;
   presentations: Presentation[];
   evenements: { texte: string; cree_le: string }[];
@@ -79,4 +84,17 @@ export async function lireSuivi(jeton: string): Promise<Suivi | null> {
 export async function exclureRepreneur(jeton: string, siren: string, exclu: boolean): Promise<boolean> {
   if (!jetonValide(jeton) || !/^\d{9}$/.test(siren)) return false;
   return appeler<boolean>("exclure_repreneur", { p_jeton: jeton, p_siren: siren, p_exclu: exclu });
+}
+
+/** Enregistre l'approche préparée pour un repreneur (une seule fois). Avec refus, note qu'il ne veut pas être démarché. */
+export async function enregistrerApproche(jeton: string, siren: string, approche: { decideur?: string; qualite?: string; message?: string; refus?: boolean }): Promise<boolean> {
+  if (!jetonValide(jeton) || !/^\d{9}$/.test(siren)) return false;
+  return appeler<boolean>("enregistrer_approche", {
+    p_jeton: jeton,
+    p_siren: siren,
+    p_decideur: approche.decideur ?? null,
+    p_qualite: approche.qualite ?? null,
+    p_message: approche.message ?? null,
+    p_refus: approche.refus === true,
+  });
 }

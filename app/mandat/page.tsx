@@ -21,7 +21,7 @@ function Mandat() {
       body: JSON.stringify({ siren, signataire: nom.trim(), autorisation }),
     }).catch(() => null);
     const json = rep ? ((await rep.json().catch(() => null)) as { jeton?: string; erreur?: string } | null) : null;
-    if (rep?.ok && json?.jeton) window.location.assign(`/suivi?d=${json.jeton}`);
+    if (rep?.ok && json?.jeton) window.location.assign(`/${autorisation ? "atelier" : "suivi"}?d=${json.jeton}`);
     else {
       setErreur(json?.erreur ?? "La signature n'a pas pu être enregistrée. Réessayez.");
       setAttente(false);
