@@ -8,7 +8,11 @@ import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/sce
 type Ligne = { texte: string; etat: "ok" | "alerte" };
 
 function Dossier() {
-  const q = useSearchParams().get("q") ?? "";
+  const parametres = useSearchParams();
+  const q = parametres.get("q") ?? "";
+  const siteDonne = parametres.get("site") ?? "";
+  /** Site à conserver si le SIREN doit être saisi à la main : celui donné au départ. */
+  const siteAGarder = siteDonne || (/[a-z]/i.test(q) ? q : "");
 
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [encours, setEncours] = useState<string | null>("Lecture de votre saisie");
@@ -77,7 +81,7 @@ function Dossier() {
   });
 
   useEffect(() => {
-    const flux = new EventSource(`/api/analyse?q=${encodeURIComponent(q)}`);
+    const flux = new EventSource(`/api/analyse?q=${encodeURIComponent(q)}${siteDonne ? `&site=${encodeURIComponent(siteDonne)}` : ""}`);
     let termine = false;
     flux.onmessage = (m) => {
       const e = JSON.parse(m.data) as Evenement;
@@ -92,7 +96,7 @@ function Dossier() {
       if (!termine) jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page pour relancer la recherche." });
     };
     return () => flux.close();
-  }, [q, jouer]);
+  }, [q, siteDonne, jouer]);
 
   const dernier = societe?.finances.at(-1);
   const avant = societe && societe.finances.length >= 2 ? societe.finances.at(-2) : undefined;
@@ -164,6 +168,7 @@ function Dossier() {
               <form className="rappel" action="/dossier" method="get">
                 <label className="cache" htmlFor="siren">Numéro SIREN</label>
                 <input id="siren" name="q" inputMode="numeric" placeholder="Numéro SIREN, 9 chiffres" required />
+                {siteAGarder && <input type="hidden" name="site" value={siteAGarder} />}
                 <button className="bouton" type="submit">Continuer</button>
               </form>
             </div>

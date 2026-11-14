@@ -19,7 +19,9 @@ function tropDappels(ip: string): boolean {
 }
 
 export async function GET(requete: Request) {
-  const q = new URL(requete.url).searchParams.get("q") ?? "";
+  const parametres = new URL(requete.url).searchParams;
+  const q = parametres.get("q") ?? "";
+  const siteDonne = parametres.get("site") ?? "";
   const ip = requete.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "local";
   const encodeur = new TextEncoder();
 
@@ -58,6 +60,21 @@ export async function GET(requete: Request) {
             return;
           }
           dire({ type: "journal", texte: `SIREN ${siren} trouvé dans les mentions légales`, etat: "ok" });
+        }
+
+        // Le SIREN a été saisi après coup : on relit le site donné au départ pour rédiger la fiche.
+        if (saisie.type === "siren" && siteDonne) {
+          const rappel = analyserSaisie(siteDonne);
+          if (rappel.type === "site") {
+            dire({ type: "encours", texte: `Lecture de ${rappel.domaine}` });
+            site = await lireSite(rappel.domaine);
+            if (site) {
+              dire({ type: "journal", texte: `${rappel.domaine} lu, ${site.pagesLues.length} page${site.pagesLues.length > 1 ? "s" : ""}`, etat: "ok" });
+              dire({ type: "site", domaine: site.domaine, titre: site.titre, description: site.description });
+            } else {
+              dire({ type: "journal", texte: `${rappel.domaine} n'est pas lisible`, etat: "alerte" });
+            }
+          }
         }
 
         dire({ type: "encours", texte: "Interrogation du registre des entreprises" });
