@@ -41,18 +41,32 @@ export function Compteur({ valeur, duree = 900, format = String }: { valeur: num
   const depart = useRef(0);
 
   useEffect(() => {
+    // Onglet en arrière-plan : le navigateur suspend les animations, on affiche la valeur sans attendre.
+    if (typeof document !== "undefined" && document.hidden) {
+      depart.current = valeur;
+      setAffiche(valeur);
+      return;
+    }
     const de = depart.current;
     const debut = performance.now();
     let image = 0;
     const pas = (t: number) => {
       const p = Math.max(0, Math.min(1, (t - debut) / duree));
       const v = Math.round(de + (valeur - de) * (1 - Math.pow(1 - p, 3)));
+      depart.current = v;
       setAffiche(v);
       if (p < 1) image = requestAnimationFrame(pas);
-      else depart.current = valeur;
     };
     image = requestAnimationFrame(pas);
-    return () => cancelAnimationFrame(image);
+    // Filet : si l'animation n'a pas pu se jouer, la valeur exacte s'affiche quand même.
+    const filet = setTimeout(() => {
+      depart.current = valeur;
+      setAffiche(valeur);
+    }, duree + 400);
+    return () => {
+      cancelAnimationFrame(image);
+      clearTimeout(filet);
+    };
   }, [valeur, duree]);
 
   return <>{format(affiche)}</>;
