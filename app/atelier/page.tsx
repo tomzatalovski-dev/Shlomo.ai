@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { EvenementAtelier, LigneAtelier } from "@/lib/types";
 import { Avance, Compteur, attendre, useFile } from "@/app/composants/scene";
 
-type Colonne = "decideur" | "message" | "etat";
+type Colonne = "nom" | "decideur" | "message" | "etat";
 type Poste = { siren: string; colonne: Colonne };
 type Direct = { agent: number; pour: string; texte: string };
 
@@ -45,10 +45,15 @@ function Atelier() {
       setLignes(e.lignes);
       await attendre(900);
     } else if (e.type === "etape") {
-      const colonne: Colonne = e.etape === "registre" ? "decideur" : e.etape === "redaction" ? "message" : "etat";
+      const colonne: Colonne = e.etape === "registre" ? "decideur" : e.etape === "veille" ? "nom" : e.etape === "redaction" ? "message" : "etat";
       placer(e.agent, { siren: e.siren, colonne });
       if (e.etape === "registre") noter(e.agent, `ouvre la fiche de ${nomDe(e.siren)} au registre`);
-      await attendre(e.etape === "registre" ? 650 : 350);
+      if (e.etape === "veille") noter(e.agent, `cherche sur le web ce que ${nomDe(e.siren)} a annoncé`);
+      await attendre(e.etape === "registre" || e.etape === "veille" ? 650 : 350);
+    } else if (e.type === "signaux") {
+      changer(e.siren, { site: e.site, signaux: e.signaux });
+      noter(e.agent, e.signaux.length ? `a trouvé ${e.signaux.length} fait${e.signaux.length > 1 ? "s" : ""} public${e.signaux.length > 1 ? "s" : ""} sur ${nomDe(e.siren)}` : `n'a rien trouvé de sûr sur ${nomDe(e.siren)}`);
+      await attendre(500);
     } else if (e.type === "decideur") {
       changer(e.siren, { decideur: e.nom ?? "", qualite: e.qualite });
       noter(e.agent, e.nom ? `a trouvé qui décide chez ${nomDe(e.siren)} : ${e.nom}` : `ne trouve pas de dirigeant publié chez ${nomDe(e.siren)}`);
@@ -83,21 +88,32 @@ function Atelier() {
   });
 
   useEffect(() => {
-    const flux = new EventSource(`/api/atelier?d=${encodeURIComponent(jeton)}`);
+    // La préparation peut dépasser la durée d'une connexion : on se reconnecte, le travail déjà fait est conservé.
+    let flux: EventSource | null = null;
     let termine = false;
-    flux.onmessage = (m) => {
-      const e = JSON.parse(m.data) as EvenementAtelier;
-      if (e.type === "fin" || e.type === "erreur") {
-        termine = true;
-        flux.close();
-      }
-      jouer(e);
+    let reprises = 0;
+    const ouvrir = () => {
+      flux = new EventSource(`/api/atelier?d=${encodeURIComponent(jeton)}`);
+      flux.onmessage = (m) => {
+        const e = JSON.parse(m.data) as EvenementAtelier;
+        if (e.type === "fin" || e.type === "erreur") {
+          termine = true;
+          flux?.close();
+        }
+        jouer(e);
+      };
+      flux.onerror = () => {
+        flux?.close();
+        if (termine) return;
+        if (reprises++ < 4) setTimeout(ouvrir, 1500);
+        else jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page : le travail déjà fait est conservé." });
+      };
     };
-    flux.onerror = () => {
-      flux.close();
-      if (!termine) jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page : le travail déjà fait est conservé." });
+    ouvrir();
+    return () => {
+      termine = true;
+      flux?.close();
     };
-    return () => flux.close();
   }, [jeton, jouer]);
 
   const utiles = lignes?.filter((l) => l.etat !== "raye" && l.etat !== "contacte") ?? [];
@@ -145,7 +161,7 @@ function Atelier() {
         <main className="resultat">
           <div>
             <h1>{erreur ? "La préparation s'est arrêtée." : fini ? (pretes ? `${pretes} approche${pretes > 1 ? "s sont prêtes" : " est prête"} à partir.` : "Aucune approche à préparer.") : "Trois agents préparent vos approches."}</h1>
-            <p className="sous">{erreur ?? (fini ? "Vous n'avez rien eu à faire. La suite se lit dans votre suivi." : "Pour chaque repreneur : qui décide, et le message qui lui donnera envie de vous appeler. Vous n'avez rien à faire.")}</p>
+            <p className="sous">{erreur ?? (fini ? "Vous n'avez rien eu à faire. La suite se lit dans votre suivi." : "Pour chaque repreneur : qui décide, ce qu'il a annoncé publiquement, et le message qui lui donnera envie de vous appeler. Vous n'avez rien à faire.")}</p>
           </div>
 
           {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} />}
@@ -155,6 +171,7 @@ function Atelier() {
               <div className="entonnoir">
                 <div className="chiffre"><span>Repreneurs à approcher</span><b><Compteur valeur={utiles.length} /></b></div>
                 <div className="chiffre"><span>Décideurs identifiés</span><b><Compteur valeur={decideurs} duree={400} /></b></div>
+                <div className="chiffre"><span>Faits publics trouvés</span><b><Compteur valeur={utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0)} duree={400} /></b></div>
                 <div className="chiffre"><span>Messages rédigés</span><b><Compteur valeur={messages} duree={400} /></b></div>
                 <div className="chiffre cle"><span>Prêtes à partir</span><b><Compteur valeur={pretes} duree={400} /></b></div>
               </div>
@@ -165,7 +182,13 @@ function Atelier() {
                   <tbody>
                     {lignes.map((l) => (
                       <tr key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "eteint" : undefined}>
-                        <td><b>{l.rang}. {l.nom}</b><small>{[l.ville, l.effectif].filter(Boolean).join(" · ")}</small></td>
+                        {cellule(l, "nom", <>
+                          <b>{l.rang}. {l.nom}</b>
+                          <small>{[l.ville, l.effectif, l.site].filter(Boolean).join(" · ")}</small>
+                          {l.signaux?.map((x) => (
+                            <small key={x.source + x.texte} className="signal apparait">{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
+                          ))}
+                        </>)}
                         {cellule(l, "decideur", l.decideur ? <><b>{l.decideur}</b><small>{l.qualite}</small></> : l.decideur === "" ? <small>Non publié</small> : <i className="vide" />)}
                         {cellule(l, "message", l.message ? <button className="lien" type="button" onClick={() => setOuvert(ouvert === l.siren ? null : l.siren)}>{ouvert === l.siren ? "Refermer" : "Lire le message"}</button> : <i className="vide" />)}
                         {cellule(l, "etat", <span className={l.etat === "pret" ? "etat fort" : "etat"}>{ETAT[l.etat]}</span>)}

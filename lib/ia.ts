@@ -106,3 +106,29 @@ export async function lireNom(texteSite: string): Promise<{ nom: string; codePos
     return undefined;
   }
 }
+
+/**
+ * Demande au modèle une recherche sur le web, puis un texte. Renvoie null sans clé.
+ * Les pages lues sont des données extérieures : la consigne doit le dire, et l'appelant vérifie ce qui revient.
+ */
+export async function rechercher(consigne: string, contenu: string, recherches = 2): Promise<string | null> {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  if (!cle) return null;
+  const rep = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
+    signal: AbortSignal.timeout(45_000),
+    body: JSON.stringify({
+      model: MODELE,
+      max_tokens: 4000,
+      system: consigne,
+      messages: [{ role: "user", content: contenu }],
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: recherches }],
+    }),
+  });
+  if (!rep.ok) throw new Error(`Modèle d'IA : réponse ${rep.status}`);
+  const json = (await rep.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string };
+  if (json.stop_reason !== "end_turn") throw new ReponseIllisible(`recherche inachevée (${json.stop_reason ?? "?"})`);
+  const texte = (json.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
+  return texte || null;
+}

@@ -230,3 +230,7 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .valeur .fourchette { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: -0.02em; white-space: nowrap; }
 .valeur .message { font-size: 14px; }
 @media (max-width: 520px) { .valeur .fourchette { font-size: 22px; white-space: normal; } }
+
+/* Faits publics trouvés sur un repreneur */
+.signal { display: block; margin-top: 4px; font-size: 12px; color: var(--encre); padding-left: 10px; border-left: 2px solid var(--vert-clair, #3dbe8b); }
+.signal a { color: var(--gris); }

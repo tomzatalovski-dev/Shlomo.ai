@@ -129,6 +129,9 @@ export type Evenement =
   | { type: "erreur"; message: string }
   | { type: "fin" };
 
+/** Un fait public trouvé sur un repreneur, avec la page où il a été lu. */
+export type Signal = { texte: string; source: string };
+
 /** Une ligne du tableau de prospection : un repreneur et l'état de son approche. */
 export type LigneAtelier = {
   siren: string;
@@ -140,12 +143,15 @@ export type LigneAtelier = {
   decideur?: string | null;
   qualite?: string | null;
   message?: string | null;
+  site?: string | null;
+  signaux?: Signal[] | null;
 };
 
 /** Événements envoyés au navigateur pendant la préparation des approches. */
 export type EvenementAtelier =
   | { type: "plan"; societe: string; lignes: LigneAtelier[] }
-  | { type: "etape"; agent: number; siren: string; etape: "registre" | "redaction" | "enregistrement" }
+  | { type: "etape"; agent: number; siren: string; etape: "registre" | "veille" | "redaction" | "enregistrement" }
+  | { type: "signaux"; agent: number; siren: string; site?: string; signaux: Signal[] }
   | { type: "decideur"; agent: number; siren: string; nom?: string; qualite?: string }
   | { type: "refus"; agent: number; siren: string }
   | { type: "message"; agent: number; siren: string; texte: string }

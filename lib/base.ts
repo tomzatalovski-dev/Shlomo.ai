@@ -44,6 +44,8 @@ export type Presentation = {
   qualite?: string | null;
   message?: string | null;
   canal?: "a_envoyer" | "refus_demarchage" | null;
+  site?: string | null;
+  signaux?: { texte: string; source: string }[] | null;
 };
 
 export type Suivi = {
@@ -87,7 +89,7 @@ export async function exclureRepreneur(jeton: string, siren: string, exclu: bool
 }
 
 /** Enregistre l'approche préparée pour un repreneur (une seule fois). Avec refus, note qu'il ne veut pas être démarché. */
-export async function enregistrerApproche(jeton: string, siren: string, approche: { decideur?: string; qualite?: string; message?: string; refus?: boolean }): Promise<boolean> {
+export async function enregistrerApproche(jeton: string, siren: string, approche: { decideur?: string; qualite?: string; message?: string; refus?: boolean; site?: string; signaux?: { texte: string; source: string }[] }): Promise<boolean> {
   if (!jetonValide(jeton) || !/^\d{9}$/.test(siren)) return false;
   return appeler<boolean>("enregistrer_approche", {
     p_jeton: jeton,
@@ -96,5 +98,7 @@ export async function enregistrerApproche(jeton: string, siren: string, approche
     p_qualite: approche.qualite ?? null,
     p_message: approche.message ?? null,
     p_refus: approche.refus === true,
+    p_site: approche.site ?? null,
+    p_signaux: approche.signaux ?? [],
   });
 }

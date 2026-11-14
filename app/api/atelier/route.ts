@@ -1,12 +1,14 @@
 import { chercherSociete } from "@/lib/registre";
 import { BaseIndisponible, enregistrerApproche, jetonValide, lireSuivi, type Presentation } from "@/lib/base";
 import { choisirDecideur, redigerMessage } from "@/lib/approche";
+import { veiller } from "@/lib/veille";
+import { iaActive } from "@/lib/ia";
 import { adresseDe, tropDappels } from "@/lib/limite";
 import type { EvenementAtelier, LigneAtelier } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const AGENTS = 3;
 
@@ -20,7 +22,7 @@ function etatDe(p: Presentation): LigneAtelier["etat"] {
 
 /**
  * Préparation des approches, après la signature du mandat.
- * Trois agents se partagent les repreneurs : fiche au registre, décideur, message, enregistrement.
+ * Trois agents se partagent les repreneurs : fiche au registre, décideur, veille sur le web, message, enregistrement.
  * Rien n'est envoyé : les messages sont enregistrés, prêts à partir.
  */
 export async function GET(requete: Request) {
@@ -44,7 +46,7 @@ export async function GET(requete: Request) {
         dire({
           type: "plan",
           societe: suivi.societe.nom,
-          lignes: suivi.presentations.map((p) => ({ siren: p.siren, nom: p.nom, rang: p.rang, ville: p.ville, effectif: p.effectif, etat: etatDe(p), decideur: p.decideur, qualite: p.qualite, message: p.message })),
+          lignes: suivi.presentations.map((p) => ({ siren: p.siren, nom: p.nom, rang: p.rang, ville: p.ville, effectif: p.effectif, etat: etatDe(p), decideur: p.decideur, qualite: p.qualite, message: p.message, site: p.site, signaux: p.signaux })),
         });
 
         const aFaire = suivi.presentations.filter((p) => etatDe(p) === "a_faire");
@@ -63,12 +65,20 @@ export async function GET(requete: Request) {
               const decideur = fiche ? choisirDecideur(fiche.dirigeants) : null;
               dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite });
 
+              // Veille : ce que le web dit de ce repreneur. Sans IA, ou si la recherche échoue, on continue sans.
+              let veille: Awaited<ReturnType<typeof veiller>> = null;
+              if (iaActive()) {
+                dire({ type: "etape", agent, siren: p.siren, etape: "veille" });
+                veille = await veiller({ nom: p.nom, siren: p.siren, ville: p.ville });
+                dire({ type: "signaux", agent, siren: p.siren, site: veille?.site, signaux: veille?.signaux ?? [] });
+              }
+
               dire({ type: "etape", agent, siren: p.siren, etape: "redaction" });
-              const texte = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], interdits });
+              const texte = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.map((x) => x.texte), interdits });
               dire({ type: "message", agent, siren: p.siren, texte });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });
-              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite, message: texte });
+              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite, message: texte, site: veille?.site, signaux: veille?.signaux });
               dire(garde ? { type: "pret", agent, siren: p.siren } : { type: "echec", agent, siren: p.siren });
             } catch {
               dire({ type: "echec", agent, siren: p.siren });
