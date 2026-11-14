@@ -62,10 +62,13 @@ export async function GET(requete: Request) {
             dire({ type: "encours", texte: "Recherche de votre société au registre, par son nom" });
             const nomLu = iaActive() ? await lireNom(site.texte).catch(() => undefined) : undefined;
             const fiches: { candidat: string; societes: Societe[] }[] = [];
-            for (const candidat of nomsCandidats(site.domaine, site.titre, nomLu)) {
+            // D'abord à l'adresse lue sur le site, puis dans toute la France.
+            if (nomLu?.codePostal) fiches.push({ candidat: nomLu.nom, societes: await chercherParNom(nomLu.nom, nomLu.codePostal).catch(() => []) });
+            for (const candidat of nomsCandidats(site.domaine, site.titre, nomLu?.nom)) {
               fiches.push({ candidat, societes: await chercherParNom(candidat).catch(() => []) });
             }
-            const { sure, propositions } = choisirSociete(fiches, site.texte);
+            const texteAdresse = nomLu?.codePostal ? `${site.texte} ${nomLu.codePostal}` : site.texte;
+            const { sure, propositions } = choisirSociete(fiches, texteAdresse);
             if (!sure) {
               dire({
                 type: "besoin_siren",

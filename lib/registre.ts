@@ -157,7 +157,9 @@ export async function compterMetier(codeActivite: string): Promise<number | unde
 }
 
 /** Cherche des sociétés actives par leur nom. Sert à retrouver le vendeur quand son site n'affiche pas de SIREN. */
-export async function chercherParNom(nom: string): Promise<Societe[]> {
-  const reponse = await appeler({ q: nom, etat_administratif: "A", per_page: "10" });
+export async function chercherParNom(nom: string, codePostal?: string): Promise<Societe[]> {
+  const parametres: Record<string, string> = { q: nom, etat_administratif: "A", per_page: "25" };
+  if (codePostal) parametres.code_postal = codePostal;
+  const reponse = await appeler(parametres);
   return (reponse?.resultats ?? []).map(mapperSociete);
 }

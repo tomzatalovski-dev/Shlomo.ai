@@ -65,7 +65,9 @@ export function choisirSociete(fiches: { candidat: string; societes: Societe[] }
       if (note > (notes.get(s.siren)?.note ?? 0)) notes.set(s.siren, { societe: s, note });
     }
   }
-  const classees = [...notes.values()].sort((a, b) => b.note - a.note);
+  // À note égale, la plus grande d'abord : une société qui a un site est rarement la plus petite de ses homonymes.
+  const taille = (s: Societe) => Number(s.trancheEffectif) || 0;
+  const classees = [...notes.values()].sort((a, b) => b.note - a.note || taille(b.societe) - taille(a.societe));
   const [premiere, seconde] = classees;
   const sure = premiere && premiere.note >= 4 && (!seconde || seconde.note < premiere.note) ? premiere.societe : undefined;
   return { sure, propositions: classees.filter((c) => c.note >= 2).slice(0, 3).map((c) => c.societe) };
