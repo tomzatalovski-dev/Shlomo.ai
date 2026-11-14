@@ -1,8 +1,8 @@
 import { chercherParActivite, compterMetier } from "./registre";
-import type { CandidatMasque, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
+import type { CandidatMasque, Metier, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
 
 /**
- * Premier passage, sans IA : les sociétés du même métier, plus grandes que le vendeur,
+ * Recherche sans IA : les sociétés des activités retenues, plus grandes que le vendeur,
  * d'abord dans son département, puis dans sa région, puis en France.
  * Tout ce qui est affiché vient du registre. Rien n'est supposé.
  */
@@ -16,11 +16,12 @@ const MEDIANE: Record<string, number> = {
   "31": 225, "32": 375, "41": 750, "42": 1500, "51": 3500, "52": 7500, "53": 15000,
 };
 
-const LIBELLE_PROFIL: Record<ProfilRepreneur, string> = {
-  departement: "Même code d'activité, votre département",
-  region: "Même code d'activité, votre région",
-  national: "Même code d'activité, ailleurs en France",
-};
+const LIEU: Record<ProfilRepreneur, string> = { departement: "votre département", region: "votre région", national: "ailleurs en France" };
+
+/** Libellé d'un repreneur : son lien avec le métier du vendeur, puis sa zone. */
+export function libelleProfil(profil: ProfilRepreneur, metier?: Metier): string {
+  return `${metier?.lien === "voisin" ? "Activité voisine" : "Même activité"}, ${LIEU[profil]}`;
+}
 
 const ZONE: Record<ProfilRepreneur, string> = {
   departement: "Dans votre département",
@@ -42,30 +43,45 @@ function rapportDeTaille(vendeur: Societe, candidat: Societe): number | undefine
   return c / v;
 }
 
-/** Note un candidat et écrit ses raisons, à partir des seuls faits du registre. */
-export function noter(vendeur: Societe, candidat: Societe, profil: ProfilRepreneur): Repreneur {
-  let score = profil === "departement" ? 62 : profil === "region" ? 56 : 50;
+const pourcent = (x: number) => String(Math.round(x * 10) / 10).replace(".", ",");
+
+/**
+ * Note un candidat et écrit ses raisons, à partir des seuls faits du registre.
+ * Cinq critères : lien avec le métier, proximité, taille, santé des comptes, ancienneté et implantation.
+ */
+export function noter(vendeur: Societe, candidat: Societe, profil: ProfilRepreneur, metier?: Metier): Repreneur {
+  const voisin = metier?.lien === "voisin";
+  let score = (voisin ? 42 : 48) + (profil === "departement" ? 10 : profil === "region" ? 6 : 2);
   const raisons: string[] = [];
+  if (voisin) raisons.push(metier?.libelle ? `Activité voisine de la vôtre : ${metier.libelle}` : "Activité voisine de la vôtre");
 
   const rapport = rapportDeTaille(vendeur, candidat);
   if (rapport !== undefined) {
     const fois = rapport >= 10 ? Math.round(rapport / 5) * 5 : Math.round(rapport);
     raisons.push(fois >= 2 ? `Environ ${fois} fois votre effectif` : "Un peu plus grande que vous");
-    if (rapport >= 2 && rapport <= 12) score += 14;
-    else if (rapport > 12 && rapport <= 60) score += 8;
+    // Le bon repreneur est assez grand pour absorber le vendeur, pas au point de ne pas le voir.
+    if (rapport >= 3 && rapport <= 10) score += 14;
+    else if (rapport >= 2 && rapport < 3) score += 10;
+    else if (rapport > 10 && rapport <= 30) score += 9;
+    else if (rapport > 30 && rapport <= 100) score += 5;
     else score += 3;
   } else {
     raisons.push("Plus grande que vous");
   }
 
-  const dernier = candidat.finances.at(-1);
+  const comptes = candidat.finances.filter((f) => f.chiffreAffaires !== undefined || f.resultat !== undefined);
+  const dernier = comptes.at(-1);
   if (dernier?.resultat !== undefined) {
-    if (dernier.resultat > 0) {
-      score += 10;
-      raisons.push(`Résultat positif publié en ${dernier.annee}`);
-    } else {
+    const marge = dernier.chiffreAffaires && dernier.chiffreAffaires > 0 ? dernier.resultat / dernier.chiffreAffaires : undefined;
+    if (dernier.resultat <= 0) {
       score -= 8;
       raisons.push(`Résultat négatif publié en ${dernier.annee}`);
+    } else if (marge !== undefined) {
+      score += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
+      raisons.push(`Résultat positif en ${dernier.annee}, soit ${pourcent(marge * 100)} % du chiffre d'affaires`);
+    } else {
+      score += 6;
+      raisons.push(`Résultat positif publié en ${dernier.annee}`);
     }
   }
 
@@ -75,12 +91,30 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     raisons.push("Chiffre d'affaires au moins trois fois supérieur au vôtre");
   }
 
-  if (candidat.anneeCreation && new Date().getFullYear() - candidat.anneeCreation >= 10) {
-    score += 3;
-    raisons.push("Installée depuis plus de dix ans");
+  const ventes = comptes.filter((f) => f.chiffreAffaires && f.chiffreAffaires > 0);
+  if (ventes.length >= 2) {
+    const evolution = ventes.at(-1)!.chiffreAffaires! / ventes[0].chiffreAffaires! - 1;
+    if (evolution >= 0.1) {
+      score += 5;
+      raisons.push(`Chiffre d'affaires en hausse de ${Math.round(evolution * 100)} % depuis ${ventes[0].annee}`);
+    } else if (evolution <= -0.1) {
+      score -= 3;
+      raisons.push(`Chiffre d'affaires en baisse de ${Math.round(-evolution * 100)} % depuis ${ventes[0].annee}`);
+    }
   }
 
-  return { societe: candidat, profil, score: Math.max(1, Math.min(score, 97)), raisons };
+  if (candidat.etablissements && candidat.etablissements >= 2) {
+    score += candidat.etablissements >= 5 ? 5 : 3;
+    raisons.push(`${candidat.etablissements} établissements : elle sait gérer plusieurs sites`);
+  }
+
+  const age = candidat.anneeCreation ? new Date().getFullYear() - candidat.anneeCreation : 0;
+  if (age >= 10) {
+    score += Math.min(5, 2 + Math.floor(age / 10));
+    raisons.push(age >= 25 ? `Installée depuis ${age} ans` : "Installée depuis plus de dix ans");
+  }
+
+  return { societe: candidat, profil, metier, score: Math.max(1, Math.min(score, 97)), raisons };
 }
 
 /** Écarte ce qui ne peut pas être un repreneur, ou qu'on n'a pas le droit de solliciter. */
@@ -93,37 +127,40 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
   );
 }
 
-export type Passage = { profil: ProfilRepreneur; libelle: string; trouvees: number; echec?: boolean; candidats: CandidatMasque[] };
+export type Passage = { profil: ProfilRepreneur; libelle: string; metier?: Metier; trouvees: number; echec?: boolean; candidats: CandidatMasque[] };
 
 /** Dit, sans la nommer, ce qu'on a fait d'une société examinée. */
-export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur): CandidatMasque {
+export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, metier?: Metier): CandidatMasque {
   const fiche = { effectif: s.effectif, anneeCreation: s.anneeCreation };
   if (!s.active) return { ...fiche, retenu: false, motif: "Société cessée" };
   if (s.entrepreneurIndividuel) return { ...fiche, retenu: false, motif: "Entrepreneur individuel, pas une société" };
   if (s.refuseProspection) return { ...fiche, retenu: false, motif: "Elle a demandé à ne pas être sollicitée" };
-  const note = noter(vendeur, s, profil);
+  const note = noter(vendeur, s, profil, metier);
   return { ...fiche, retenu: true, score: note.score, raison: note.raisons[0], details: note.raisons.slice(1) };
 }
 
 /** Classe les candidats de plusieurs passages, sans doublon, du meilleur au moins bon. */
-export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; societes: Societe[] }[], maximum = 10): Repreneur[] {
+export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10): Repreneur[] {
   const vus = new Set<string>();
   const retenus: Repreneur[] = [];
   for (const lot of lots) {
     for (const s of lot.societes) {
       if (vus.has(s.siren) || !retenable(vendeur, s)) continue;
       vus.add(s.siren);
-      retenus.push(noter(vendeur, s, lot.profil));
+      retenus.push(noter(vendeur, s, lot.profil, lot.metier));
     }
   }
-  return retenus.sort((a, b) => b.score - a.score).slice(0, maximum);
+  // À note égale : le plus gros chiffre d'affaires publié, puis le plus grand effectif.
+  const ventes = (r: Repreneur) => r.societe.finances.at(-1)?.chiffreAffaires ?? 0;
+  const taille = (r: Repreneur) => TRANCHES.indexOf(r.societe.trancheEffectif ?? "NN");
+  return retenus.sort((a, b) => b.score - a.score || ventes(b) - ventes(a) || taille(b) - taille(a)).slice(0, maximum);
 }
 
 /** Retire tout ce qui permettrait d'identifier le repreneur avant la signature du mandat. */
 export function masquer(repreneurs: Repreneur[]): RepreneurMasque[] {
   return repreneurs.map((r, i) => ({
     rang: i + 1,
-    profil: LIBELLE_PROFIL[r.profil],
+    profil: libelleProfil(r.profil, r.metier),
     zone: ZONE[r.profil],
     effectif: r.societe.effectif,
     score: r.score,
@@ -140,58 +177,69 @@ export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
     siren: r.societe.siren,
     ville: r.societe.ville,
     effectif: r.societe.effectif,
-    profil: LIBELLE_PROFIL[r.profil],
+    profil: libelleProfil(r.profil, r.metier),
     score: r.score,
     raisons: r.raisons,
   }));
 }
 
-/** Interroge le registre en trois passages. `suivre` reçoit le compte de chaque passage. */
+/** Nombre d'appels au registre qu'une recherche s'autorise. */
+const APPELS_MAX = 9;
+
+/**
+ * Interroge le registre, activité par activité : département, région, puis France pour le métier du vendeur ;
+ * région puis France pour les activités voisines. `suivre` reçoit le compte de chaque passage.
+ */
 export async function trouverRepreneurs(
   vendeur: Societe,
   suivre: (p: Passage) => void = () => {},
   metier: (total: number) => void = () => {},
+  metiers: Metier[] = vendeur.codeActivite ? [{ code: vendeur.codeActivite, libelle: "", lien: "meme" }] : [],
 ): Promise<{ repreneurs: Repreneur[]; examinees: number }> {
-  if (!vendeur.codeActivite) return { repreneurs: [], examinees: 0 };
+  if (metiers.length === 0) return { repreneurs: [], examinees: 0 };
 
-  // Le nombre total de sociétés du métier donne l'échelle du tri. S'il manque, la recherche continue.
+  // Le nombre total de sociétés de ces activités donne l'échelle du tri. S'il manque, la recherche continue.
   try {
-    const total = await compterMetier(vendeur.codeActivite);
+    const totaux = await Promise.all(metiers.map((m) => compterMetier(m.code).catch(() => undefined)));
+    const total = totaux.reduce<number>((somme, t) => somme + (t ?? 0), 0);
     if (total) metier(total);
   } catch {}
   const dejaVues = new Set<string>([vendeur.siren]);
 
   const tranches = tranchesAuDessus(vendeur.trancheEffectif);
   const grandes = tranches.filter((t) => TRANCHES.indexOf(t) >= TRANCHES.indexOf("21"));
-  const lots: { profil: ProfilRepreneur; societes: Societe[] }[] = [];
+  const lots: { profil: ProfilRepreneur; metier: Metier; societes: Societe[] }[] = [];
   let examinees = 0;
   let tentes = 0;
   let derniereErreur: unknown;
 
-  const passage = async (profil: ProfilRepreneur, zone: { departement?: string; region?: string }, t: string[]) => {
-    if (t.length === 0) return;
+  const passage = async (m: Metier, profil: ProfilRepreneur, zone: { departement?: string; region?: string }, t: string[]) => {
+    if (t.length === 0 || tentes >= APPELS_MAX) return;
     tentes++;
+    const libelle = libelleProfil(profil, m);
     try {
-      const societes = await chercherParActivite({ codeActivite: vendeur.codeActivite!, tranches: t, ...zone });
+      const societes = await chercherParActivite({ codeActivite: m.code, tranches: t, ...zone });
       examinees += societes.length;
-      lots.push({ profil, societes });
+      lots.push({ profil, metier: m, societes });
       const candidats: CandidatMasque[] = [];
       for (const s of societes) {
         if (dejaVues.has(s.siren)) continue;
         dejaVues.add(s.siren);
-        candidats.push(examiner(vendeur, s, profil));
+        candidats.push(examiner(vendeur, s, profil, m));
       }
-      suivre({ profil, libelle: LIBELLE_PROFIL[profil], trouvees: societes.length, candidats });
+      suivre({ profil, libelle, metier: m, trouvees: societes.length, candidats });
     } catch (e) {
       // Un résultat partiel vaut mieux qu'une erreur : on continue avec les autres passages.
       derniereErreur = e;
-      suivre({ profil, libelle: LIBELLE_PROFIL[profil], trouvees: 0, echec: true, candidats: [] });
+      suivre({ profil, libelle, metier: m, trouvees: 0, echec: true, candidats: [] });
     }
   };
 
-  if (vendeur.departement) await passage("departement", { departement: vendeur.departement }, tranches);
-  if (vendeur.region) await passage("region", { region: vendeur.region }, tranches);
-  await passage("national", {}, grandes.length ? grandes : tranches);
+  for (const m of metiers) {
+    if (m.lien === "meme" && vendeur.departement) await passage(m, "departement", { departement: vendeur.departement }, tranches);
+    if (vendeur.region) await passage(m, "region", { region: vendeur.region }, tranches);
+    await passage(m, "national", {}, grandes.length ? grandes : tranches);
+  }
 
   if (tentes > 0 && lots.length === 0) throw derniereErreur;
 

@@ -24,8 +24,26 @@ describe("repreneurs", () => {
     const voisin = noter(base, soc("200000007", { finances: [{ annee: 2023, chiffreAffaires: 6_000_000, resultat: 300_000 }] }), "departement");
     const lointain = noter(base, soc("300000005", { trancheEffectif: "42" }), "national");
     expect(voisin.score).toBeGreaterThan(lointain.score);
-    expect(voisin.raisons).toContain("Résultat positif publié en 2023");
+    expect(voisin.raisons).toContain("Résultat positif en 2023, soit 5 % du chiffre d'affaires");
     expect(voisin.raisons).toContain("Chiffre d'affaires au moins trois fois supérieur au vôtre");
+  });
+
+  it("départage deux sociétés de même taille par leurs comptes, leur croissance et leurs sites", () => {
+    const plate = noter(base, soc("200000007"), "departement");
+    const solide = noter(base, soc("300000005", { etablissements: 3, anneeCreation: 1990, finances: [{ annee: 2021, chiffreAffaires: 4_000_000, resultat: 200_000 }, { annee: 2023, chiffreAffaires: 6_000_000, resultat: 600_000 }] }), "departement");
+    const fragile = noter(base, soc("400000003", { finances: [{ annee: 2023, chiffreAffaires: 3_000_000, resultat: -50_000 }] }), "departement");
+    expect(solide.score).toBeGreaterThan(plate.score);
+    expect(plate.score).toBeGreaterThan(fragile.score);
+    expect(solide.raisons).toContain("Chiffre d'affaires en hausse de 50 % depuis 2021");
+    expect(solide.raisons).toContain("3 établissements : elle sait gérer plusieurs sites");
+  });
+
+  it("note une activité voisine un peu moins bien, et le dit en premier", () => {
+    const meme = noter(base, soc("200000007"), "region", { code: "43.32A", libelle: "Menuiserie", lien: "meme" });
+    const voisine = noter(base, soc("300000005"), "region", { code: "43.91B", libelle: "Couverture", lien: "voisin" });
+    expect(meme.score).toBeGreaterThan(voisine.score);
+    expect(voisine.raisons[0]).toBe("Activité voisine de la vôtre : Couverture");
+    expect(masquer([voisine])[0].profil).toBe("Activité voisine, votre région");
   });
 
   it("classe sans doublon et limite à dix", () => {

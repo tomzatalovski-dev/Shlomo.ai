@@ -1,6 +1,7 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
+import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
 
@@ -41,21 +42,25 @@ export async function GET(requete: Request) {
         }
         dire({ type: "vendeur", nom: vendeur.nom, siren: vendeur.siren });
 
-        if (!vendeur.codeActivite) {
+        const metiers = lireMetiers(parametres.get("m"), vendeur.codeActivite);
+        if (metiers.length === 0) {
           dire({ type: "erreur", message: "Le registre n'indique pas votre code d'activité. Je ne peux pas chercher de sociétés du même métier." });
           return;
         }
-        dire({ type: "journal", texte: `Votre métier au registre : code ${vendeur.codeActivite}`, etat: "ok" });
+        dire({ type: "metiers", liste: metiers });
+        for (const m of metiers) {
+          dire({ type: "journal", texte: `${m.lien === "meme" ? "Votre activité" : "Activité voisine"} : ${m.libelle ? `${m.libelle} (${m.code})` : `code ${m.code}`}`, etat: "ok" });
+        }
 
-        dire({ type: "encours", texte: "Recherche des sociétés du même métier, plus grandes que vous" });
+        dire({ type: "encours", texte: metiers.length > 1 ? "Recherche des sociétés de ces activités, plus grandes que vous" : "Recherche des sociétés du même métier, plus grandes que vous" });
         const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) => {
           dire({ type: "passage", profil: p.profil, libelle: p.libelle, candidats: p.candidats, echec: p.echec });
           dire(p.echec ? { type: "journal", texte: `Le registre n'a pas répondu ${PASSAGE[p.profil]} : je continue sans`, etat: "alerte" } : {
             type: "journal",
-            texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}`,
+            texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}${p.metier?.lien === "voisin" ? `, activité voisine${p.metier.libelle ? ` (${p.metier.libelle})` : ""}` : ""}`,
             etat: p.trouvees ? "ok" : "alerte",
           });
-        }, (total) => dire({ type: "metier", total }));
+        }, (total) => dire({ type: "metier", total }), metiers);
 
         // Seule la version masquée quitte le serveur ici : ni nom, ni SIREN, ni ville.
         // Les noms ne sont remis que par la page de suivi, après un mandat enregistré.

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Evenement, ResumeIA, Societe } from "@/lib/types";
+import type { Evenement, Metier, Proposition, ResumeIA, Societe } from "@/lib/types";
 import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/scene";
 
 type Ligne = { texte: string; etat: "ok" | "alerte" };
@@ -25,6 +25,9 @@ function Dossier() {
   const [points, setPoints] = useState(0);
   const [description, setDescription] = useState("");
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
+  const [propositions, setPropositions] = useState<Proposition[]>([]);
+  const [metier, setMetier] = useState<{ libelle?: string; liste: (Metier & { total?: number })[] } | null>(null);
+  const [activites, setActivites] = useState(0);
   const [erreur, setErreur] = useState<string | null>(null);
   const [fini, setFini] = useState(false);
   const [valide, setValide] = useState(false);
@@ -66,7 +69,14 @@ function Dossier() {
         await attendre(550);
         setPoints(i);
       }
+    } else if (e.type === "metiers") {
+      setMetier(e);
+      for (let i = 1; i <= e.liste.length; i++) {
+        await attendre(600);
+        setActivites(i);
+      }
     } else if (e.type === "besoin_siren") {
+      setPropositions(e.propositions ?? []);
       setBesoinSiren(e.message);
       setEncours(null);
     } else if (e.type === "erreur") {
@@ -105,7 +115,7 @@ function Dossier() {
   const titre = erreur
     ? "La recherche s'est arrêtée."
     : besoinSiren
-      ? "Il me manque votre numéro SIREN."
+      ? propositions.length ? "Est-ce bien votre société ?" : "Il me manque votre numéro SIREN."
       : valide
         ? "Fiche validée. Je cherche vos repreneurs."
         : fini
@@ -165,6 +175,16 @@ function Dossier() {
           {besoinSiren && (
             <div className="carte">
               <p className="message">{besoinSiren}</p>
+              {propositions.length > 0 && (
+                <div className="liste">
+                  {propositions.map((p) => (
+                    <a key={p.siren} className="ligne choix" href={`/dossier?q=${p.siren}${siteAGarder ? `&site=${encodeURIComponent(siteAGarder)}` : ""}`}>
+                      <span><b>{p.nom}</b><small>{[p.codePostal, p.ville, `SIREN ${p.siren}`].filter(Boolean).join(" · ")}</small></span>
+                      <span className="lien">C'est elle</span>
+                    </a>
+                  ))}
+                </div>
+              )}
               <form className="rappel" action="/dossier" method="get">
                 <label className="cache" htmlFor="siren">Numéro SIREN</label>
                 <input id="siren" name="q" inputMode="numeric" placeholder="Numéro SIREN, 9 chiffres" required />
@@ -235,6 +255,22 @@ function Dossier() {
                 </div>
               )}
 
+              {metier && activites > 0 && (
+                <div>
+                  <p className="source" style={{ marginBottom: 10 }}>
+                    Où je chercherai vos repreneurs{metier.libelle ? ` · votre métier tel que je le comprends : ${metier.libelle}` : ""}
+                  </p>
+                  <ul className="activites">
+                    {metier.liste.slice(0, activites).map((m) => (
+                      <li key={m.code} className="apparait">
+                        <b>{m.libelle || `Code ${m.code}`}</b>
+                        <small>{[m.lien === "meme" ? "Votre activité" : "Activité voisine", `code ${m.code}`, m.total ? `${m.total.toLocaleString("fr-FR")} sociétés en France` : null].filter(Boolean).join(" · ")}</small>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {fini && societe.dirigeants.length > 0 && (
                 <p className="source apparait">
                   Dirigeants au registre : {societe.dirigeants.slice(0, 4).map((d) => (d.qualite ? `${d.nom} (${d.qualite})` : d.nom)).join(", ")}
@@ -248,7 +284,8 @@ function Dossier() {
                     type="button"
                     onClick={() => {
                       setValide(true);
-                      window.location.assign(`/repreneurs?siren=${societe.siren}`);
+                      const m = metier?.liste.map(({ code, libelle, lien }) => ({ code, libelle, lien }));
+                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}`);
                     }}
                   >
                     Tout est juste, je valide

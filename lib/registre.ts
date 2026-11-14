@@ -81,6 +81,7 @@ export function mapperSociete(r: Brut): Societe {
     trancheEffectif: r.tranche_effectif_salarie ? String(r.tranche_effectif_salarie) : undefined,
     entrepreneurIndividuel: forme === "1000",
     refuseProspection: r.opposition_diffusion_commerciale === true || r.statut_diffusion === "P",
+    etablissements: typeof r.nombre_etablissements_ouverts === "number" ? r.nombre_etablissements_ouverts : undefined,
     dirigeants,
     finances,
     source: "API Recherche d'entreprises (annuaire-entreprises.data.gouv.fr)",
@@ -153,4 +154,10 @@ export async function chercherParActivite(filtre: FiltreActivite): Promise<Socie
 export async function compterMetier(codeActivite: string): Promise<number | undefined> {
   const reponse = await appeler({ activite_principale: codeActivite, etat_administratif: "A", per_page: "1", minimal: "true" });
   return reponse?.total;
+}
+
+/** Cherche des sociétés actives par leur nom. Sert à retrouver le vendeur quand son site n'affiche pas de SIREN. */
+export async function chercherParNom(nom: string): Promise<Societe[]> {
+  const reponse = await appeler({ q: nom, etat_administratif: "A", per_page: "10" });
+  return (reponse?.resultats ?? []).map(mapperSociete);
 }

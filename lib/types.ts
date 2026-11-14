@@ -27,10 +27,18 @@ export type Societe = {
   entrepreneurIndividuel?: boolean;
   /** La société a demandé que ses données ne servent pas à la prospection : on ne la propose jamais. */
   refuseProspection?: boolean;
+  /** Nombre d'établissements ouverts, quand le registre le donne. */
+  etablissements?: number;
   dirigeants: Dirigeant[];
   finances: ExerciceFinancier[];
   source: string;
 };
+
+/** Une activité où chercher des repreneurs : celle du vendeur, ou une activité voisine. */
+export type Metier = { code: string; libelle: string; lien: "meme" | "voisin" };
+
+/** Une société proposée au vendeur quand le site ne suffit pas à l'identifier avec certitude. */
+export type Proposition = { siren: string; nom: string; ville?: string; codePostal?: string };
 
 export type ProfilRepreneur = "departement" | "region" | "national";
 
@@ -38,6 +46,7 @@ export type ProfilRepreneur = "departement" | "region" | "national";
 export type Repreneur = {
   societe: Societe;
   profil: ProfilRepreneur;
+  metier?: Metier;
   score: number;
   raisons: string[];
 };
@@ -81,6 +90,7 @@ export type EvenementRepreneurs =
   | { type: "encours"; texte: string }
   | { type: "vendeur"; nom: string; siren: string }
   | { type: "metier"; total: number }
+  | { type: "metiers"; liste: Metier[] }
   | { type: "passage"; profil: ProfilRepreneur; libelle: string; candidats: CandidatMasque[]; echec?: boolean }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
@@ -97,7 +107,14 @@ export type LectureSite = {
   texte: string;
 };
 
-export type ResumeIA = { description: string; pointsForts: string[] };
+export type ResumeIA = {
+  description: string;
+  pointsForts: string[];
+  /** Le métier réel, en quelques mots, tel que le site le montre. */
+  metier?: string;
+  /** Codes d'activité proposés par l'IA. À vérifier au registre avant tout usage. */
+  codes?: Metier[];
+};
 
 /** Événements envoyés au navigateur pendant l'analyse. */
 export type Evenement =
@@ -106,7 +123,8 @@ export type Evenement =
   | { type: "societe"; societe: Societe }
   | { type: "site"; domaine: string; titre?: string; description?: string }
   | { type: "resume"; resume: ResumeIA }
-  | { type: "besoin_siren"; message: string }
+  | { type: "besoin_siren"; message: string; propositions?: Proposition[] }
+  | { type: "metiers"; libelle?: string; liste: (Metier & { total?: number })[] }
   | { type: "erreur"; message: string }
   | { type: "fin" };
 

@@ -13,6 +13,8 @@ const nombre = (n: number) => (n >= 10_000 ? "10 000 +" : n.toLocaleString("fr-F
 function Repreneurs() {
   const parametres = useSearchParams();
   const siren = parametres.get("siren") ?? "";
+  const metiers = parametres.get("m") ?? "";
+  const suite = metiers ? `&m=${encodeURIComponent(metiers)}` : "";
   const signe = parametres.get("signe") === "1";
   const par = parametres.get("par") ?? "";
   // Après la signature, la recherche a déjà été montrée : on la rejoue vite.
@@ -75,7 +77,7 @@ function Repreneurs() {
   });
 
   useEffect(() => {
-    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${signe ? "&mandat=test" : ""}`);
+    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${suite}${signe ? "&mandat=test" : ""}`);
     let termine = false;
     flux.onmessage = (m) => {
       const e = JSON.parse(m.data) as EvenementRepreneurs;
@@ -90,7 +92,7 @@ function Repreneurs() {
       if (!termine) jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page pour relancer la recherche." });
     };
     return () => flux.close();
-  }, [siren, signe, jouer]);
+  }, [siren, suite, signe, jouer]);
 
   const premiers = liste?.slice(0, 3) ?? [];
   const suivants = liste?.slice(3) ?? [];
@@ -146,12 +148,12 @@ function Repreneurs() {
             )}
             {liste !== null && n > 0 && (
               <p className="sous">
-                Premier passage sur le registre : des sociétés de votre code d'activité, plus grandes que vous. Ce code ne décrit pas toujours votre vrai métier : le classement sera affiné par l'étude de votre marché. Les noms s'affichent après la signature du mandat.
+                {metiers ? "Des sociétés de votre activité et d'activités voisines, plus grandes que vous, notées sur leur taille, leurs comptes publiés et leur proximité." : "Des sociétés de votre code d'activité, plus grandes que vous. Ce code ne décrit pas toujours votre vrai métier : donnez l'adresse de votre site à l'étape 1 pour que je cherche aussi parmi les activités voisines."} Les noms s'affichent après la signature du mandat.
               </p>
             )}
             {liste !== null && n === 0 && !erreur && !aDesNoms && (
               <p className="sous">
-                Aucune société plus grande que vous n'apparaît sous votre code d'activité. L'étude de votre marché, à venir, cherchera aussi parmi les métiers voisins, les fournisseurs et les repreneurs individuels.
+                {metiers ? "Aucune société plus grande que vous n'apparaît dans ces activités." : "Aucune société plus grande que vous n'apparaît sous votre code d'activité. Donnez l'adresse de votre site à l'étape 1 : je chercherai aussi parmi les activités voisines."}
               </p>
             )}
           </div>
@@ -167,7 +169,7 @@ function Repreneurs() {
 
           {!erreur && (
             <div className="entonnoir">
-              <div className="chiffre"><span>Sociétés de votre métier en France</span><b>{metier === null ? "…" : <Compteur valeur={metier} duree={1100} format={nombre} />}</b></div>
+              <div className="chiffre"><span>{metiers ? "Sociétés de ces activités en France" : "Sociétés de votre métier en France"}</span><b>{metier === null ? "…" : <Compteur valeur={metier} duree={1100} format={nombre} />}</b></div>
               <div className="chiffre"><span>Examinées de près</span><b>{compte.vues}</b></div>
               <div className="chiffre"><span>Écartées</span><b>{compte.non}</b></div>
               <div className="chiffre cle"><span>Retenues</span><b>{compte.oui}</b></div>
@@ -254,7 +256,7 @@ function Repreneurs() {
                 <div className="grand">Signez le mandat pour voir les noms et lancer l'approche.</div>
                 <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
               </div>
-              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}`}>Signer le mandat</a>
+              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${suite}`}>Signer le mandat</a>
             </div>
           )}
         </main>

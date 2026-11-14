@@ -1,8 +1,10 @@
 import { analyserSaisie } from "@/lib/saisie";
-import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
+import { chercherParNom, chercherSociete, compterMetier, RegistreIndisponible } from "@/lib/registre";
 import { lireSite } from "@/lib/site";
-import { iaActive, resumer } from "@/lib/ia";
-import type { Evenement, LectureSite } from "@/lib/types";
+import { iaActive, lireNom, resumer } from "@/lib/ia";
+import { choisirSociete, nomsCandidats } from "@/lib/identite";
+import { composerMetiers } from "@/lib/metiers";
+import type { Evenement, LectureSite, Societe } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,11 +57,30 @@ export async function GET(requete: Request) {
           dire({ type: "site", domaine: site.domaine, titre: site.titre, description: site.description });
           siren = site.sirenTrouve;
           if (!siren) {
-            dire({ type: "journal", texte: "Numéro SIREN introuvable sur le site", etat: "alerte" });
-            dire({ type: "besoin_siren", message: "Votre site n'affiche pas de numéro SIREN. Saisissez-le pour que je retrouve votre société au registre." });
-            return;
+            // Pas de SIREN sur le site : on cherche la société au registre par son nom.
+            dire({ type: "journal", texte: "Pas de numéro SIREN sur le site", etat: "alerte" });
+            dire({ type: "encours", texte: "Recherche de votre société au registre, par son nom" });
+            const nomLu = iaActive() ? await lireNom(site.texte).catch(() => undefined) : undefined;
+            const fiches: { candidat: string; societes: Societe[] }[] = [];
+            for (const candidat of nomsCandidats(site.domaine, site.titre, nomLu)) {
+              fiches.push({ candidat, societes: await chercherParNom(candidat).catch(() => []) });
+            }
+            const { sure, propositions } = choisirSociete(fiches, site.texte);
+            if (!sure) {
+              dire({
+                type: "besoin_siren",
+                message: propositions.length
+                  ? "Votre site n'affiche pas de numéro SIREN. Est-ce l'une de ces sociétés ? Sinon, saisissez votre SIREN."
+                  : "Votre site n'affiche pas de numéro SIREN et je ne retrouve pas votre société par son nom. Saisissez votre SIREN.",
+                propositions: propositions.map((p) => ({ siren: p.siren, nom: p.nom, ville: p.ville, codePostal: p.codePostal })),
+              });
+              return;
+            }
+            siren = sure.siren;
+            dire({ type: "journal", texte: `Société reconnue au registre : ${sure.nom}${sure.ville ? `, ${sure.ville}` : ""}`, etat: "ok" });
+          } else {
+            dire({ type: "journal", texte: `SIREN ${siren} trouvé dans les mentions légales`, etat: "ok" });
           }
-          dire({ type: "journal", texte: `SIREN ${siren} trouvé dans les mentions légales`, etat: "ok" });
         }
 
         // Le SIREN a été saisi après coup : on relit le site donné au départ pour rédiger la fiche.
@@ -105,6 +126,16 @@ export async function GET(requete: Request) {
             if (resume) {
               dire({ type: "resume", resume });
               dire({ type: "journal", texte: "Fiche rédigée à partir du site", etat: "ok" });
+
+              // Les codes proposés par l'IA ne servent que si le registre les connaît.
+              const proposes = composerMetiers(societe.codeActivite, resume.codes ?? []);
+              const totaux = await Promise.all(proposes.map((m) => compterMetier(m.code).catch(() => undefined)));
+              const liste = proposes.map((m, i) => ({ ...m, total: totaux[i] })).filter((m) => (m.total ?? 0) > 0 || m.code === societe.codeActivite);
+              if (liste.length) {
+                dire({ type: "encours", texte: "Recherche des activités où trouver vos repreneurs" });
+                dire({ type: "metiers", libelle: resume.metier, liste });
+                dire({ type: "journal", texte: `${liste.length} activité${liste.length > 1 ? "s" : ""} où chercher vos repreneurs`, etat: "ok" });
+              }
             } else {
               dire({ type: "journal", texte: "Le site ne permet pas de rédiger une description", etat: "alerte" });
             }

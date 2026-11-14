@@ -2,6 +2,7 @@ import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { reveler, trouverRepreneurs } from "@/lib/repreneurs";
 import { BaseIndisponible, signerMandat } from "@/lib/base";
+import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, tropDappels } from "@/lib/limite";
 
 export const runtime = "nodejs";
@@ -17,7 +18,7 @@ const refus = (message: string, statut = 400) => Response.json({ erreur: message
 export async function POST(requete: Request) {
   if (tropDappels(`mandat:${adresseDe(requete)}`, 4)) return refus("Trop de signatures en peu de temps. Réessayez dans une minute.", 429);
 
-  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; signataire?: unknown; autorisation?: unknown } | null;
+  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown } | null;
   const saisie = analyserSaisie(typeof corps?.siren === "string" ? corps.siren : "");
   const signataire = typeof corps?.signataire === "string" ? corps.signataire.trim().slice(0, 120) : "";
   if (saisie.type !== "siren") return refus("Numéro SIREN manquant ou invalide.");
@@ -27,7 +28,8 @@ export async function POST(requete: Request) {
     const vendeur = await chercherSociete(saisie.siren);
     if (!vendeur) return refus("Le registre ne connaît pas cette société.", 404);
 
-    const { repreneurs } = await trouverRepreneurs(vendeur);
+    const metiers = lireMetiers(typeof corps?.metiers === "string" ? corps.metiers : null, vendeur.codeActivite);
+    const { repreneurs } = await trouverRepreneurs(vendeur, undefined, undefined, metiers);
     if (repreneurs.length === 0) return refus("Aucun repreneur à présenter pour l'instant : le mandat ne peut pas être signé.", 409);
 
     const jeton = await signerMandat({

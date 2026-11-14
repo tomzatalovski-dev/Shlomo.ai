@@ -4,7 +4,9 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 function Mandat() {
-  const siren = useSearchParams().get("siren") ?? "";
+  const parametres = useSearchParams();
+  const siren = parametres.get("siren") ?? "";
+  const metiers = parametres.get("m") ?? "";
   const [nom, setNom] = useState("");
   const [accord, setAccord] = useState(false);
   const [autorisation, setAutorisation] = useState(true);
@@ -18,7 +20,7 @@ function Mandat() {
     const rep = await fetch("/api/mandat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siren, signataire: nom.trim(), autorisation }),
+      body: JSON.stringify({ siren, signataire: nom.trim(), autorisation, metiers }),
     }).catch(() => null);
     const json = rep ? ((await rep.json().catch(() => null)) as { jeton?: string; erreur?: string } | null) : null;
     if (rep?.ok && json?.jeton) window.location.assign(`/${autorisation ? "atelier" : "suivi"}?d=${json.jeton}`);
@@ -82,7 +84,7 @@ function Mandat() {
               >
                 {attente ? "Enregistrement…" : "Je signe"}
               </button>
-              <a className="lien" href={`/repreneurs?siren=${encodeURIComponent(siren)}`}>Revenir à la liste</a>
+              <a className="lien" href={`/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}`}>Revenir à la liste</a>
             </div>
           </div>
         </main>

@@ -98,3 +98,10 @@ Après la signature, `/atelier?d=<jeton>` montre trois agents qui préparent les
 - Une société qui s'est opposée au démarchage au registre est laissée de côté.
 - Rien n'est envoyé par le site. L'équipe relit, envoie, puis change `presentations.statut` dans Supabase ; la page de suivi se met à jour.
 - Limite connue : toute personne qui détient le jeton peut enregistrer une approche (une seule fois par repreneur). La relecture avant envoi couvre ce risque.
+
+## Vrai métier, activités voisines et notes
+
+- Quand le site est donné, l'IA propose, avec la fiche, le métier réel et quatre codes d'activité au plus (`lib/ia.ts`). Chaque code est vérifié au registre avant usage ; un code inconnu est écarté (`lib/metiers.ts`).
+- La recherche porte sur ces activités : département, région, France pour le métier du vendeur ; région, France pour les voisines. Neuf appels au registre au plus.
+- La note (`noter`, `lib/repreneurs.ts`) repose sur cinq critères du registre : lien avec le métier, proximité, taille, comptes publiés (marge, évolution du chiffre d'affaires), ancienneté et nombre d'établissements.
+- Sans SIREN sur le site, la société est cherchée au registre par son nom (`lib/identite.ts`). Elle n'est retenue d'office que si le nom est exact et l'adresse présente sur le site ; sinon le vendeur choisit parmi trois fiches au plus, ou saisit son SIREN.
