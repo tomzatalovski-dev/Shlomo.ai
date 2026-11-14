@@ -237,7 +237,8 @@ function Atelier() {
                         <p className="ecran-tete"><Agent n={n} /><span>{ecran?.cible ?? "en attente"}</span></p>
                         <p className="ecran-etat">{ecran?.actif && <i className="pouls" />}{ecran?.etat || "attend son premier repreneur"}</p>
                         <ul>
-                          {ecran?.traces.map((t) => (
+                          {/* La ligne la plus récente en haut : elle reste visible, les anciennes sortent par le bas. */}
+                          {ecran?.traces.slice().reverse().map((t) => (
                             <li key={t.cle} className={`trace ${t.genre}`}>
                               {t.genre === "page" ? <><b>{t.texte}</b> {t.detail}</> : t.texte}
                             </li>
