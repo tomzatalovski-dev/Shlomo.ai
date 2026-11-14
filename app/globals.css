@@ -275,3 +275,100 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .trace.relu { color: var(--vert); font-weight: 600; white-space: normal; }
 .trace.relu.corrige { color: #b4690e; }
 .chiffre .part { font-size: 12px; font-weight: 400; color: var(--gris); }
+
+/* Avant le mandat : ce que la veille dit d'un repreneur, sans le nommer */
+.indice { margin: 0; font-size: 13px; line-height: 1.4; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--trait); display: flex; align-items: center; gap: 8px; }
+.indice.rachat { border-color: var(--vert); color: var(--vert); font-weight: 600; }
+.indice.croissance { border-color: var(--vert); }
+.indice.alerte { border-color: #b4690e; color: #b4690e; }
+.indice.neutre, .indice.attente { color: var(--gris); }
+.indice .pouls { --ton: var(--gris); }
+
+/* Mandat : un document que l'on signe */
+.contrat-page.corps.seul { max-width: 820px; }
+.cles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.cles li { background: var(--carte); border: 1px solid #ebebef; border-radius: 16px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.cles b { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
+.cles span { font-size: 13px; line-height: 1.4; color: var(--gris); }
+.contrat { background: var(--carte); border: 1px solid #ebebef; border-radius: 20px; padding: 36px 40px; display: grid; gap: 28px; box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04), 0 12px 32px rgba(17, 17, 17, 0.05); }
+.contrat-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--encre); }
+.surtitre { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+.contrat .date { margin: 4px 0 0; font-size: 13px; color: var(--gris); min-height: 18px; }
+.essai { font-size: 12px; font-weight: 600; color: #b4690e; border: 1px solid #b4690e; border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
+.parties { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.parties span { display: block; font-size: 12px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.parties b { display: block; font-size: 16px; }
+.parties small { display: block; font-size: 13px; color: var(--gris); margin-top: 2px; }
+.articles { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.articles li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid #ededf0; }
+.articles .numero { font-size: 12px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.06em; padding-top: 3px; }
+.articles b { font-size: 15px; }
+.articles p { margin: 4px 0 0; font-size: 15px; line-height: 1.55; color: #33333a; }
+.options { display: grid; gap: 18px; padding: 20px; border-radius: 14px; background: #f8f8fa; }
+.signature { display: grid; gap: 18px; padding-top: 24px; border-top: 1px solid var(--encre); }
+.paraphe { border-bottom: 1.5px solid var(--contour); padding: 6px 4px 10px; display: grid; gap: 6px; transition: border-color 0.3s ease; }
+.paraphe.rempli { border-bottom-color: var(--encre); }
+.trace-signature { font-family: "Snell Roundhand", "Segoe Script", "Lucida Handwriting", "Brush Script MT", cursive; font-size: 36px; line-height: 1.2; color: var(--contour); min-height: 44px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.paraphe.rempli .trace-signature { color: #1b2a5c; }
+.paraphe small { font-size: 12px; color: var(--gris); }
+.bouton.large { min-width: 240px; }
+.voile { position: fixed; inset: 0; background: rgba(245, 245, 247, 0.92); display: grid; place-items: center; z-index: 10; animation: monte 0.3s ease both; }
+.scelle { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.scelle svg { width: 72px; height: 72px; fill: none; stroke: var(--vert); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.scelle circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: trait 0.5s ease forwards; }
+.scelle path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: trait 0.35s 0.45s ease forwards; }
+@keyframes trait { to { stroke-dashoffset: 0; } }
+.scelle b { font-size: 24px; letter-spacing: -0.02em; }
+.scelle span { color: var(--gris); }
+@media (max-width: 700px) {
+  .cles { grid-template-columns: 1fr 1fr; }
+  .contrat { padding: 24px 20px; gap: 22px; border-radius: 16px; }
+  .parties { grid-template-columns: 1fr; gap: 16px; }
+  .articles li { grid-template-columns: 1fr; gap: 4px; }
+  .trace-signature { font-size: 30px; }
+  .bouton.large { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .scelle circle, .scelle path { animation: none; stroke-dashoffset: 0; } }
+
+/* Téléphone : chaque écran se lit d'une main, sans défilement horizontal */
+@media (max-width: 700px) {
+  .hero { padding: 40px 20px 36px; gap: 22px; }
+  .sous { font-size: 17px; }
+  .resultat h1 { font-size: 28px; }
+  .etapes { gap: 6px; }
+  .etapes li { min-width: 26px; height: 26px; font-size: 12px; }
+
+  /* Les chiffres vont par deux */
+  .chiffres, .entonnoir { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .entonnoir .chiffre b { font-size: 26px; }
+  .entonnoir .chiffre.cle:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  /* Listes : le nom sur toute la largeur, puis l'état à gauche et la note à droite */
+  .ligne { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+  .ligne .quoi { grid-column: 1 / -1; }
+  .ligne .ou { font-size: 13px; }
+  .ligne .jauge { grid-column: 1 / -1; }
+  .trio .carte { padding: 22px; }
+  .carte.mandat .bouton { width: 100%; }
+
+  /* Atelier : le fil des agents est déjà dans leurs écrans, on ne le répète pas */
+  .journal .agents, .journal .agents + .promesse, .journal h2:has(+ .agents) { display: none; }
+  .ecran { height: auto; min-height: 120px; max-height: 240px; }
+
+  /* Tableau de prospection : une fiche par repreneur au lieu de colonnes */
+  .tableau-carte { padding: 4px 18px; overflow: visible; }
+  .tableau { min-width: 0; display: block; }
+  .tableau thead { display: none; }
+  .tableau tbody { display: block; }
+  .tableau tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 16px 0; border-bottom: 1px solid #f0f0f3; }
+  .tableau tr:last-child { border-bottom: 0; }
+  .tableau td { display: block; padding: 0; border: 0; }
+  .tableau td:nth-child(1), .tableau td:nth-child(2) { grid-column: 1 / -1; }
+  .tableau td:nth-child(2) b { font-weight: 500; font-size: 13px; }
+  .tableau td:nth-child(2):not(:empty)::before { content: "Qui décide"; display: block; font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }
+  .tableau td:nth-child(4) { text-align: right; }
+  .tableau td.vise .agent { top: -8px; right: 0; }
+  .lettre { font-size: 14px; }
+  .fiche > div { flex-direction: column; gap: 2px; }
+  .fiche dd { text-align: left; }
+}

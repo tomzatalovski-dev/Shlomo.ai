@@ -94,6 +94,7 @@ export type EvenementRepreneurs =
   | { type: "metiers"; liste: Metier[] }
   | { type: "passage"; profil: ProfilRepreneur; libelle: string; candidats: CandidatMasque[]; echec?: boolean }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
+  | { type: "indices"; rang: number; genres: ("rachat" | "croissance" | "alerte")[]; pages: number }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }
   | { type: "fin" };

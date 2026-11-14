@@ -2,13 +2,15 @@ import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { mesurer } from "@/lib/base";
+import { iaActive } from "@/lib/ia";
+import { veiller } from "@/lib/veille";
 import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const PASSAGE = {
   departement: "dans votre département",
@@ -71,6 +73,24 @@ export async function GET(requete: Request) {
           texte: repreneurs.length ? `${repreneurs.length} repreneur${repreneurs.length > 1 ? "s" : ""} classé${repreneurs.length > 1 ? "s" : ""}` : "Aucun repreneur retenu à ce stade",
           etat: repreneurs.length ? "ok" : "alerte",
         });
+
+        // Avant le mandat, le vendeur apprend ce que ses trois premiers repreneurs ont annoncé, sans rien qui les nomme :
+        // seuls le genre des faits et le nombre de pages lues quittent le serveur.
+        if (iaActive() && repreneurs.length > 0) {
+          dire({ type: "encours", texte: "Lecture de ce que vos premiers repreneurs ont annoncé publiquement" });
+          const premiers = repreneurs.slice(0, 3);
+          let pagesLues = 0;
+          await Promise.all(
+            premiers.map(async (r, i) => {
+              const veille = await veiller({ nom: r.societe.nom, siren: r.societe.siren, ville: r.societe.ville });
+              if (!veille) return;
+              pagesLues += veille.pages.length;
+              const genres = [...new Set(veille.signaux.map((x) => x.genre).filter((g): g is "rachat" | "croissance" | "alerte" => Boolean(g)))];
+              dire({ type: "indices", rang: i + 1, genres, pages: veille.pages.length });
+            }),
+          );
+          if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${premiers.length > 1 ? `${premiers.length} premiers repreneurs` : "premier repreneur"}`, etat: "ok" });
+        }
         await mesurer("repreneurs_vus", vendeur.siren);
         dire({ type: "fin" });
       } catch (e) {

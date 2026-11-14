@@ -8,6 +8,13 @@ import { Avance, Compteur, attendre, useFile } from "@/app/composants/scene";
 type Ligne = { texte: string; etat: "ok" | "alerte" };
 type Recent = CandidatMasque & { cle: number; libelle: string };
 
+/** Ce que la veille révèle avant le mandat : le genre du fait, jamais le fait lui-même, qui nommerait le repreneur. */
+const INDICE: Record<"rachat" | "croissance" | "alerte", string> = {
+  rachat: "A déjà racheté une société",
+  croissance: "En croissance : ouverture, investissement ou hausse d'activité annoncée",
+  alerte: "Un signal de difficulté, à vérifier",
+};
+
 const nombre = (n: number) => (n >= 10_000 ? "10 000 +" : n.toLocaleString("fr-FR"));
 
 function Repreneurs() {
@@ -33,11 +40,18 @@ function Repreneurs() {
   const [liste, setListe] = useState<RepreneurMasque[] | null>(null);
   const [reveles, setReveles] = useState<RepreneurRevele[] | null>(null);
   const [examinees, setExaminees] = useState(0);
+  const [indices, setIndices] = useState<Record<number, ("rachat" | "croissance" | "alerte")[]>>({});
+  const [veille, setVeille] = useState<"non" | "encours" | "faite">("non");
   const [erreur, setErreur] = useState<string | null>(null);
 
   // Chaque événement réel du serveur est joué à son tour, à un rythme lisible.
   const jouer = useFile<EvenementRepreneurs>(async (e) => {
-    if (e.type === "encours") {
+    if (e.type === "indices") {
+      setIndices((i) => ({ ...i, [e.rang]: e.genres }));
+      setVeille("faite");
+      await attendre(700 * rythme);
+    } else if (e.type === "encours") {
+      if (/annoncé publiquement/.test(e.texte)) setVeille("encours");
       setEncours(e.texte);
       setAvance((a) => ({ pct: Math.min(a.pct + 12, 85), texte: e.texte }));
       await attendre(800 * rythme);
@@ -74,6 +88,7 @@ function Repreneurs() {
       setEncours(null);
     } else if (e.type === "fin") {
       setAvance({ pct: 100, texte: "Recherche terminée" });
+      setVeille((v) => (v === "encours" ? "faite" : v));
       setEncours(null);
     }
   });
@@ -101,6 +116,11 @@ function Repreneurs() {
   const n = liste?.length ?? 0;
   const aDesNoms = Boolean(reveles && reveles.length > 0);
   const cherche = liste === null && !erreur;
+
+  const acheteurs = Object.values(indices).filter((g) => g.includes("rachat") && !g.includes("alerte")).length;
+  const accroche = acheteurs > 0
+    ? `${acheteurs === 1 ? "L'un de vos trois premiers repreneurs a" : `${acheteurs} de vos trois premiers repreneurs ont`} déjà racheté une société. Signez le mandat pour voir ${acheteurs === 1 ? "son nom" : "leurs noms"} et lancer l'approche.`
+    : "Signez le mandat pour voir les noms et lancer l'approche.";
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
@@ -227,6 +247,11 @@ function Repreneurs() {
                   <div className="rang"><span className="num">{r.rang}</span><span>{r.profil}</span></div>
                   <p className="pourquoi">{r.raison}.</p>
                   {r.details.length > 0 && <ul className="faits">{r.details.map((d) => <li key={d}>{d}</li>)}</ul>}
+                  {veille === "encours" && !indices[r.rang] && <p className="indice attente"><i className="pouls" />Je lis ce qu'elle a annoncé publiquement…</p>}
+                  {indices[r.rang]?.map((g) => (
+                    <p key={g} className={`indice apparait ${g}`}>{INDICE[g]}</p>
+                  ))}
+                  {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice apparait neutre">Rien de notable annoncé publiquement.</p>}
                   <div className="bas">
                     <div>
                       <span className="masque">Nom masqué</span>
@@ -255,7 +280,7 @@ function Repreneurs() {
           {n > 0 && (
             <div className="carte mandat apparait">
               <div>
-                <div className="grand">Signez le mandat pour voir les noms et lancer l'approche.</div>
+                <div className="grand">{accroche}</div>
                 <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
               </div>
               <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${versMandat}`}>Signer le mandat</a>
