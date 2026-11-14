@@ -5,7 +5,7 @@ export type Saisie =
   | { type: "invalide"; raison: string };
 
 /** `societe` vaut vrai quand le dirigeant inscrit au registre est lui-même une société. */
-export type Dirigeant = { nom: string; qualite?: string; societe?: boolean };
+export type Dirigeant = { nom: string; qualite?: string; societe?: boolean; siren?: string };
 
 export type ExerciceFinancier = { annee: number; chiffreAffaires?: number; resultat?: number };
 

@@ -7,6 +7,8 @@ const ORDRE = [/pr[ée]sident(?! du conseil de surveillance)/i, /g[ée]rant/i, /
 /** Met en forme un nom écrit en capitales au registre : « JEAN DUPONT » devient « Jean Dupont ». */
 export function nomLisible(nom: string): string {
   return nom
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\s+/g, " ")
     .toLowerCase()
     .replace(/(^|[\s'-])(\p{L})/gu, (_, avant: string, lettre: string) => avant + lettre.toUpperCase())
     .trim();
@@ -16,12 +18,12 @@ export function nomLisible(nom: string): string {
  * Choisit, parmi les dirigeants du registre, qui décide d'un rachat.
  * Une personne passe toujours avant une société dirigeante : on écrit à quelqu'un, pas à une holding.
  */
-export function choisirDecideur(dirigeants: Dirigeant[]): { nom: string; qualite?: string; societe?: boolean } | null {
+export function choisirDecideur(dirigeants: Dirigeant[]): { nom: string; qualite?: string; societe?: boolean; siren?: string } | null {
   if (dirigeants.length === 0) return null;
   const personnes = dirigeants.filter((d) => !d.societe);
   if (personnes.length === 0) {
     const d = dirigeants[0];
-    return { nom: d.nom, qualite: d.qualite, societe: true };
+    return { nom: d.nom, qualite: d.qualite, societe: true, siren: d.siren };
   }
   for (const fonction of ORDRE) {
     const trouve = personnes.find((d) => d.qualite && fonction.test(d.qualite));

@@ -62,8 +62,15 @@ export async function GET(requete: Request) {
                 dire({ type: "refus", agent, siren: p.siren });
                 continue;
               }
-              const decideur = fiche ? choisirDecideur(fiche.dirigeants) : null;
-              dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite });
+              let decideur = fiche ? choisirDecideur(fiche.dirigeants) : null;
+              // Le dirigeant inscrit est une société : on remonte à la personne qui la dirige.
+              if (decideur?.societe && decideur.siren) {
+                const holding = await chercherSociete(decideur.siren).catch(() => null);
+                const personne = holding ? choisirDecideur(holding.dirigeants) : null;
+                if (personne && !personne.societe) decideur = { nom: personne.nom, qualite: `${personne.qualite ?? "Dirigeant"} de ${holding!.nom}, qui dirige la société` };
+              }
+              const qualite = decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite;
+              dire({ type: "decideur", agent, siren: p.siren, nom: decideur?.nom, qualite });
 
               // Veille : ce que le web dit de ce repreneur. Sans IA, ou si la recherche échoue, on continue sans.
               let veille: Awaited<ReturnType<typeof veiller>> = null;
@@ -78,7 +85,7 @@ export async function GET(requete: Request) {
               dire({ type: "message", agent, siren: p.siren, texte });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });
-              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite: decideur?.societe ? `${decideur.qualite ?? "Dirigeant"} (société : personne à identifier)` : decideur?.qualite, message: texte, site: veille?.site, signaux: veille?.signaux });
+              const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite, message: texte, site: veille?.site, signaux: veille?.signaux });
               dire(garde ? { type: "pret", agent, siren: p.siren } : { type: "echec", agent, siren: p.siren });
             } catch {
               dire({ type: "echec", agent, siren: p.siren });

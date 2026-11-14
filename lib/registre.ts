@@ -46,7 +46,7 @@ export function mapperSociete(r: Brut): Societe {
         .map((d: Brut) => ({
           nom: (d.denomination ?? [d.prenoms, d.nom].filter(Boolean).join(" ")).trim(),
           qualite: d.qualite ?? undefined,
-          ...(d.denomination || d.type_dirigeant === "personne morale" ? { societe: true } : {}),
+          ...(d.denomination || d.type_dirigeant === "personne morale" ? { societe: true, ...(/^\d{9}$/.test(String(d.siren ?? "")) ? { siren: String(d.siren) } : {}) } : {}),
         }))
         .filter((d: { nom: string; qualite?: string }) => d.nom && !/commissaire aux comptes/i.test(d.qualite ?? ""))
     : [];

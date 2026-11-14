@@ -14,6 +14,7 @@ describe("décideur", () => {
     expect(choisirDecideur([{ nom: "TESSI", qualite: "Président de SAS", societe: true }, { nom: "MARIE DURAND", qualite: "Directeur Général" }])).toEqual({ nom: "Marie Durand", qualite: "Directeur Général" });
     expect(choisirDecideur([{ nom: "TESSI", qualite: "Président de SAS", societe: true }])).toEqual({ nom: "TESSI", qualite: "Président de SAS", societe: true });
   });
+  it("retire le nom d'usage entre parenthèses", () => expect(nomLisible("ERIC VIALATOUX (VIALATOUX)")).toBe("Eric Vialatoux"));
   it("met les noms en forme", () => expect(nomLisible("ÉLODIE DE LA TOUR")).toBe("Élodie De La Tour"));
 });
 
