@@ -24,7 +24,7 @@ describe("message", () => {
     const m = messageModele(faits);
     expect(citeLeVendeur(m, faits.interdits)).toBe(false);
     expect(m).toContain("Bonjour Jean Durand,");
-    expect(m).toContain("dans votre région");
+    expect(m).toContain("dans une région où vous êtes implanté");
   });
   it("repère un texte qui cite le vendeur", () => {
     expect(citeLeVendeur("La société Atelier Morel est à céder.", faits.interdits)).toBe(true);
