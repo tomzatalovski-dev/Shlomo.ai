@@ -36,3 +36,14 @@ describe("dirigeants", () => {
     expect(s.dirigeants).toEqual([{ nom: "Claire DUPONT", qualite: "Présidente de SAS" }]);
   });
 });
+
+import { sansDoublon } from "@/lib/registre";
+
+describe("nom répété entre parenthèses", () => {
+  it("retire la répétition et garde un vrai sigle", () => {
+    expect(sansDoublon("CIRCUS (CIRCUS)")).toBe("CIRCUS");
+    expect(sansDoublon("MAC GUFF LIGNE (MAC GUFF LIGNE)")).toBe("MAC GUFF LIGNE");
+    expect(sansDoublon("TRANSPERFECT STUDIOS FRANCE (HIVENTY)")).toBe("TRANSPERFECT STUDIOS FRANCE (HIVENTY)");
+    expect(sansDoublon("ATELIER MOREL")).toBe("ATELIER MOREL");
+  });
+});

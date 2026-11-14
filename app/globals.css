@@ -367,7 +367,9 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
   .tableau td:nth-child(2) b { font-weight: 500; font-size: 13px; }
   .tableau td:nth-child(2):not(:empty)::before { content: "Qui décide"; display: block; font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }
   .tableau td:nth-child(4) { text-align: right; }
-  .tableau td.vise .agent { top: -8px; right: 0; }
+  /* Sur téléphone, pas de cadre autour de la case : l'étiquette de l'agent se pose sous le texte, sans rien recouvrir. */
+  .tableau td.vise { box-shadow: none; border-radius: 0; }
+  .tableau td.vise .agent { position: static; display: inline-flex; margin-top: 6px; animation: none; }
   .lettre { font-size: 14px; }
   .fiche > div { flex-direction: column; gap: 2px; }
   .fiche dd { text-align: left; }

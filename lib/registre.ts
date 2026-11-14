@@ -68,7 +68,7 @@ export function mapperSociete(r: Brut): Societe {
 
   return {
     siren: String(r.siren),
-    nom: r.nom_complet ?? r.nom_raison_sociale ?? "Société sans nom publié",
+    nom: sansDoublon(r.nom_complet ?? r.nom_raison_sociale ?? "Société sans nom publié"),
     active: r.etat_administratif !== "C",
     formeJuridique: forme ? (FORMES[forme] ?? `Forme juridique ${forme}`) : undefined,
     anneeCreation: Number.isFinite(annee) ? annee : undefined,
@@ -123,6 +123,12 @@ async function appeler(parametres: Record<string, string>): Promise<{ resultats:
 }
 
 /** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */
+/** Le registre répète parfois le nom entre parenthèses : « CIRCUS (CIRCUS) » devient « CIRCUS ». Un vrai sigle est gardé. */
+export function sansDoublon(nom: string): string {
+  const plat = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  return nom.replace(/\s*\(([^)]*)\)/g, (tout, dedans: string, position: number) => (plat(dedans) === plat(nom.slice(0, position)) ? "" : tout)).trim();
+}
+
 export async function chercherSociete(siren: string): Promise<Societe | null> {
   const reponse = await appeler({ q: siren, per_page: "1" });
   const trouve = reponse?.resultats.find((r) => String(r.siren) === siren);
