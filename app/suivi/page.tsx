@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BaseIndisponible, lireSuivi, type Presentation, type StatutPresentation } from "@/lib/base";
 import { Exclusion } from "./Exclusion";
+import { ordonner, prioriteDe } from "@/lib/priorite";
 
 export const dynamic = "force-dynamic";
 // L'adresse de cette page contient le jeton secret du dossier : ni indexation, ni fuite vers d'autres sites.
@@ -99,7 +100,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           </div>
 
           <div className="carte liste">
-            {suivi.presentations.map((p) => (
+            {ordonner(suivi.presentations).map((p) => (
               <div key={p.siren} className={p.exclu ? "ligne ecartee" : "ligne"}>
                 <span className="quoi">
                   <b>{p.rang}. {p.nom}</b>
@@ -116,7 +117,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                   )}
                 </span>
                 <span className="ou">
-                  <b className={INTERESSES.includes(p.statut) ? "etat fort" : "etat"}>{p.exclu ? "Rayé à votre demande" : p.canal === "refus_demarchage" ? "Ne veut pas être démarché" : p.statut === "identifie" && p.canal === "a_envoyer" ? "Approche prête" : STATUT[p.statut]}</b>
+                  <b className={INTERESSES.includes(p.statut) ? "etat fort" : "etat"}>{p.exclu ? "Rayé à votre demande" : p.canal === "refus_demarchage" ? "Ne veut pas être démarché" : p.statut === "identifie" && p.canal === "a_envoyer" ? (prioriteDe(p.signaux) === "a_verifier" ? "À vérifier avant envoi" : prioriteDe(p.signaux) === "prioritaire" ? "Approche prête, en priorité" : "Approche prête") : STATUT[p.statut]}</b>
                   <br />
                   <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
                   {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}

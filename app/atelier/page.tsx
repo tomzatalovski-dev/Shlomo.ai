@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { EvenementAtelier, LigneAtelier } from "@/lib/types";
 import { Avance, Compteur, attendre, useFile } from "@/app/composants/scene";
+import { ordonner, prioriteDe } from "@/lib/priorite";
 
 type Colonne = "nom" | "decideur" | "message" | "etat";
 type Poste = { siren: string; colonne: Colonne };
@@ -170,7 +171,10 @@ function Atelier() {
   const utiles = lignes?.filter((l) => l.etat !== "raye" && l.etat !== "contacte") ?? [];
   const decideurs = utiles.filter((l) => l.decideur).length;
   const messages = utiles.filter((l) => l.message).length;
-  const pretes = utiles.filter((l) => l.etat === "pret").length;
+  const aVerifier = utiles.filter((l) => l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier").length;
+  const pretes = utiles.filter((l) => l.etat === "pret").length - aVerifier;
+  // Le classement final n'arrive qu'à la fin : pendant le travail, les lignes ne bougent pas.
+  const affichees = lignes ? (fini ? ordonner(lignes) : lignes) : [];
   const traites = utiles.filter((l) => l.etat !== "a_faire").length;
   const pct = fini ? 100 : utiles.length ? Math.max(6, Math.round((traites / utiles.length) * 92)) : 6;
   const agentSur = (siren: string, colonne: Colonne) => [1, 2, 3].find((n) => postes[n]?.siren === siren && postes[n]?.colonne === colonne);
@@ -211,8 +215,8 @@ function Atelier() {
 
         <main className="resultat">
           <div>
-            <h1>{erreur ? "La préparation s'est arrêtée." : fini ? (pretes ? `${pretes} approche${pretes > 1 ? "s sont prêtes" : " est prête"} à partir.` : "Aucune approche à préparer.") : "Trois agents préparent vos approches."}</h1>
-            <p className="sous">{erreur ?? (fini ? "Vous n'avez rien eu à faire. La suite se lit dans votre suivi." : "Pour chaque repreneur : qui décide, ce qu'il a annoncé publiquement, et le message qui lui donnera envie de vous appeler. Vous n'avez rien à faire.")}</p>
+            <h1>{erreur ? "La préparation s'est arrêtée." : fini ? (pretes ? `${pretes} approche${pretes > 1 ? "s sont prêtes" : " est prête"} à partir${aVerifier ? `, ${aVerifier} à vérifier` : ""}.` : aVerifier ? `${aVerifier} approche${aVerifier > 1 ? "s" : ""} à vérifier avant envoi.` : "Aucune approche à préparer.") : "Trois agents préparent vos approches."}</h1>
+            <p className="sous">{erreur ?? (fini ? "Vous n'avez rien eu à faire. Les repreneurs qui ont déjà racheté passent en tête ; ceux qui semblent en difficulté passent en dernier." : "Pour chaque repreneur : qui décide, ce qu'il a annoncé publiquement, et le message qui lui donnera envie de vous appeler. Vous n'avez rien à faire.")}</p>
           </div>
 
           {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} />}
@@ -254,7 +258,7 @@ function Atelier() {
                 <table className="tableau">
                   <thead><tr><th>Repreneur</th><th>Qui décide</th><th>Message</th><th>État</th></tr></thead>
                   <tbody>
-                    {lignes.map((l) => (
+                    {affichees.map((l) => (
                       <tr key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "eteint" : undefined}>
                         {cellule(l, "nom", <>
                           <b>{l.rang}. {l.nom}{l.signaux?.some((x) => x.genre === "rachat") && <span className="pastille">A déjà racheté</span>}{l.signaux?.some((x) => x.genre === "alerte") && <span className="pastille" style={{ color: "#b4690e", borderColor: "#b4690e" }}>À vérifier</span>}</b>
@@ -265,7 +269,7 @@ function Atelier() {
                         </>)}
                         {cellule(l, "decideur", l.decideur ? <><b>{l.decideur}</b><small>{l.qualite}</small></> : l.decideur === "" ? <small>Non publié</small> : <i className="vide" />)}
                         {cellule(l, "message", l.message ? <button className="lien" type="button" onClick={() => setOuvert(ouvert === l.siren ? null : l.siren)}>{ouvert === l.siren ? "Refermer" : "Lire le message"}</button> : <i className="vide" />)}
-                        {cellule(l, "etat", <span className={l.etat === "pret" ? "etat fort" : "etat"}>{ETAT[l.etat]}</span>)}
+                        {cellule(l, "etat", l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier" ? <span className="etat" style={{ color: "#b4690e" }}>À vérifier avant envoi</span> : <span className={l.etat === "pret" ? "etat fort" : "etat"}>{l.etat === "pret" && prioriteDe(l.signaux) === "prioritaire" ? "Prête, en priorité" : ETAT[l.etat]}</span>)}
                       </tr>
                     ))}
                   </tbody>
