@@ -108,8 +108,10 @@ export async function GET(requete: Request) {
             } else {
               dire({ type: "journal", texte: "Le site ne permet pas de rédiger une description", etat: "alerte" });
             }
-          } catch {
-            dire({ type: "journal", texte: "Description indisponible pour le moment", etat: "alerte" });
+          } catch (e) {
+            const detail = e instanceof Error ? e.message : "inconnu";
+            console.error("Rédaction de la fiche :", detail);
+            dire({ type: "journal", texte: "Description indisponible pour le moment", etat: "alerte", detail } as Evenement);
           }
         } else if (site) {
           dire({ type: "journal", texte: "Rédaction par IA non activée sur ce serveur", etat: "alerte" });
