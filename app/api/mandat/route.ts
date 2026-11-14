@@ -35,7 +35,18 @@ export async function POST(requete: Request) {
     const jeton = await signerMandat({
       siren: vendeur.siren,
       nom: vendeur.nom,
-      fiche: { formeJuridique: vendeur.formeJuridique, ville: vendeur.ville, codeActivite: vendeur.codeActivite, effectif: vendeur.effectif },
+      fiche: {
+        formeJuridique: vendeur.formeJuridique,
+        ville: vendeur.ville,
+        codeActivite: vendeur.codeActivite,
+        effectif: vendeur.effectif,
+        // Ce qui suit alimente la présentation anonyme remise aux repreneurs.
+        region: vendeur.region,
+        anneeCreation: vendeur.anneeCreation,
+        chiffreAffaires: vendeur.finances.at(-1)?.chiffreAffaires,
+        resultatPositif: vendeur.finances.at(-1)?.resultat === undefined ? undefined : vendeur.finances.at(-1)!.resultat! > 0,
+        activite: metiers.find((m) => m.lien === "meme" && m.libelle)?.libelle,
+      },
       signataire,
       autorisation: corps?.autorisation === true,
       repreneurs: reveler(repreneurs),

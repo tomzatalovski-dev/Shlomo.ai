@@ -49,6 +49,8 @@ export async function GET(requete: Request) {
           lignes: suivi.presentations.map((p) => ({ siren: p.siren, nom: p.nom, rang: p.rang, ville: p.ville, effectif: p.effectif, etat: etatDe(p), decideur: p.decideur, qualite: p.qualite, message: p.message, site: p.site, signaux: p.signaux })),
         });
 
+        // Chaque message se termine par le lien vers la présentation anonyme de la société.
+        const lienFiche = suivi.jeton_fiche ? `${new URL(requete.url).origin}/fiche?f=${suivi.jeton_fiche}` : null;
         const aFaire = suivi.presentations.filter((p) => etatDe(p) === "a_faire");
         const interdits = [suivi.societe.nom, suivi.fiche?.ville ?? ""].filter(Boolean);
 
@@ -77,11 +79,12 @@ export async function GET(requete: Request) {
               if (iaActive()) {
                 dire({ type: "etape", agent, siren: p.siren, etape: "veille" });
                 veille = await veiller({ nom: p.nom, siren: p.siren, ville: p.ville });
-                dire({ type: "signaux", agent, siren: p.siren, site: veille?.site, signaux: veille?.signaux ?? [] });
+                dire({ type: "signaux", agent, siren: p.siren, site: veille?.site, signaux: veille?.signaux ?? [], requetes: veille?.requetes, pages: veille?.pages });
               }
 
               dire({ type: "etape", agent, siren: p.siren, etape: "redaction" });
-              const texte = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.map((x) => x.texte), interdits });
+              const redige = await redigerMessage({ repreneur: p.nom, decideur: decideur?.societe ? undefined : decideur?.nom, profil: p.profil, effectifVendeur: suivi.fiche?.effectif, raisons: p.raisons ?? [], signaux: veille?.signaux.map((x) => x.texte), interdits });
+              const texte = lienFiche ? `${redige}\n\nPrésentation anonyme de la société, sans nom ni ville : ${lienFiche}` : redige;
               dire({ type: "message", agent, siren: p.siren, texte });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });

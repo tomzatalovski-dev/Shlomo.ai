@@ -50,6 +50,7 @@ export type Presentation = {
 
 export type Suivi = {
   societe: { siren: string; nom: string };
+  jeton_fiche?: string;
   fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null } | null;
   mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string } | null;
   presentations: Presentation[];
@@ -101,4 +102,18 @@ export async function enregistrerApproche(jeton: string, siren: string, approche
     p_site: approche.site ?? null,
     p_signaux: approche.signaux ?? [],
   });
+}
+
+/** Ce que la présentation anonyme montre à un repreneur : jamais de nom, de SIREN ni de ville. */
+export type FicheAnonyme = { activite?: string | null; region?: string | null; effectif?: string | null; anneeCreation?: number | null; chiffreAffaires?: number | null; resultatPositif?: boolean | null };
+
+export async function lireFiche(jeton: string): Promise<FicheAnonyme | null> {
+  if (!jetonValide(jeton)) return null;
+  return appeler<FicheAnonyme | null>("lire_fiche", { p_jeton: jeton });
+}
+
+/** Enregistre la demande d'un repreneur. Ses coordonnées ne sont jamais montrées au vendeur. */
+export async function manifesterInteret(jeton: string, demande: { nom: string; societe: string; contact: string }): Promise<boolean> {
+  if (!jetonValide(jeton)) return false;
+  return appeler<boolean>("manifester_interet", { p_jeton: jeton, p_nom: demande.nom, p_societe: demande.societe, p_contact: demande.contact });
 }

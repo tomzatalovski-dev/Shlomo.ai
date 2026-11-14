@@ -107,11 +107,14 @@ export async function lireNom(texteSite: string): Promise<{ nom: string; codePos
   }
 }
 
+/** Ce qu'une recherche sur le web a réellement fait : les requêtes lancées et les pages reçues. */
+export type TraceRecherche = { texte: string | null; requetes: string[]; pages: { titre: string; url: string }[] };
+
 /**
  * Demande au modèle une recherche sur le web, puis un texte. Renvoie null sans clé.
  * Les pages lues sont des données extérieures : la consigne doit le dire, et l'appelant vérifie ce qui revient.
  */
-export async function rechercher(consigne: string, contenu: string, recherches = 2): Promise<string | null> {
+export async function rechercher(consigne: string, contenu: string, recherches = 2): Promise<TraceRecherche | null> {
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
   const rep = await fetch("https://api.anthropic.com/v1/messages", {
@@ -127,8 +130,18 @@ export async function rechercher(consigne: string, contenu: string, recherches =
     }),
   });
   if (!rep.ok) throw new Error(`Modèle d'IA : réponse ${rep.status}`);
-  const json = (await rep.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string };
+  type Bloc = { type: string; text?: string; name?: string; input?: { query?: unknown }; content?: unknown };
+  const json = (await rep.json()) as { content?: Bloc[]; stop_reason?: string };
   if (json.stop_reason !== "end_turn") throw new ReponseIllisible(`recherche inachevée (${json.stop_reason ?? "?"})`);
-  const texte = (json.content ?? []).filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
-  return texte || null;
+  const blocs = json.content ?? [];
+  const requetes = blocs.filter((b) => b.type === "server_tool_use" && typeof b.input?.query === "string").map((b) => String(b.input!.query));
+  const pages: { titre: string; url: string }[] = [];
+  for (const b of blocs) {
+    if (b.type !== "web_search_tool_result" || !Array.isArray(b.content)) continue;
+    for (const r of b.content as { type?: string; title?: unknown; url?: unknown }[]) {
+      if (r?.type === "web_search_result" && typeof r.url === "string") pages.push({ titre: typeof r.title === "string" ? r.title : "", url: r.url });
+    }
+  }
+  const texte = blocs.filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
+  return { texte: texte || null, requetes, pages };
 }

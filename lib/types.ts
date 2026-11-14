@@ -132,6 +132,9 @@ export type Evenement =
 /** Un fait public trouvé sur un repreneur, avec la page où il a été lu. */
 export type Signal = { texte: string; source: string };
 
+/** Une page reçue pendant une recherche, telle que l'écran la montre. */
+export type PageLue = { titre: string; domaine: string };
+
 /** Une ligne du tableau de prospection : un repreneur et l'état de son approche. */
 export type LigneAtelier = {
   siren: string;
@@ -151,7 +154,7 @@ export type LigneAtelier = {
 export type EvenementAtelier =
   | { type: "plan"; societe: string; lignes: LigneAtelier[] }
   | { type: "etape"; agent: number; siren: string; etape: "registre" | "veille" | "redaction" | "enregistrement" }
-  | { type: "signaux"; agent: number; siren: string; site?: string; signaux: Signal[] }
+  | { type: "signaux"; agent: number; siren: string; site?: string; signaux: Signal[]; requetes?: string[]; pages?: PageLue[] }
   | { type: "decideur"; agent: number; siren: string; nom?: string; qualite?: string }
   | { type: "refus"; agent: number; siren: string }
   | { type: "message"; agent: number; siren: string; texte: string }

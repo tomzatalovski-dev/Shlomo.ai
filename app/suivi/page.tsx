@@ -132,7 +132,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                 ? "Les agents préparent, pour chaque repreneur, le nom du décideur et un message qui ne cite ni votre nom ni votre ville. À ce stade du projet, l'équipe Shlomo relit chaque message et l'envoie elle-même ; chaque étape s'inscrit ici."
                 : "Pour lancer l'approche, il faudra signer un mandat qui l'autorise."}
             </p>
-            {autorise && <div className="actions"><a className="lien" href={`/atelier?d=${jeton}`}>Voir les agents au travail</a></div>}
+            {autorise && (
+              <div className="actions">
+                <a className="lien" href={`/atelier?d=${jeton}`}>Voir les agents au travail</a>
+                {suivi.jeton_fiche && <a className="lien" href={`/fiche?f=${suivi.jeton_fiche}`} target="_blank" rel="noreferrer">Voir la présentation anonyme remise aux repreneurs</a>}
+              </div>
+            )}
             <p className="source">Vous pouvez rayer un repreneur tant que son approche n'est pas préparée. C'est facultatif.</p>
           </div>
         </main>

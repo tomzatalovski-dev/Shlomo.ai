@@ -8,6 +8,10 @@ import { Avance, Compteur, attendre, useFile } from "@/app/composants/scene";
 type Colonne = "nom" | "decideur" | "message" | "etat";
 type Poste = { siren: string; colonne: Colonne };
 type Direct = { agent: number; pour: string; texte: string };
+type Trace = { genre: "requete" | "page" | "fait" | "info"; texte: string; detail?: string; cle: number };
+type Ecran = { cible?: string; etat: string; actif: boolean; traces: Trace[] };
+
+const AGENTS = [1, 2, 3];
 
 const ETAT: Record<LigneAtelier["etat"], string> = {
   a_faire: "En attente",
@@ -29,6 +33,8 @@ function Atelier() {
   const [postes, setPostes] = useState<Record<number, Poste | null>>({});
   const [journal, setJournal] = useState<{ agent: number; texte: string; cle: number }[]>([]);
   const [direct, setDirect] = useState<Direct | null>(null);
+  const [ecrans, setEcrans] = useState<Record<number, Ecran>>({});
+  const [pagesLues, setPagesLues] = useState(0);
   const [ouvert, setOuvert] = useState<string | null>(null);
   const [fini, setFini] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -36,6 +42,13 @@ function Atelier() {
   const changer = (siren: string, avec: Partial<LigneAtelier>) => setLignes((l) => l?.map((x) => (x.siren === siren ? { ...x, ...avec } : x)) ?? l);
   const placer = (agent: number, poste: Poste | null) => setPostes((p) => ({ ...p, [agent]: poste }));
   const noter = (agent: number, texte: string) => setJournal((j) => [...j, { agent, texte, cle: Math.random() }].slice(-9));
+  const regler = (agent: number, avec: Partial<Ecran>) => setEcrans((e) => ({ ...e, [agent]: { ...(e[agent] ?? { etat: "", actif: true, traces: [] }), ...avec } }));
+  const tracer = (agent: number, trace: Omit<Trace, "cle">, cle = Math.random()) =>
+    setEcrans((e) => {
+      const ecran = e[agent] ?? { etat: "", actif: true, traces: [] };
+      const sans = ecran.traces.filter((t) => t.cle !== cle);
+      return { ...e, [agent]: { ...ecran, traces: [...sans, { ...trace, cle }].slice(-9) } };
+    });
   const nomDe = (siren: string) => lignes?.find((l) => l.siren === siren)?.nom ?? "ce repreneur";
 
   // Chaque événement réel du serveur est joué à son tour, à un rythme lisible.
@@ -47,20 +60,56 @@ function Atelier() {
     } else if (e.type === "etape") {
       const colonne: Colonne = e.etape === "registre" ? "decideur" : e.etape === "veille" ? "nom" : e.etape === "redaction" ? "message" : "etat";
       placer(e.agent, { siren: e.siren, colonne });
-      if (e.etape === "registre") noter(e.agent, `ouvre la fiche de ${nomDe(e.siren)} au registre`);
-      if (e.etape === "veille") noter(e.agent, `cherche sur le web ce que ${nomDe(e.siren)} a annoncé`);
+      if (e.etape === "registre") {
+        noter(e.agent, `ouvre la fiche de ${nomDe(e.siren)} au registre`);
+        regler(e.agent, { cible: nomDe(e.siren), etat: "lit sa fiche au registre des entreprises", actif: true, traces: [] });
+      }
+      if (e.etape === "veille") {
+        noter(e.agent, `cherche sur le web ce que ${nomDe(e.siren)} a annoncé`);
+        regler(e.agent, { etat: "cherche sur le web ce qu'elle a annoncé" });
+      }
+      if (e.etape === "redaction") regler(e.agent, { etat: "rédige le message" });
+      if (e.etape === "enregistrement") regler(e.agent, { etat: "range l'approche dans votre suivi" });
       await attendre(e.etape === "registre" || e.etape === "veille" ? 650 : 350);
     } else if (e.type === "signaux") {
+      // On rejoue ce que la recherche a réellement fait : ses requêtes, les pages reçues, les faits retenus.
+      for (const requete of e.requetes ?? []) {
+        const cle = Math.random();
+        for (let i = 0; i < requete.length; i += 3) {
+          tracer(e.agent, { genre: "requete", texte: requete.slice(0, i + 3) }, cle);
+          await attendre(18);
+        }
+        tracer(e.agent, { genre: "requete", texte: requete }, cle);
+        await attendre(250);
+      }
+      const pages = e.pages ?? [];
+      for (const page of pages.slice(0, 5)) {
+        tracer(e.agent, { genre: "page", texte: page.domaine, detail: page.titre });
+        setPagesLues((n) => n + 1);
+        await attendre(170);
+      }
+      if (pages.length > 5) {
+        tracer(e.agent, { genre: "info", texte: `et ${pages.length - 5} autres pages lues` });
+        setPagesLues((n) => n + pages.length - 5);
+        await attendre(200);
+      }
+      for (const signal of e.signaux) {
+        tracer(e.agent, { genre: "fait", texte: signal.texte });
+        await attendre(350);
+      }
+      if (!e.signaux.length) tracer(e.agent, { genre: "info", texte: "Rien de sûr à retenir : je n'invente pas." });
       changer(e.siren, { site: e.site, signaux: e.signaux });
       noter(e.agent, e.signaux.length ? `a trouvé ${e.signaux.length} fait${e.signaux.length > 1 ? "s" : ""} public${e.signaux.length > 1 ? "s" : ""} sur ${nomDe(e.siren)}` : `n'a rien trouvé de sûr sur ${nomDe(e.siren)}`);
       await attendre(500);
     } else if (e.type === "decideur") {
       changer(e.siren, { decideur: e.nom ?? "", qualite: e.qualite });
+      tracer(e.agent, { genre: "info", texte: e.nom ? `Décideur : ${e.nom}${e.qualite ? `, ${e.qualite}` : ""}` : "Aucun dirigeant publié au registre" });
       noter(e.agent, e.nom ? `a trouvé qui décide chez ${nomDe(e.siren)} : ${e.nom}` : `ne trouve pas de dirigeant publié chez ${nomDe(e.siren)}`);
       await attendre(450);
     } else if (e.type === "refus") {
       changer(e.siren, { etat: "refus" });
       placer(e.agent, null);
+      regler(e.agent, { etat: "la laisse de côté : elle refuse le démarchage", actif: false });
       noter(e.agent, `laisse ${nomDe(e.siren)} de côté : la société a demandé à ne pas être démarchée`);
       await attendre(600);
     } else if (e.type === "message") {
@@ -76,12 +125,14 @@ function Atelier() {
     } else if (e.type === "pret" || e.type === "echec") {
       changer(e.siren, { etat: e.type });
       placer(e.agent, null);
+      regler(e.agent, { etat: e.type === "pret" ? "approche prête" : "à reprendre", actif: false });
       if (e.type === "pret") noter(e.agent, `a rangé l'approche de ${nomDe(e.siren)}, prête à partir`);
       await attendre(300);
     } else if (e.type === "erreur") {
       setErreur(e.message);
     } else if (e.type === "fin") {
       setPostes({});
+      setEcrans((tous) => Object.fromEntries(Object.entries(tous).map(([n, ecran]) => [n, { ...ecran, actif: false, etat: "a terminé" }])));
       await attendre(500);
       setFini(true);
     }
@@ -171,10 +222,32 @@ function Atelier() {
               <div className="entonnoir">
                 <div className="chiffre"><span>Repreneurs à approcher</span><b><Compteur valeur={utiles.length} /></b></div>
                 <div className="chiffre"><span>Décideurs identifiés</span><b><Compteur valeur={decideurs} duree={400} /></b></div>
+                <div className="chiffre"><span>Pages web lues</span><b><Compteur valeur={pagesLues} duree={300} /></b></div>
                 <div className="chiffre"><span>Faits publics trouvés</span><b><Compteur valeur={utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0)} duree={400} /></b></div>
                 <div className="chiffre"><span>Messages rédigés</span><b><Compteur valeur={messages} duree={400} /></b></div>
                 <div className="chiffre cle"><span>Prêtes à partir</span><b><Compteur valeur={pretes} duree={400} /></b></div>
               </div>
+
+              {Object.keys(ecrans).length > 0 && (
+                <div className="ecrans">
+                  {AGENTS.map((n) => {
+                    const ecran = ecrans[n];
+                    return (
+                      <div key={n} className={`ecran a${n}${ecran?.actif ? " actif" : ""}`}>
+                        <p className="ecran-tete"><Agent n={n} /><span>{ecran?.cible ?? "en attente"}</span></p>
+                        <p className="ecran-etat">{ecran?.actif && <i className="pouls" />}{ecran?.etat || "attend son premier repreneur"}</p>
+                        <ul>
+                          {ecran?.traces.map((t) => (
+                            <li key={t.cle} className={`trace ${t.genre}`}>
+                              {t.genre === "page" ? <><b>{t.texte}</b> {t.detail}</> : t.texte}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className="carte tableau-carte apparait">
                 <table className="tableau">

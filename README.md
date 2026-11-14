@@ -105,3 +105,10 @@ Après la signature, `/atelier?d=<jeton>` montre trois agents qui préparent les
 - La recherche porte sur ces activités : département, région, France pour le métier du vendeur ; région, France pour les voisines. Neuf appels au registre au plus.
 - La note (`noter`, `lib/repreneurs.ts`) repose sur cinq critères du registre : lien avec le métier, proximité, taille, comptes publiés (marge, évolution du chiffre d'affaires), ancienneté et nombre d'établissements.
 - Sans SIREN sur le site, la société est cherchée au registre par son nom (`lib/identite.ts`). Elle n'est retenue d'office que si le nom est exact et l'adresse présente sur le site ; sinon le vendeur choisit parmi trois fiches au plus, ou saisit son SIREN.
+
+## Veille, écrans d'agents et présentation anonyme
+
+- Veille (`lib/veille.ts`) : pour chaque repreneur, l'IA cherche sur le web son site et des faits publics (rachat, ouverture, investissement). Chaque fait garde l'adresse de sa source. Un homonyme reste possible : la relecture avant envoi est obligatoire.
+- Écrans d'agents (`/atelier`) : ils rejouent ce que chaque recherche a réellement fait, c'est-à-dire les requêtes lancées, les pages reçues, les faits retenus. Rien n'est simulé.
+- Présentation anonyme (`/fiche?f=<jeton de fiche>`) : activité, région, effectif, ancienneté en tranche, chiffre d'affaires à un chiffre significatif. Ni nom, ni SIREN, ni ville. Le jeton de fiche est distinct du jeton du vendeur.
+- Un repreneur intéressé laisse ses coordonnées (`interets`, lisible seulement dans Supabase). Le vendeur voit qu'une demande est arrivée, jamais de qui.
