@@ -264,7 +264,7 @@ function Dossier() {
                     {metier.liste.slice(0, activites).map((m) => (
                       <li key={m.code} className="apparait">
                         <b>{m.libelle || `Code ${m.code}`}</b>
-                        <small>{[m.lien === "meme" ? "Votre activité" : "Activité voisine", `code ${m.code}`, m.total ? `${m.total.toLocaleString("fr-FR")} sociétés en France` : null].filter(Boolean).join(" · ")}</small>
+                        <small>{[m.lien === "meme" ? "Votre activité" : "Activité voisine", `code ${m.code}`, m.total ? `${m.total >= 10000 ? "plus de 10 000" : m.total.toLocaleString("fr-FR")} sociétés en France` : null].filter(Boolean).join(" · ")}</small>
                       </li>
                     ))}
                   </ul>
