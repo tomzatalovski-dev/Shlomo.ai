@@ -140,3 +140,20 @@ export async function enregistrerPresentation(jeton: string, texte: string): Pro
   if (!jetonValide(jeton)) return false;
   return appeler<boolean>("enregistrer_presentation", { p_jeton: jeton, p_texte: texte });
 }
+
+/** Résultats du banc d'essai du négociateur, tels que la base les résume. */
+export type BilanEssais = {
+  versions: { version: string; essais: number; graves: number; sans_faute: number; rendez_vous: number; note: number | null; premier: string; dernier: string }[];
+  personas: { persona: string; version: string; essais: number; graves: number; rendez_vous: number; note: number | null }[];
+  derniers: { id: number; cree_le: string; version: string; persona: string; tours: { de: string; texte: string; situation?: string; repli?: boolean; fautes?: { detail: string; grave: boolean; arretee?: boolean }[] }[]; fautes: { regle: string; grave: boolean; detail: string; arretee?: boolean }[]; graves: number; rendez_vous: boolean; note: number | null; avis: string | null }[];
+};
+
+export async function enregistrerEssai(code: string, e: { version: string; persona: string; tours: unknown[]; fautes: unknown[]; graves: number; rendezVous: boolean; note: number | null; avis: string }): Promise<boolean> {
+  if (!jetonValide(code)) return false;
+  return appeler<boolean>("enregistrer_essai", { p_code: code, p_version: e.version, p_persona: e.persona, p_tours: e.tours, p_fautes: e.fautes, p_graves: e.graves, p_rdv: e.rendezVous, p_note: e.note, p_avis: e.avis });
+}
+
+export async function lireEssais(code: string): Promise<BilanEssais | null> {
+  if (!jetonValide(code)) return null;
+  return appeler<BilanEssais | null>("lire_essais", { p_code: code });
+}

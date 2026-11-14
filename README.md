@@ -119,3 +119,11 @@ Après la signature, `/atelier?d=<jeton>` montre trois agents qui préparent les
 - Provenance (`verifierProvenance`) : un fait public n'est gardé que si sa source est une page réellement reçue par la recherche.
 - Relecture (`redigerEtRelire`) : un second appel à l'IA relit chaque message contre les faits autorisés. Un défaut entraîne une réécriture, puis une seconde relecture ; en cas de nouvel échec, le modèle fixe remplace le message. Une réponse illisible du relecteur ne vaut jamais validation.
 - Présentation anonyme (`presenter`) : trois phrases écrites à partir du site du vendeur. Le texte est rejeté s'il contient un mot du nom, la ville ou le nom de domaine. La raison de la cession vient d'une liste fermée.
+
+## Négociateur et banc d'essai
+
+- Manuel (`lib/negociation/manuel.ts`) : principes et situations, avec un numéro de version. Tout changement de fond change la version, pour que les essais restent comparables.
+- Garde-fous (`lib/negociation/gardefous.ts`) : du code, pas des consignes. Avant l'accord de confidentialité, aucun message ne peut laisser reconnaître le vendeur ; aucun montant hors des bornes validées ; aucune concurrence, offre ou échéance qui ne figure pas au dossier. Une faute grave entraîne une seconde tentative, puis une réponse d'attente.
+- Négociateur (`lib/negociation/negociateur.ts`) : il ne reçoit jamais le nom du vendeur. La signature, posée par le code, dit que le message vient d'un assistant d'IA.
+- Banc d'essai (`/banc?c=<code de pilotage>`) : douze repreneurs simulés, sur un dossier fictif. Chaque conversation est enregistrée (`essais`) avec la version du manuel, les fautes tentées et arrêtées, le rendez-vous obtenu ou non, et la note d'un arbitre.
+- Limites : le repreneur, le négociateur et l'arbitre sont le même modèle ; les garde-fous reposent sur des motifs de texte et peuvent laisser passer une formulation imprévue. Le banc mesure la discipline, pas la réaction de vrais repreneurs.
