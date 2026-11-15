@@ -298,7 +298,7 @@ function Atelier() {
                     {affichees.map((l) => (
                       <tr key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "eteint" : undefined}>
                         {cellule(l, "nom", <>
-                          <b>{l.rang}. {l.nom}{l.signaux?.some((x) => x.genre === "rachat") && <span className="pastille">A déjà racheté</span>}{l.signaux?.some((x) => x.genre === "alerte") && <span className="pastille" style={{ color: "#b4690e", borderColor: "#b4690e" }}>À vérifier</span>}</b>
+                          <b>{l.rang}. {l.nom}{l.signaux?.some((x) => x.genre === "rachat") && <span className="pastille">A déjà racheté</span>}{l.signaux?.some((x) => x.genre === "alerte") && <span className="pastille" style={{ color: "var(--ambre)", borderColor: "var(--ambre)" }}>À vérifier</span>}</b>
                           <small>{[l.ville, l.effectif, l.site].filter(Boolean).join(" · ")}</small>
                           {l.signaux?.map((x) => (
                             <small key={x.source + x.texte} className={`signal apparait${x.genre === "alerte" ? " alerte" : ""}`}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
@@ -306,7 +306,7 @@ function Atelier() {
                         </>)}
                         {cellule(l, "decideur", l.decideur ? <><b>{l.decideur}</b><small>{l.qualite}</small></> : l.decideur === "" ? <small>Non publié</small> : <i className="vide" />)}
                         {cellule(l, "message", l.message ? <button className="lien" type="button" onClick={() => setOuvert(ouvert === l.siren ? null : l.siren)}>{ouvert === l.siren ? "Refermer" : "Lire le message"}</button> : <i className="vide" />)}
-                        {cellule(l, "etat", l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier" ? <span className="etat" style={{ color: "#b4690e" }}>À vérifier avant envoi</span> : <span className={l.etat === "pret" ? "etat fort" : "etat"}>{l.etat === "pret" && prioriteDe(l.signaux) === "prioritaire" ? "Prête, en priorité" : ETAT[l.etat]}</span>)}
+                        {cellule(l, "etat", l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier" ? <span className="etat" style={{ color: "var(--ambre)" }}>À vérifier avant envoi</span> : <span className={l.etat === "pret" ? "etat fort" : "etat"}>{l.etat === "pret" && prioriteDe(l.signaux) === "prioritaire" ? "Prête, en priorité" : ETAT[l.etat]}</span>)}
                       </tr>
                     ))}
                   </tbody>

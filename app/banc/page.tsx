@@ -55,7 +55,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
                     <tr key={p.persona}>
                       <td><b>{nomDe(p.persona)}</b></td>
                       <td>{p.essais}</td>
-                      <td style={p.graves > 0 ? { color: "#b4690e", fontWeight: 600 } : undefined}>{p.graves}</td>
+                      <td style={p.graves > 0 ? { color: "var(--ambre)", fontWeight: 600 } : undefined}>{p.graves}</td>
                       <td>{p.rendez_vous}</td>
                       <td>{p.note ?? "—"}</td>
                     </tr>

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/hanken-grotesk";
 import "./globals.css";
 
 export const metadata: Metadata = {

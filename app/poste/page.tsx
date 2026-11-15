@@ -107,7 +107,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
                 <td>{d.contactes}</td>
                 <td>{d.reponses}</td>
                 <td>{d.interesses}</td>
-                <td style={d.a_envoyer + d.demandes > 0 ? { color: "#b4690e", fontWeight: 600 } : undefined}>{d.a_envoyer + d.demandes > 0 ? `${d.a_envoyer} réponse${d.a_envoyer > 1 ? "s" : ""} · ${d.demandes} demande${d.demandes > 1 ? "s" : ""}` : "—"}</td>
+                <td style={d.a_envoyer + d.demandes > 0 ? { color: "var(--ambre)", fontWeight: 600 } : undefined}>{d.a_envoyer + d.demandes > 0 ? `${d.a_envoyer} réponse${d.a_envoyer > 1 ? "s" : ""} · ${d.demandes} demande${d.demandes > 1 ? "s" : ""}` : "—"}</td>
               </tr>
             ))}
           </tbody>
