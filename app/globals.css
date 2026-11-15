@@ -449,3 +449,7 @@ small { line-height: 1.45; }
 .statut, .etat.fort { letter-spacing: 0; }
 .essai { color: var(--ambre); border-color: var(--ambre); }
 .message.alerte { color: var(--rouge); }
+/* Quatre tuiles : sur une ligne quand elles tiennent, sinon deux par deux, jamais trois et une */
+.chiffres, .entonnoir:has(> :nth-child(4):last-child) { grid-template-columns: repeat(auto-fit, minmax(clamp((100% - 48px) / 4, (660px - 100%) * 999, (100% - 16px) / 2), 1fr)); }
+.entonnoir { container-type: inline-size; }
+@container (max-width: 659px) { .entonnoir:has(> :nth-child(4):last-child) .chiffre:nth-child(2n)::after { display: none; } }
