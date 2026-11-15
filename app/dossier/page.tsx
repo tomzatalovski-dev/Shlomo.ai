@@ -25,6 +25,7 @@ function Dossier() {
   const [resume, setResume] = useState<ResumeIA | null>(null);
   const [faits, setFaits] = useState<{ texte: string; source: string }[]>([]);
   const [faitsVus, setFaitsVus] = useState(0);
+  const [annonces, setAnnonces] = useState<Extract<Evenement, { type: "annonces" }> | null>(null);
   const [points, setPoints] = useState(0);
   const [description, setDescription] = useState("");
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
@@ -49,6 +50,9 @@ function Dossier() {
       setSite(e);
       if (e.description) setDescription((d) => d || e.description!);
       await attendre(500);
+    } else if (e.type === "annonces") {
+      setAnnonces(e);
+      await attendre(400);
     } else if (e.type === "faits") {
       setFaits(e.faits);
       for (let i = 1; i <= e.faits.length; i++) {
@@ -123,6 +127,8 @@ function Dossier() {
   const hausse = dernier?.chiffreAffaires && avant?.chiffreAffaires ? Math.round((dernier.chiffreAffaires / avant.chiffreAffaires - 1) * 100) : undefined;
 
   const estimation = societe ? estimer(societe.finances) : null;
+  // Un chiffre absent n'est pas un trou : le bulletin officiel dit s'il est confidentiel ou jamais déposé.
+  const sansChiffre = annonces?.comptes === "confidentiels" ? "Confidentiel" : annonces?.comptes === "aucun_depot" ? "Jamais déposé" : "Non publié";
   const saisi = Number(resultatSaisi.replace(/[^\d]/g, ""));
   const aLaMain = saisi > 0 ? fourchette(saisi) : null;
 
@@ -231,8 +237,8 @@ function Dossier() {
               <div className="chiffres">
                 {tuile(1, "Création", societe.anneeCreation ? <Compteur valeur={societe.anneeCreation} duree={600} /> : "Non publié")}
                 {tuile(2, `Effectif${societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}`, societe.effectif ?? "Non publié")}
-                {tuile(3, `Chiffre d'affaires${dernier ? ` ${dernier.annee}` : ""}`, dernier?.chiffreAffaires !== undefined ? <Compteur valeur={dernier.chiffreAffaires} format={euros} /> : "Non publié")}
-                {tuile(4, `Résultat${dernier ? ` ${dernier.annee}` : ""}`, dernier?.resultat !== undefined ? <Compteur valeur={dernier.resultat} format={euros} /> : "Non publié")}
+                {tuile(3, `Chiffre d'affaires${dernier ? ` ${dernier.annee}` : ""}`, dernier?.chiffreAffaires !== undefined ? <Compteur valeur={dernier.chiffreAffaires} format={euros} /> : sansChiffre)}
+                {tuile(4, `Résultat${dernier ? ` ${dernier.annee}` : ""}`, dernier?.resultat !== undefined ? <Compteur valeur={dernier.resultat} format={euros} /> : sansChiffre)}
               </div>
 
               {evolution && dernier && avant && dernier.chiffreAffaires && avant.chiffreAffaires && (
@@ -262,7 +268,7 @@ function Dossier() {
                     <>
                       <p className="message">
                         {estimation.raison === "sans_comptes"
-                          ? "Vos comptes ne sont pas publiés : je ne donne pas de chiffre au hasard. Indiquez votre résultat net annuel moyen pour obtenir un ordre de grandeur."
+                          ? (annonces?.comptes === "confidentiels" ? "Vos comptes sont déposés sous confidentialité" : annonces?.comptes === "aucun_depot" ? "Aucun dépôt de comptes ne figure au bulletin officiel" : "Vos comptes ne sont pas publiés") + " : je ne donne pas de chiffre au hasard. Indiquez votre résultat net annuel moyen pour obtenir un ordre de grandeur."
                           : "Votre dernier résultat publié est négatif : un multiple du résultat ne dirait rien. Si l'année était exceptionnelle, indiquez votre résultat net d'une année normale."}
                       </p>
                       <div className="rappel">
@@ -298,6 +304,19 @@ function Dossier() {
                 <div>
                   <p className="source" style={{ marginBottom: 10 }}>Ce qui intéressera un repreneur</p>
                   <ul className="points">{resume.pointsForts.slice(0, points).map((p) => <li key={p} className="apparait">{p}</li>)}</ul>
+                </div>
+              )}
+
+              {annonces && annonces.liste.length > 0 && (
+                <div className="apparait">
+                  <p className="source" style={{ marginBottom: 10 }}>Annonces légales · bulletin officiel (BODACC){annonces.total > annonces.liste.length ? ` · ${annonces.liste.length} sur ${annonces.total}` : ""}</p>
+                  <ul className="points">
+                    {annonces.liste.map((a) => (
+                      <li key={a.url}>
+                        {a.date.split("-").reverse().join("/")} · {a.famille}{a.detail ? ` · ${a.detail}` : ""} <a className="origine" href={a.url} target="_blank" rel="noreferrer nofollow">bodacc.fr</a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 

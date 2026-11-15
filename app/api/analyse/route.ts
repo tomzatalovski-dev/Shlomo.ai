@@ -6,6 +6,7 @@ import { choisirSociete, nomsCandidats } from "@/lib/identite";
 import { composerMetiers } from "@/lib/metiers";
 import { mesurer } from "@/lib/base";
 import { enqueter, siteConfirme } from "@/lib/enquete";
+import { etatDesComptes, lireAnnonces } from "@/lib/bodacc";
 import type { Evenement, LectureSite, Societe } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -118,11 +119,36 @@ export async function GET(requete: Request) {
         if (!societe.active) dire({ type: "journal", texte: "Le registre indique une société cessée", etat: "alerte" });
 
         const annees = societe.finances.map((f) => f.annee);
-        dire(
-          annees.length
-            ? { type: "journal", texte: `Comptes publiés récupérés : ${annees.join(", ")}`, etat: "ok" }
-            : { type: "journal", texte: "Comptes non publiés ou déposés sous confidentialité : vous seul pouvez les fournir", etat: "alerte" },
-        );
+        if (annees.length) dire({ type: "journal", texte: `Comptes publiés récupérés : ${annees.join(", ")}`, etat: "ok" });
+
+        // Annonces légales : ce que le bulletin officiel a publié sur la société.
+        dire({ type: "encours", texte: "Lecture des annonces légales au bulletin officiel" });
+        const annonces = await lireAnnonces(societe.siren);
+        if (!annonces) {
+          dire({ type: "journal", texte: "Le bulletin officiel des annonces légales ne répond pas", etat: "alerte" });
+          if (!annees.length) dire({ type: "journal", texte: "Comptes non publiés au registre : vous seul pouvez les fournir", etat: "alerte" });
+        } else {
+          const comptes = etatDesComptes(annonces);
+          // Les modifications courantes encombrent : on montre d'abord ce qui compte pour une cession.
+          const utiles = [...annonces.filter((a) => a.genre === "procedure" || a.genre === "vente"), ...annonces.filter((a) => a.genre === "comptes").slice(0, 2), ...annonces.filter((a) => a.genre === "modification" || a.genre === "creation" || a.genre === "radiation").slice(0, 3)]
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .slice(0, 6);
+          dire({ type: "annonces", liste: utiles, total: annonces.length, comptes });
+          dire({ type: "journal", texte: annonces.length ? `${annonces.length} annonce${annonces.length > 1 ? "s" : ""} légale${annonces.length > 1 ? "s" : ""} au bulletin officiel` : "Aucune annonce légale au bulletin officiel", etat: "ok" });
+          if (annonces.some((a) => a.genre === "procedure")) dire({ type: "journal", texte: "Une procédure collective figure au bulletin officiel : un repreneur la verra aussi", etat: "alerte" });
+          if (!annees.length) {
+            dire({
+              type: "journal",
+              texte:
+                comptes === "confidentiels"
+                  ? "Comptes déposés avec une déclaration de confidentialité : ils existent, mais vous seul pouvez les montrer"
+                  : comptes === "deposes"
+                    ? "Des comptes ont été déposés, mais leurs chiffres ne sont pas en accès libre : vous pouvez les fournir"
+                    : "Aucun dépôt de comptes au bulletin officiel : vous seul pouvez fournir vos chiffres",
+              etat: "alerte",
+            });
+          }
+        }
 
         // L'enquête : ce que le web public dit de la société. Elle tourne pendant que la fiche se rédige quand le site est connu ;
         // sans site, elle passe d'abord, car c'est elle qui peut le retrouver.
@@ -170,7 +196,7 @@ export async function GET(requete: Request) {
         if (texteFiche && iaActive()) {
           dire({ type: "encours", texte: "Rédaction de la fiche" });
           try {
-            const resume = await resumer(societe, texteFiche);
+            const resume = await resumer(societe, texteFiche, origine === "du site" ? "site" : "web");
             if (resume) {
               dire({ type: "resume", resume });
               dire({ type: "journal", texte: `Fiche rédigée à partir ${origine}`, etat: "ok" });

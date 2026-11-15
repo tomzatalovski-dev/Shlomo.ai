@@ -125,6 +125,7 @@ export type Evenement =
   | { type: "societe"; societe: Societe }
   | { type: "site"; domaine: string; titre?: string; description?: string; confirmation?: "sur" | "probable" }
   | { type: "resume"; resume: ResumeIA }
+  | { type: "annonces"; liste: { date: string; famille: string; genre: string; detail?: string; confidentiel?: boolean; url: string }[]; total: number; comptes: "confidentiels" | "deposes" | "aucun_depot" }
   | { type: "faits"; faits: { texte: string; source: string }[]; requetes: string[]; pages: PageLue[] }
   | { type: "besoin_siren"; message: string; propositions?: Proposition[] }
   | { type: "metiers"; libelle?: string; liste: (Metier & { total?: number })[] }

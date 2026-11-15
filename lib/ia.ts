@@ -24,7 +24,7 @@ Réponds uniquement par un objet JSON :
  "codes": [{"code": "code NAF rév. 2 au format 62.01Z", "libelle": "intitulé court de ce code", "lien": "meme ou voisin"}]}
 Pour "codes" : quatre au plus. "meme" pour le ou les codes qui décrivent le métier réel (garde celui du registre s'il est juste, écarte-le s'il est seulement administratif, comme le siège social ou les services de bureau). "voisin" pour des activités dont les sociétés auraient une raison de racheter celle-ci : même clientèle, métier complémentaire, amont ou aval. Ne donne que des codes dont tu es sûr ; une liste vide vaut mieux qu'un code inventé.`;
 
-export async function resumer(societe: Societe, texteSite: string): Promise<ResumeIA | null> {
+export async function resumer(societe: Societe, texteSite: string, origine: "site" | "web" = "site"): Promise<ResumeIA | null> {
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
 
@@ -36,7 +36,7 @@ export async function resumer(societe: Societe, texteSite: string): Promise<Resu
       model: MODELE,
       // Le modèle réfléchit avant de répondre, et sa réflexion compte dans ce plafond.
       max_tokens: 4000,
-      system: CONSIGNE,
+      system: origine === "web" ? `${CONSIGNE}\nIci la société n'a pas de site connu : le texte entre les balises vient de pages publiques qui parlent d'elle. N'écris jamais « le site » ; si un point manque, dis que les sources publiques ne le précisent pas.` : CONSIGNE,
       messages: [
         {
           role: "user",
