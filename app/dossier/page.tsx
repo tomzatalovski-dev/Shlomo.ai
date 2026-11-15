@@ -128,7 +128,7 @@ function Dossier() {
 
   const estimation = societe ? estimer(societe.finances) : null;
   // Un chiffre absent n'est pas un trou : le bulletin officiel dit s'il est confidentiel ou jamais déposé.
-  const sansChiffre = annonces?.comptes === "confidentiels" ? "Confidentiel" : annonces?.comptes === "aucun_depot" ? "Jamais déposé" : "Non publié";
+  const sansChiffre = annonces?.comptes === "confidentiels" ? "Confidentiel" : annonces?.comptes === "aucun_depot" ? "Aucun dépôt publié" : "Non publié";
   const saisi = Number(resultatSaisi.replace(/[^\d]/g, ""));
   const aLaMain = saisi > 0 ? fourchette(saisi) : null;
 
