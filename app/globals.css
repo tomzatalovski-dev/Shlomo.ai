@@ -25,7 +25,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .page { min-height: 100vh; display: flex; flex-direction: column; }
 
 /* En-tête */
-.haut { display: flex; align-items: center; gap: 40px; padding: 32px 64px; flex-wrap: wrap; }
+.haut { display: flex; align-items: center; gap: 40px; padding: 32px clamp(24px, 5vw, 64px); flex-wrap: wrap; }
 .logo { font-family: var(--titre); font-weight: 700; font-size: 21px; letter-spacing: -0.02em; text-decoration: none; }
 .etapes { display: flex; align-items: center; gap: 8px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
 .etapes li { min-width: 28px; height: 28px; border-radius: 14px; display: grid; place-items: center; font-size: 13px; font-weight: 500; border: 1px solid var(--contour); color: var(--gris); }
@@ -57,9 +57,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .pied { font-size: 13px; color: var(--gris); text-align: center; padding: 0 24px 40px; margin: 0; }
 
 /* Dossier */
-.corps { display: flex; gap: 72px; padding: 32px 64px 96px; flex-wrap: wrap; align-items: flex-start; }
+.corps { display: flex; gap: 32px clamp(32px, 5vw, 72px); padding: 32px clamp(24px, 5vw, 64px) 96px; flex-wrap: wrap; align-items: flex-start; }
 .journal { flex: 0 0 280px; display: flex; flex-direction: column; }
-.resultat { flex: 1 1 560px; min-width: 0; max-width: 960px; display: flex; flex-direction: column; gap: 32px; }
+.resultat { flex: 1 1 480px; min-width: 0; max-width: 960px; display: flex; flex-direction: column; gap: 32px; }
 .qui { font-size: 14px; padding-bottom: 20px; border-bottom: 1px solid var(--trait); margin-bottom: 20px; }
 .qui b { display: block; font-size: 15px; }
 .qui span { color: var(--gris); }
