@@ -407,3 +407,12 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .poste-saisie textarea { font-size: 14px; }
 .bouton.petit { min-height: 40px; padding: 0 18px; font-size: 14px; }
 .faute-poste { color: #b4690e; font-size: 13px; margin: 10px 0 0; }
+
+/* Décisions du vendeur et accord de confidentialité */
+.deux-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+@media (max-width: 700px) { .deux-champs { grid-template-columns: 1fr; } }
+.carte.decider { border-color: var(--encre); }
+.decision { display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decision small { color: var(--gris); font-size: 13px; }
+.decision button.lien, .carte button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 14px; min-height: 0; }
+.decision button.lien.discret { color: var(--gris); }

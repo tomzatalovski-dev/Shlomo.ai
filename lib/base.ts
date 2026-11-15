@@ -47,9 +47,16 @@ export type Presentation = {
   canal?: "a_envoyer" | "refus_demarchage" | null;
   site?: string | null;
   signaux?: Signal[] | null;
+  revelation?: "autorisee" | "refusee" | null;
+  accord?: AccordSigne | null;
 };
 
+/** Accord de confidentialité signé par un repreneur. */
+export type AccordSigne = { signataire: string; qualite?: string | null; signe_le: string };
+export type Fourchette = { bas: number; haut: number };
+
 export type Suivi = {
+  fourchette?: Fourchette | null;
   societe: { siren: string; nom: string };
   jeton_fiche?: string;
   presentation?: string | null;
@@ -163,7 +170,7 @@ export type Echange = { id: number; de: "repreneur" | "shlomo"; texte: string; e
 
 export type LignePoste = { id: string; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
 
-export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; echanges: Echange[] };
+export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; jeton_accord: string; revelation?: "autorisee" | "refusee" | null; accord?: AccordSigne | null; echanges: Echange[] };
 
 export type DossierPoste = {
   id: string;
@@ -171,6 +178,7 @@ export type DossierPoste = {
   siren: string;
   jeton: string;
   jeton_fiche: string;
+  fourchette?: Fourchette | null;
   fiche: { ville?: string | null; effectif?: string | null; site?: string | null; activite?: string | null; region?: string | null } | null;
   presentations: RepreneurPoste[];
   interets: { id: number; nom: string; societe?: string | null; contact: string; cree_le: string; siren?: string | null }[];
@@ -214,4 +222,36 @@ export async function traiterEchange(code: string, echange: number, etat: "envoy
 export async function rattacherInteret(code: string, dossier: string, interet: number, siren: string): Promise<boolean> {
   if (!jetonValide(code) || !jetonValide(dossier) || !Number.isInteger(interet) || !SIREN.test(siren)) return false;
   return appeler<boolean>("rattacher_interet", { p_code: code, p_dossier: dossier, p_interet: interet, p_siren: siren });
+}
+
+/** Le vendeur confirme lui-même la fourchette de prix. Sans elle, le négociateur n'annonce aucun montant. */
+export async function validerFourchette(jeton: string, bas: number, haut: number): Promise<boolean> {
+  if (!jetonValide(jeton) || !Number.isInteger(bas) || !Number.isInteger(haut)) return false;
+  return appeler<boolean>("valider_fourchette", { p_jeton: jeton, p_bas: bas, p_haut: haut });
+}
+
+/** Ce que voit un repreneur sur la page de l'accord. `cedant` n'est rempli qu'après signature et feu vert du vendeur. */
+export type PageAccord = {
+  repreneur: string;
+  decideur?: string | null;
+  cession: { activite?: string | null; region?: string | null; effectif?: string | null };
+  accord: AccordSigne | null;
+  revelation?: "autorisee" | "refusee" | null;
+  cedant: { nom: string; siren: string; ville?: string | null; site?: string | null } | null;
+};
+
+export async function lireAccord(jeton: string): Promise<PageAccord | null> {
+  if (!jetonValide(jeton)) return null;
+  return appeler<PageAccord | null>("lire_accord", { p_jeton: jeton });
+}
+
+export async function signerAccord(jeton: string, signataire: string, qualite: string): Promise<boolean> {
+  if (!jetonValide(jeton)) return false;
+  return appeler<boolean>("signer_accord", { p_jeton: jeton, p_signataire: signataire, p_qualite: qualite });
+}
+
+/** Le vendeur autorise ou refuse que son nom soit communiqué à un repreneur qui a signé l'accord. */
+export async function deciderRevelation(jeton: string, siren: string, autorise: boolean): Promise<boolean> {
+  if (!jetonValide(jeton) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("decider_revelation", { p_jeton: jeton, p_siren: siren, p_autorise: autorise });
 }

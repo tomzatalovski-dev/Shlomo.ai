@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { DossierPoste, RepreneurPoste } from "@/lib/base";
 import { conversation, dossierPour } from "@/lib/negociation/poste";
 
-const r = (siren: string, statut: RepreneurPoste["statut"], plus: Partial<RepreneurPoste> = {}): RepreneurPoste => ({ siren, nom: `R${siren}`, rang: 1, statut, exclu: false, echanges: [], ...plus });
-const d = (presentations: RepreneurPoste[]): DossierPoste => ({ id: "x", nom: "ATELIER VERDIER", siren: "123456789", jeton: "j", jeton_fiche: "f", fiche: { ville: "CHAMBERY", activite: "Menuiserie", region: "84", effectif: "10 à 19 salariés" }, presentations, interets: [] });
+const r = (siren: string, statut: RepreneurPoste["statut"], plus: Partial<RepreneurPoste> = {}): RepreneurPoste => ({ siren, nom: `R${siren}`, rang: 1, statut, exclu: false, jeton_accord: "a", echanges: [], ...plus });
+const d = (presentations: RepreneurPoste[], plus: Partial<DossierPoste> = {}): DossierPoste => ({ id: "x", nom: "ATELIER VERDIER", siren: "123456789", jeton: "j", jeton_fiche: "f", fiche: { ville: "CHAMBERY", activite: "Menuiserie", region: "84", effectif: "10 à 19 salariés" }, presentations, interets: [], ...plus });
 
 describe("faits transmis au négociateur", () => {
   it("ne compte que les repreneurs réellement en discussion", () => {
@@ -17,9 +17,16 @@ describe("faits transmis au négociateur", () => {
     expect(faits.echeance).toBeNull();
     expect(faits.repreneursActifs).toBe(1);
   });
-  it("ne considère l'accord signé qu'à partir de l'étape correspondante", () => {
-    expect(dossierPour(d([r("111111111", "interesse")]), "111111111")!.accordSigne).toBe(false);
-    expect(dossierPour(d([r("111111111", "confidentialite_signee")]), "111111111")!.accordSigne).toBe(true);
+  it("ne permet le nom qu'après l'accord signé et le feu vert du vendeur", () => {
+    const accord = { signataire: "Jean Martin", signe_le: "" };
+    expect(dossierPour(d([r("111111111", "confidentialite_signee")]), "111111111")!.accordSigne).toBe(false);
+    expect(dossierPour(d([r("111111111", "confidentialite_signee", { accord })]), "111111111")!.accordSigne).toBe(false);
+    expect(dossierPour(d([r("111111111", "confidentialite_signee", { accord, revelation: "refusee" })]), "111111111")!.accordSigne).toBe(false);
+    expect(dossierPour(d([r("111111111", "confidentialite_signee", { revelation: "autorisee" })]), "111111111")!.accordSigne).toBe(false);
+    expect(dossierPour(d([r("111111111", "confidentialite_signee", { accord, revelation: "autorisee" })]), "111111111")!.accordSigne).toBe(true);
+  });
+  it("transmet la fourchette validée par le vendeur", () => {
+    expect(dossierPour(d([r("111111111", "a_repondu")], { fourchette: { bas: 400000, haut: 600000 } }), "111111111")!.fourchette).toEqual({ bas: 400000, haut: 600000 });
   });
   it("donne le nom de la région, pas son code", () => {
     expect(dossierPour(d([r("111111111", "a_repondu")]), "111111111")!.region).toBe("Auvergne-Rhône-Alpes");

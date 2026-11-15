@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { BaseIndisponible, lireSuivi, type Presentation, type StatutPresentation } from "@/lib/base";
 import { Exclusion } from "./Exclusion";
+import { Prix } from "./Prix";
+import { Revelation } from "./Revelation";
+import { chercherSociete } from "@/lib/registre";
+import { estimer } from "@/lib/estimation";
 import { ordonner, prioriteDe } from "@/lib/priorite";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +74,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
 
   const actifs = suivi.presentations.filter((p) => !p.exclu);
   const autorise = suivi.mandat?.autorisation_approche === true;
+  const aDecider = actifs.filter((p) => p.accord && !p.revelation);
+  // Repère de prix tiré des comptes publiés, seulement tant que le vendeur n'a rien validé. Le registre peut être lent : on s'en passe alors.
+  let repere: { bas: number; haut: number } | null = null;
+  if (autorise && !suivi.fourchette) {
+    const societe = await chercherSociete(suivi.societe.siren).catch(() => null);
+    const estimation = societe ? estimer(societe.finances ?? []) : null;
+    if (estimation?.possible) repere = { bas: estimation.bas, haut: estimation.haut };
+  }
 
   return (
     <Cadre>
@@ -90,7 +102,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
             <h1>{autorise ? "Shlomo travaille pour vous." : "Votre mandat est signé."}</h1>
             <p className="sous">
               {suivi.mandat ? `Mandat de test signé par ${suivi.mandat.signataire} le ${date(suivi.mandat.signe_le)}, sans valeur juridique. ` : ""}
-              {autorise ? "Vous n'avez rien à faire : cette page se met à jour à chaque étape." : "Vous n'avez pas autorisé l'approche : aucun repreneur ne sera contacté."}
+              {autorise ? "Shlomo s'occupe de tout ; vos seules décisions s'affichent en haut de cette page." : "Vous n'avez pas autorisé l'approche : aucun repreneur ne sera contacté."}
             </p>
           </div>
 
@@ -100,6 +112,20 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
             <div className="chiffre"><span>Ont répondu</span><b>{compter(actifs, REPONSES)}</b></div>
             <div className="chiffre cle"><span>Intéressés</span><b>{compter(actifs, INTERESSES)}</b></div>
           </div>
+
+          {aDecider.length > 0 && (
+            <div className="carte decider">
+              <p className="message"><b>Une décision vous attend.</b> {aDecider.length > 1 ? "Ces repreneurs ont" : "Ce repreneur a"} signé l'accord de confidentialité. Votre nom ne leur est communiqué que si vous le décidez.</p>
+              {aDecider.map((p) => (
+                <div key={p.siren} className="ligne">
+                  <span className="quoi"><b>{p.nom}</b><small>Signé par {p.accord!.signataire}{p.accord!.qualite ? `, ${p.accord!.qualite}` : ""}, le {date(p.accord!.signe_le)} · {[p.ville, p.effectif].filter(Boolean).join(" · ")}</small></span>
+                  <span className="ou"><Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee={false} /></span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {autorise && <Prix jeton={jeton} validee={suivi.fourchette ?? null} repere={repere} />}
 
           <div className="carte liste">
             {ordonner(suivi.presentations).map((p) => (
@@ -122,6 +148,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                   <b className={INTERESSES.includes(p.statut) ? "etat fort" : "etat"}>{p.exclu ? "Rayé à votre demande" : p.canal === "refus_demarchage" ? "Ne veut pas être démarché" : p.statut === "identifie" && p.canal === "a_envoyer" ? (prioriteDe(p.signaux) === "a_verifier" ? "À vérifier avant envoi" : prioriteDe(p.signaux) === "prioritaire" ? "Approche prête, en priorité" : "Approche prête") : STATUT[p.statut]}</b>
                   <br />
                   <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
+                  {p.accord && p.revelation === "autorisee" && <><br /><small>Votre nom lui a été communiqué</small></>}
+                  {p.accord && p.revelation === "refusee" && <><br /><small>Vous avez refusé de vous nommer</small> <Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee /></>}
                   {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
                 </span>
                 <span className="note">{p.score ?? ""}</span>

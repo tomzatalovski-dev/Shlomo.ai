@@ -18,12 +18,12 @@ export const ETAPES: [StatutPresentation, string][] = [
 ];
 
 const EN_DISCUSSION: StatutPresentation[] = ["a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "offre"];
-const ACCORD: StatutPresentation[] = ["confidentialite_signee", "rendez_vous", "offre", "conclu"];
 
 /**
  * Les faits que le négociateur et les garde-fous ont le droit d'utiliser pour ce repreneur.
  * Tout vient de la base : le nombre de repreneurs en discussion et d'offres est compté, jamais supposé.
- * Aucune fourchette n'est transmise tant que le vendeur n'en a pas validé une : aucun montant ne peut donc partir.
+ * La fourchette est celle que le vendeur a validée lui-même ; sans elle, aucun montant ne peut partir.
+ * Le nom du vendeur n'est permis que si ce repreneur a signé l'accord et que le vendeur a donné son feu vert.
  */
 export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
   const lui = d.presentations.find((p) => p.siren === siren && !p.exclu);
@@ -35,8 +35,8 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
     // Le registre donne un code de région : le négociateur reçoit le nom.
     region: REGIONS[d.fiche?.region ?? ""] ?? "",
     effectif: d.fiche?.effectif ?? "",
-    fourchette: null,
-    accordSigne: ACCORD.includes(lui.statut),
+    fourchette: d.fourchette && d.fourchette.bas > 0 && d.fourchette.haut >= d.fourchette.bas ? { bas: d.fourchette.bas, haut: d.fourchette.haut } : null,
+    accordSigne: Boolean(lui.accord) && lui.revelation === "autorisee",
     repreneursActifs: 1 + autres.filter((p) => EN_DISCUSSION.includes(p.statut)).length,
     offresRecues: d.presentations.filter((p) => !p.exclu && p.statut === "offre").length,
     echeance: null,

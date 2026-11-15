@@ -73,6 +73,15 @@ export default function Fil({ code, dossier, repreneur, etapes, ouvert }: { code
         {repreneur.site && <a className="lien" href={repreneur.site.startsWith("http") ? repreneur.site : `https://${repreneur.site}`} target="_blank" rel="noreferrer nofollow">Site</a>}
       </div>
 
+      {!refuse && (
+        <p className="source">
+          {repreneur.accord
+            ? `Accord de confidentialité signé par ${repreneur.accord.signataire}${repreneur.accord.qualite ? `, ${repreneur.accord.qualite}` : ""}, le ${heure(repreneur.accord.signe_le)}. ${repreneur.revelation === "autorisee" ? "Le vendeur a donné son feu vert : le nom s'affiche sur la page de l'accord." : repreneur.revelation === "refusee" ? "Le vendeur a refusé que son nom soit communiqué." : "Le vendeur doit encore donner son feu vert dans son suivi."} `
+            : "Accord de confidentialité non signé. "}
+          <button type="button" className="lien" onClick={() => copier("accord", `${window.location.origin}/accord?a=${repreneur.jeton_accord}`)}>{copie === "accord" ? "Lien copié" : "Copier le lien de l'accord"}</button>
+        </p>
+      )}
+
       {refuse && <p className="source">Cette société a demandé à ne pas être démarchée : aucun message ne doit lui être envoyé.</p>}
 
       {!refuse && repreneur.message && (

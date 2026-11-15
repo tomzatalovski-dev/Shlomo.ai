@@ -44,7 +44,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <h1>{d.nom}</h1>
           <p className="sous">
             {[d.fiche?.activite, d.fiche?.ville, d.fiche?.effectif].filter(Boolean).join(" · ")}. Le négociateur propose, vous envoyez : rien ne part de cette page.
-            Aucun prix n'est validé par le vendeur, il n'en annoncera donc aucun.
+            {d.fourchette ? ` Fourchette validée par le vendeur : ${d.fourchette.bas.toLocaleString("fr-FR")} € à ${d.fourchette.haut.toLocaleString("fr-FR")} €.` : " Aucun prix n'est validé par le vendeur, il n'en annoncera donc aucun."}
           </p>
           <div className="actions">
             <a className="lien" href={`/suivi?d=${d.jeton}`} target="_blank" rel="noreferrer">Suivi vu par le vendeur</a>
