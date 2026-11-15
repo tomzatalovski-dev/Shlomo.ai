@@ -10,6 +10,8 @@ export type Dossier = {
   fourchette: { bas: number; haut: number } | null;
   /** L'accord de confidentialité est-il signé par ce repreneur ? */
   accordSigne: boolean;
+  /** L'accord est signé, mais le vendeur n'a pas encore donné son feu vert : le nom reste interdit. */
+  accordEnAttente?: boolean;
   /** Nombre de repreneurs réellement en discussion sur ce dossier, celui-ci compris. */
   repreneursActifs: number;
   /** Nombre d'offres réellement reçues. */

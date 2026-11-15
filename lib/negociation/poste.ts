@@ -37,6 +37,7 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
     effectif: d.fiche?.effectif ?? "",
     fourchette: d.fourchette && d.fourchette.bas > 0 && d.fourchette.haut >= d.fourchette.bas ? { bas: d.fourchette.bas, haut: d.fourchette.haut } : null,
     accordSigne: Boolean(lui.accord) && lui.revelation === "autorisee",
+    accordEnAttente: Boolean(lui.accord) && lui.revelation !== "autorisee",
     repreneursActifs: 1 + autres.filter((p) => EN_DISCUSSION.includes(p.statut)).length,
     offresRecues: d.presentations.filter((p) => !p.exclu && p.statut === "offre").length,
     echeance: null,

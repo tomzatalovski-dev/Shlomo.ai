@@ -115,7 +115,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
 
           {aDecider.length > 0 && (
             <div className="carte decider">
-              <p className="message"><b>Une décision vous attend.</b> {aDecider.length > 1 ? "Ces repreneurs ont" : "Ce repreneur a"} signé l'accord de confidentialité. Votre nom ne leur est communiqué que si vous le décidez.</p>
+              <p className="message"><b>Une décision vous attend.</b> {aDecider.length > 1 ? "Ces repreneurs ont signé l'accord de confidentialité. Votre nom ne leur est communiqué que si vous le décidez." : "Ce repreneur a signé l'accord de confidentialité. Votre nom ne lui est communiqué que si vous le décidez."}</p>
               {aDecider.map((p) => (
                 <div key={p.siren} className="ligne">
                   <span className="quoi"><b>{p.nom}</b><small>Signé par {p.accord!.signataire}{p.accord!.qualite ? `, ${p.accord!.qualite}` : ""}, le {date(p.accord!.signe_le)} · {[p.ville, p.effectif].filter(Boolean).join(" · ")}</small></span>

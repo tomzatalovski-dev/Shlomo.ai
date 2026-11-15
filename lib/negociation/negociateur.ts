@@ -53,7 +53,11 @@ function vue(dossier: Dossier) {
     region: dossier.region,
     effectif: dossier.effectif,
     fourchette_validee_par_le_vendeur: dossier.fourchette ? `${dossier.fourchette.bas.toLocaleString("fr-FR")} € à ${dossier.fourchette.haut.toLocaleString("fr-FR")} €` : null,
-    accord_de_confidentialite_signe: dossier.accordSigne,
+    confidentialite: dossier.accordSigne
+      ? "Accord signé et feu vert du cédant : le repreneur a déjà reçu le nom de la société, sur la page de l'accord. Ne dis plus que le nom viendra plus tard. La suite est un rendez-vous avec le cédant."
+      : dossier.accordEnAttente
+        ? "Accord signé par le repreneur. Le cédant doit encore donner son feu vert : le nom n'est pas communiqué pour l'instant, et tu ne promets aucun délai."
+        : "Accord non signé : le nom n'est pas communiqué.",
     repreneurs_en_discussion_celui_ci_compris: dossier.repreneursActifs,
     offres_recues: dossier.offresRecues,
     date_de_remise_des_offres: dossier.echeance,
