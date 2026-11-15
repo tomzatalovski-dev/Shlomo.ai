@@ -10,14 +10,14 @@ const CLE_PUBLIQUE = process.env.SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_b1b
 
 export class BaseIndisponible extends Error {}
 
-async function appeler<T>(fonction: string, arguments_: Record<string, unknown>): Promise<T> {
+async function appeler<T>(fonction: string, arguments_: Record<string, unknown>, delai = 10_000): Promise<T> {
   let rep: Response;
   try {
     rep = await fetch(`${URL_BASE}/rest/v1/rpc/${fonction}`, {
       method: "POST",
       headers: { "content-type": "application/json", apikey: CLE_PUBLIQUE },
       body: JSON.stringify(arguments_),
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(delai),
       cache: "no-store",
     });
   } catch (e) {
@@ -49,7 +49,13 @@ export type Presentation = {
   signaux?: Signal[] | null;
   revelation?: "autorisee" | "refusee" | null;
   accord?: AccordSigne | null;
+  rendez_vous?: string | null;
+  offres?: Offre[];
 };
+
+/** Offre chiffrée déposée par un repreneur, et la réponse du vendeur. */
+export type Offre = { id: number; prix: number; financement?: string | null; calendrier?: string | null; conditions?: string | null; deposee_le: string; reponse?: "acceptee" | "refusee" | "a_ameliorer" | null; reponse_le?: string | null };
+export type DocumentDepose = { id: string; nom: string; taille: number; depose_le?: string; consultations?: { nom: string; vu_le: string }[] };
 
 /** Accord de confidentialité signé par un repreneur. */
 export type AccordSigne = { signataire: string; qualite?: string | null; signe_le: string };
@@ -57,6 +63,8 @@ export type Fourchette = { bas: number; haut: number };
 
 export type Suivi = {
   fourchette?: Fourchette | null;
+  creneaux?: string[];
+  documents?: DocumentDepose[];
   societe: { siren: string; nom: string };
   jeton_fiche?: string;
   presentation?: string | null;
@@ -170,7 +178,7 @@ export type Echange = { id: number; de: "repreneur" | "shlomo"; texte: string; e
 
 export type LignePoste = { id: string; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
 
-export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; jeton_accord: string; revelation?: "autorisee" | "refusee" | null; accord?: AccordSigne | null; echanges: Echange[] };
+export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; jeton_accord: string; revelation?: "autorisee" | "refusee" | null; accord?: AccordSigne | null; rendez_vous?: string | null; offres?: Offre[]; echanges: Echange[] };
 
 export type DossierPoste = {
   id: string;
@@ -179,6 +187,8 @@ export type DossierPoste = {
   jeton: string;
   jeton_fiche: string;
   fourchette?: Fourchette | null;
+  creneaux?: string[];
+  documents?: number;
   fiche: { ville?: string | null; effectif?: string | null; site?: string | null; activite?: string | null; region?: string | null } | null;
   presentations: RepreneurPoste[];
   interets: { id: number; nom: string; societe?: string | null; contact: string; cree_le: string; siren?: string | null }[];
@@ -238,6 +248,8 @@ export type PageAccord = {
   accord: AccordSigne | null;
   revelation?: "autorisee" | "refusee" | null;
   cedant: { nom: string; siren: string; ville?: string | null; site?: string | null } | null;
+  /** Ce que le repreneur autorisé peut consulter et faire : documents, prix annoncé, créneaux encore libres, ses offres. */
+  dossier: { fourchette?: Fourchette | null; documents: DocumentDepose[]; creneaux: string[]; rendez_vous?: string | null; offres: Offre[] } | null;
 };
 
 export async function lireAccord(jeton: string): Promise<PageAccord | null> {
@@ -254,4 +266,42 @@ export async function signerAccord(jeton: string, signataire: string, qualite: s
 export async function deciderRevelation(jeton: string, siren: string, autorise: boolean): Promise<boolean> {
   if (!jetonValide(jeton) || !SIREN.test(siren)) return false;
   return appeler<boolean>("decider_revelation", { p_jeton: jeton, p_siren: siren, p_autorise: autorise });
+}
+
+const UUID = jetonValide;
+export type Fichier = { nom: string; type?: string | null; contenu: string };
+
+/** Le vendeur dépose un document (contenu en base64). Renvoie son identifiant, ou null s'il est refusé (trop lourd, trop nombreux). */
+export async function deposerDocument(jeton: string, nom: string, type: string, contenu: string): Promise<string | null> {
+  if (!UUID(jeton)) return null;
+  return appeler<string | null>("deposer_document", { p_jeton: jeton, p_nom: nom, p_type: type, p_contenu: contenu }, 30_000);
+}
+export async function supprimerDocument(jeton: string, id: string): Promise<boolean> {
+  if (!UUID(jeton) || !UUID(id)) return false;
+  return appeler<boolean>("supprimer_document", { p_jeton: jeton, p_id: id });
+}
+export async function lireDocumentVendeur(jeton: string, id: string): Promise<Fichier | null> {
+  if (!UUID(jeton) || !UUID(id)) return null;
+  return appeler<Fichier | null>("lire_document_vendeur", { p_jeton: jeton, p_id: id });
+}
+/** La base ne rend le document que si ce repreneur a signé l'accord et reçu le feu vert ; elle note la consultation. */
+export async function lireDocumentRepreneur(jetonAccord: string, id: string): Promise<Fichier | null> {
+  if (!UUID(jetonAccord) || !UUID(id)) return null;
+  return appeler<Fichier | null>("lire_document_repreneur", { p_jeton_accord: jetonAccord, p_id: id });
+}
+export async function fixerCreneaux(jeton: string, creneaux: string[]): Promise<boolean> {
+  if (!UUID(jeton)) return false;
+  return appeler<boolean>("fixer_creneaux", { p_jeton: jeton, p_creneaux: creneaux });
+}
+export async function choisirCreneau(jetonAccord: string, creneau: string): Promise<boolean> {
+  if (!UUID(jetonAccord)) return false;
+  return appeler<boolean>("choisir_creneau", { p_jeton_accord: jetonAccord, p_creneau: creneau });
+}
+export async function deposerOffre(jetonAccord: string, o: { prix: number; financement: string; calendrier: string; conditions: string }): Promise<boolean> {
+  if (!UUID(jetonAccord) || !Number.isInteger(o.prix)) return false;
+  return appeler<boolean>("deposer_offre", { p_jeton_accord: jetonAccord, p_prix: o.prix, p_financement: o.financement, p_calendrier: o.calendrier, p_conditions: o.conditions });
+}
+export async function repondreOffre(jeton: string, offre: number, reponse: "acceptee" | "refusee" | "a_ameliorer"): Promise<boolean> {
+  if (!UUID(jeton) || !Number.isInteger(offre)) return false;
+  return appeler<boolean>("repondre_offre", { p_jeton: jeton, p_offre: offre, p_reponse: reponse });
 }

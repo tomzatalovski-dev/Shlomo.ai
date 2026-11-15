@@ -2,6 +2,7 @@ import type { DossierPoste, RepreneurPoste, StatutPresentation } from "../base";
 import type { Dossier } from "./gardefous";
 import type { Tour } from "./negociateur";
 import { REGIONS } from "../fiche";
+import { direCreneau } from "../creneaux";
 
 /** Étapes d'un repreneur, dans l'ordre. C'est la ligne unique que lisent le poste, le suivi du vendeur et le négociateur. */
 export const ETAPES: [StatutPresentation, string][] = [
@@ -39,8 +40,11 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
     accordSigne: Boolean(lui.accord) && lui.revelation === "autorisee",
     accordEnAttente: Boolean(lui.accord) && lui.revelation !== "autorisee",
     repreneursActifs: 1 + autres.filter((p) => EN_DISCUSSION.includes(p.statut)).length,
-    offresRecues: d.presentations.filter((p) => !p.exclu && p.statut === "offre").length,
+    offresRecues: d.presentations.filter((p) => !p.exclu && (p.offres?.length ?? 0) > 0).length,
     echeance: null,
+    // Seuls les créneaux encore libres sont proposés, et seulement quand le nom est déjà communiqué : avant, il n'y a pas de rencontre avec le cédant.
+    creneaux: lui.accord && lui.revelation === "autorisee" ? (d.creneaux ?? []).filter((c) => !d.presentations.some((p) => p.siren !== siren && p.rendez_vous === c)).map(direCreneau) : [],
+    offresDuRepreneur: (lui.offres ?? []).map((o) => o.prix),
   };
 }
 

@@ -61,6 +61,8 @@ function vue(dossier: Dossier) {
     repreneurs_en_discussion_celui_ci_compris: dossier.repreneursActifs,
     offres_recues: dossier.offresRecues,
     date_de_remise_des_offres: dossier.echeance,
+    disponibilites_du_cedant_pour_une_rencontre: dossier.creneaux?.length ? dossier.creneaux : "aucune indiquée : ne propose aucun horaire précis, demande au repreneur ses disponibilités",
+    offres_deposees_par_ce_repreneur: dossier.offresDuRepreneur?.length ? dossier.offresDuRepreneur.map((m) => `${m.toLocaleString("fr-FR")} €`) : [],
   };
 }
 

@@ -32,7 +32,16 @@ describe("faits transmis au négociateur", () => {
     expect(dossierPour(d([r("111111111", "a_repondu")]), "111111111")!.region).toBe("Auvergne-Rhône-Alpes");
   });
   it("compte les offres réellement remises", () => {
-    expect(dossierPour(d([r("111111111", "a_repondu"), r("222222222", "offre")]), "111111111")!.offresRecues).toBe(1);
+    const offre = { id: 1, prix: 450000, deposee_le: "" };
+    expect(dossierPour(d([r("111111111", "a_repondu"), r("222222222", "offre", { offres: [offre] })]), "111111111")!.offresRecues).toBe(1);
+    expect(dossierPour(d([r("111111111", "offre", { offres: [offre] })]), "111111111")!.offresDuRepreneur).toEqual([450000]);
+  });
+  it("ne propose que les créneaux libres, et seulement après le feu vert", () => {
+    const accord = { signataire: "Jean Martin", signe_le: "" };
+    const creneaux = ["2026-11-24T10:00", "2026-11-26T15:00"];
+    expect(dossierPour(d([r("111111111", "a_repondu")], { creneaux }), "111111111")!.creneaux).toEqual([]);
+    const faits = dossierPour(d([r("111111111", "confidentialite_signee", { accord, revelation: "autorisee" }), r("222222222", "rendez_vous", { rendez_vous: "2026-11-24T10:00" })], { creneaux }), "111111111")!;
+    expect(faits.creneaux).toEqual(["jeudi 26 novembre à 15 h 00"]);
   });
   it("refuse un repreneur rayé ou inconnu", () => {
     expect(dossierPour(d([r("111111111", "a_repondu", { exclu: true })]), "111111111")).toBeNull();

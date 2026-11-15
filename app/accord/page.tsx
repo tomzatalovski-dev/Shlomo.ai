@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { lireAccord } from "@/lib/base";
 import { REGIONS } from "@/lib/fiche";
 import Signer from "./Signer";
+import { Creneau, DeposerOffre } from "./Suite";
+import { direCreneau, euros, poids } from "@/lib/creneaux";
 
 export const dynamic = "force-dynamic";
 // L'adresse contient le jeton propre à ce repreneur : ni indexation, ni fuite vers d'autres sites.
@@ -53,8 +55,53 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                     <a className="lien" href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${a.cedant.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
                     {a.cedant.site && <a className="lien" href={a.cedant.site.startsWith("http") ? a.cedant.site : `https://${a.cedant.site}`} target="_blank" rel="noreferrer">Site</a>}
                   </div>
-                  <p className="source">Ces informations sont couvertes par l'accord que vous avez signé. L'équipe Shlomo vous propose un rendez-vous avec le cédant.</p>
+                  <p className="source">Ces informations sont couvertes par l'accord que vous avez signé.</p>
                 </div>
+              )}
+
+              {a.cedant && a.dossier && (
+                <>
+                  <div className="carte">
+                    <p className="message"><b>Le dossier.</b>{a.dossier.fourchette ? ` Prix annoncé par le cédant : ${euros(a.dossier.fourchette.bas)} à ${euros(a.dossier.fourchette.haut)}.` : " Le cédant n'a pas encore annoncé de prix."}</p>
+                    {a.dossier.documents.length > 0 ? (
+                      <div>
+                        {a.dossier.documents.map((d) => (
+                          <div key={d.id} className="ligne">
+                            <span className="quoi"><b><a href={`/api/document?a=${jeton}&id=${d.id}`}>{d.nom}</a></b><small>{poids(d.taille)}</small></span>
+                            <span className="ou"><a className="lien" href={`/api/document?a=${jeton}&id=${d.id}`}>Télécharger</a></span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="source">Le cédant n'a pas encore déposé de documents. Ils apparaîtront ici.</p>
+                    )}
+                    <p className="source">Chaque téléchargement est signalé au cédant. Ces documents sont couverts par l'accord que vous avez signé.</p>
+                  </div>
+
+                  <div className="carte">
+                    {a.dossier.rendez_vous ? (
+                      <p className="message"><b>Rendez-vous avec le cédant : {direCreneau(a.dossier.rendez_vous)}.</b> L'équipe Shlomo vous confirme le lieu ou le lien de visioconférence.</p>
+                    ) : a.dossier.creneaux.length > 0 ? (
+                      <>
+                        <p className="message"><b>Rencontrer le cédant.</b> Choisissez l'une de ses disponibilités.</p>
+                        <Creneau jeton={jeton} creneaux={a.dossier.creneaux} />
+                      </>
+                    ) : (
+                      <p className="message"><b>Rencontrer le cédant.</b> Il n'a pas encore indiqué ses disponibilités : l'équipe Shlomo revient vers vous.</p>
+                    )}
+                  </div>
+
+                  <div className="carte">
+                    <p className="message"><b>Votre offre.</b> Quand vous êtes prêt, déposez un prix et vos conditions.</p>
+                    {a.dossier.offres.map((o) => (
+                      <div key={o.id} className="ligne">
+                        <span className="quoi"><b>{euros(o.prix)}</b><small>{[o.financement, o.calendrier, o.conditions].filter(Boolean).join(" · ")}</small></span>
+                        <span className="ou"><b className={o.reponse === "acceptee" ? "etat fort" : "etat"}>{o.reponse === "acceptee" ? "Acceptée par le cédant" : o.reponse === "refusee" ? "Refusée par le cédant" : o.reponse === "a_ameliorer" ? "Le cédant attend mieux" : "En attente de sa réponse"}</b></span>
+                      </div>
+                    ))}
+                    {!a.dossier.offres.some((o) => o.reponse === "acceptee") && <DeposerOffre jeton={jeton} deja={a.dossier.offres.length > 0} />}
+                  </div>
+                </>
               )}
 
               <article className="contrat">

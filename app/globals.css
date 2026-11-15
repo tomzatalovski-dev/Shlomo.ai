@@ -454,3 +454,25 @@ small { line-height: 1.45; }
 .chiffres, .entonnoir:has(> :nth-child(4):last-child) { grid-template-columns: repeat(auto-fit, minmax(clamp((100% - 48px) / 4, (660px - 100%) * 999, (100% - 16px) / 2), 1fr)); }
 .entonnoir { container-type: inline-size; }
 @container (max-width: 659px) { .entonnoir:has(> :nth-child(4):last-child) .chiffre:nth-child(2n)::after { display: none; } }
+
+/* Dossier, rendez-vous et offres */
+.trois-champs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 700px) { .trois-champs { grid-template-columns: 1fr; } }
+.depot { display: inline-flex; align-items: center; cursor: pointer; position: relative; }
+.depot:has(input:disabled) { opacity: 0.6; cursor: default; }
+.depot:focus-within { outline: 2px solid var(--encre); outline-offset: 3px; }
+.carte button.lien.discret, .ligne button.lien.discret { color: var(--gris); }
+.offres { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.offre { border: 1px solid var(--trait); border-radius: 16px; padding: 24px; display: grid; gap: 12px; align-content: start; }
+.offre.repondue { background: var(--voile); border-color: transparent; }
+.offre small { color: var(--gris); font-size: 13px; }
+.offre .prix { font-size: 30px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.offre dl { margin: 0; display: grid; gap: 10px; }
+.offre dt { font-size: 13px; color: var(--gris); }
+.offre dd { margin: 2px 0 0; font-size: 14px; line-height: 1.5; color: var(--texte); }
+.offre .etat { margin: 0; font-size: 14px; }
+.choix-creneaux { display: flex; gap: 12px; flex-wrap: wrap; }
+.creneau { background: var(--carte); border: 1px solid var(--contour); border-radius: 14px; padding: 14px 18px; font-size: 15px; font-weight: 500; cursor: pointer; transition: border-color 0.2s ease; }
+.creneau:hover:not(:disabled) { border-color: var(--encre); }
+.creneau:disabled { opacity: 0.5; cursor: default; }
+.formulaire-offre { display: grid; gap: 16px; }

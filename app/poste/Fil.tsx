@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { RepreneurPoste, StatutPresentation } from "@/lib/base";
+import { direCreneau, euros } from "@/lib/creneaux";
 
 type Faute = { detail: string; grave: boolean; arretee?: boolean };
 
@@ -79,6 +80,13 @@ export default function Fil({ code, dossier, repreneur, etapes, ouvert }: { code
             ? `Accord de confidentialité signé par ${repreneur.accord.signataire}${repreneur.accord.qualite ? `, ${repreneur.accord.qualite}` : ""}, le ${heure(repreneur.accord.signe_le)}. ${repreneur.revelation === "autorisee" ? "Le vendeur a donné son feu vert : le nom s'affiche sur la page de l'accord." : repreneur.revelation === "refusee" ? "Le vendeur a refusé que son nom soit communiqué." : "Le vendeur doit encore donner son feu vert dans son suivi."} `
             : "Accord de confidentialité non signé. "}
           <button type="button" className="lien" onClick={() => copier("accord", `${window.location.origin}/accord?a=${repreneur.jeton_accord}`)}>{copie === "accord" ? "Lien copié" : "Copier le lien de l'accord"}</button>
+        </p>
+      )}
+
+      {(repreneur.rendez_vous || (repreneur.offres?.length ?? 0) > 0) && (
+        <p className="source">
+          {repreneur.rendez_vous ? `Rendez-vous avec le cédant : ${direCreneau(repreneur.rendez_vous)}. ` : ""}
+          {repreneur.offres?.map((o) => `Offre de ${euros(o.prix)} (${o.reponse === "acceptee" ? "acceptée" : o.reponse === "refusee" ? "refusée" : o.reponse === "a_ameliorer" ? "le vendeur attend mieux" : "en attente du vendeur"})`).join(" · ")}
         </p>
       )}
 

@@ -18,6 +18,10 @@ export type Dossier = {
   offresRecues: number;
   /** Date de remise des offres, si le vendeur en a fixé une. */
   echeance: string | null;
+  /** Disponibilités réelles du vendeur pour une rencontre, en clair. Le négociateur ne propose aucun autre horaire. */
+  creneaux?: string[];
+  /** Montants des offres que ce repreneur a lui-même déposées : il est permis de les citer. */
+  offresDuRepreneur?: number[];
 };
 
 export type Faute = { regle: "identite" | "prix" | "concurrence" | "echeance" | "civilite" | "promesse" | "longueur"; grave: boolean; detail: string };
@@ -56,7 +60,7 @@ export function verifier(reponse: string, dossier: Dossier, messageRepreneur = "
     fautes.push({ regle: "identite", grave: true, detail: "Le message laisse reconnaître le vendeur avant l'accord de confidentialité." });
   }
 
-  const avances = new Set(montants(messageRepreneur));
+  const avances = new Set([...montants(messageRepreneur), ...(dossier.offresDuRepreneur ?? [])]);
   for (const m of montants(reponse)) {
     if (avances.has(m)) continue;
     if (!dossier.fourchette) fautes.push({ regle: "prix", grave: true, detail: `Montant annoncé (${m.toLocaleString("fr-FR")} €) alors qu'aucune fourchette n'est validée.` });

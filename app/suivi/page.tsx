@@ -3,6 +3,10 @@ import { BaseIndisponible, lireSuivi, type Presentation, type StatutPresentation
 import { Exclusion } from "./Exclusion";
 import { Prix } from "./Prix";
 import { Revelation } from "./Revelation";
+import { Documents } from "./Documents";
+import { Creneaux } from "./Creneaux";
+import { Offres } from "./Offres";
+import { direCreneau } from "@/lib/creneaux";
 import { chercherSociete } from "@/lib/registre";
 import { estimer } from "@/lib/estimation";
 import { ordonner, prioriteDe } from "@/lib/priorite";
@@ -18,7 +22,7 @@ const STATUT: Record<StatutPresentation, string> = {
   a_repondu: "A répondu",
   interesse: "Intéressé",
   confidentialite_signee: "Confidentialité signée",
-  rendez_vous: "Rendez-vous proposé",
+  rendez_vous: "Rendez-vous pris",
   offre: "Offre remise",
   conclu: "Cession conclue",
   sans_suite: "Sans suite",
@@ -75,6 +79,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
   const actifs = suivi.presentations.filter((p) => !p.exclu);
   const autorise = suivi.mandat?.autorisation_approche === true;
   const aDecider = actifs.filter((p) => p.accord && !p.revelation);
+  const offres = actifs.flatMap((p) => (p.offres ?? []).map((offre) => ({ nom: p.nom, offre }))).sort((x, y) => Number(Boolean(x.offre.reponse)) - Number(Boolean(y.offre.reponse)) || y.offre.prix - x.offre.prix);
   // Repère de prix tiré des comptes publiés, seulement tant que le vendeur n'a rien validé. Le registre peut être lent : on s'en passe alors.
   let repere: { bas: number; haut: number } | null = null;
   if (autorise && !suivi.fourchette) {
@@ -125,7 +130,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
             </div>
           )}
 
+          {offres.length > 0 && <Offres jeton={jeton} offres={offres} fourchette={suivi.fourchette ?? null} />}
+
           {autorise && <Prix jeton={jeton} validee={suivi.fourchette ?? null} repere={repere} />}
+          {autorise && <Documents jeton={jeton} documents={suivi.documents ?? []} />}
+          {autorise && <Creneaux jeton={jeton} creneaux={suivi.creneaux ?? []} pris={actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }))} />}
 
           <div className="carte liste">
             {ordonner(suivi.presentations).map((p) => (
@@ -149,6 +158,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                   <br />
                   <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
                   {p.accord && p.revelation === "autorisee" && <><br /><small>Votre nom lui a été communiqué</small></>}
+                  {p.rendez_vous && <><br /><small>Rendez-vous : {direCreneau(p.rendez_vous)}</small></>}
                   {p.accord && p.revelation === "refusee" && <><br /><small>Vous avez refusé de vous nommer</small> <Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee /></>}
                   {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
                 </span>
