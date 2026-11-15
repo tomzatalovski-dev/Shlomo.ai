@@ -120,10 +120,10 @@ export async function rechercher(consigne: string, contenu: string, recherches =
   const rep = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
-    signal: AbortSignal.timeout(45_000),
+    signal: AbortSignal.timeout(55_000),
     body: JSON.stringify({
       model: MODELE,
-      max_tokens: 4000,
+      max_tokens: 7000,
       system: consigne,
       messages: [{ role: "user", content: contenu }],
       tools: [{ type: "web_search_20250305", name: "web_search", max_uses: recherches }],

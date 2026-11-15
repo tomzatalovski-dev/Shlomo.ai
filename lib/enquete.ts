@@ -32,6 +32,16 @@ const DOMAINE = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 // Sites qui parlent de toutes les sociétés : jamais le site officiel de l'une d'elles.
 const PAS_UN_SITE = /(^|\.)(societe\.com|pappers\.fr|infogreffe\.fr|verif\.com|linkedin\.com|facebook\.com|instagram\.com|pagesjaunes\.fr|annuaire-entreprises\.data\.gouv\.fr|manageo\.fr|kompass\.com|google\.com|wikipedia\.org|data\.gouv\.fr|bodacc\.fr|x\.com|twitter\.com|youtube\.com|tiktok\.com|societeinfo\.com|infonet\.fr|entreprises\.lefigaro\.fr|dnb\.com|europages\.fr)$/;
 
+// Annuaires qui recopient le registre : ce qu'ils disent, la fiche l'a déjà.
+const ANNUAIRE = /(^|\.)(societe\.com|pappers\.fr|infogreffe\.fr|verif\.com|manageo\.fr|societeinfo\.com|infonet\.fr|entreprises\.lefigaro\.fr|annuaire-entreprises\.data\.gouv\.fr|dnb\.com|kompass\.com|bilansgratuits\.fr|score3\.fr)$/;
+const hote = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+};
+
 const adresseNue = (url: string) => url.trim().replace(/^https?:\/\/(www\.)?/, "").replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
 
 /** Ne garde que ce qui est bien formé. Le contrôle de provenance vient ensuite. */
@@ -44,7 +54,7 @@ export function nettoyerEnquete(brut: unknown): { site?: string; activite?: stri
     for (const f of b.faits) {
       const texte = typeof f?.fait === "string" ? f.fait.replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 220) : "";
       const source = typeof f?.source === "string" ? f.source.trim() : "";
-      if (texte.length < 12 || !/^https:\/\/[^\s"<>]{4,280}$/.test(source)) continue;
+      if (texte.length < 12 || !/^https:\/\/[^\s"<>]{4,280}$/.test(source) || ANNUAIRE.test(hote(source))) continue;
       faits.push({ texte, source });
       if (faits.length === 6) break;
     }
@@ -81,7 +91,8 @@ export function siteConfirme(site: LectureSite, societe: Societe): "sur" | "prob
 export async function enqueter(societe: Societe): Promise<Enquete | null> {
   try {
     const contenu = `<societe>${JSON.stringify({ nom: societe.nom, siren: societe.siren, ville: societe.ville ?? null, code_postal: societe.codePostal ?? null, dirigeants: societe.dirigeants.slice(0, 2).map((d) => d.nom) })}</societe>`;
-    const trace = await rechercher(CONSIGNE, contenu, 3);
+    // Une recherche peut s'interrompre (délai, réponse coupée) : on la retente une fois, plus courte.
+    const trace = await rechercher(CONSIGNE, contenu, 3).catch(() => rechercher(CONSIGNE, contenu, 2));
     if (!trace) return null;
     const suite = { requetes: trace.requetes.map((r) => r.slice(0, 120)).slice(0, 5), pages: pagesLues(trace.pages) };
     const objet = trace.texte?.match(/\{[\s\S]*\}/);

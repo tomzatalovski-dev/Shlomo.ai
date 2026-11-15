@@ -31,6 +31,9 @@ describe("résultat de l'enquête", () => {
     const propre = nettoyerEnquete({ faits: [{ fait: "A ouvert un second atelier en 2023.", source: "https://exemple.fr/a" }, { fait: "Sans source valable ici.", source: "exemple" }, { fait: "court", source: "https://exemple.fr/b" }] });
     expect(propre.faits).toHaveLength(1);
   });
+  it("écarte ce que disent les annuaires qui recopient le registre", () => {
+    expect(nettoyerEnquete({ faits: [{ fait: "Le siège a été transféré à Paris en 2026.", source: "https://www.societe.com/societe/x-123.html" }] }).faits).toHaveLength(0);
+  });
   it("écarte un fait dont la source n'a pas été réellement lue", () => {
     const { gardes, ecartes } = faitsProuves([{ texte: "Fait lu sur une page reçue.", source: "https://www.exemple.fr/a/" }, { texte: "Fait à la source inventée.", source: "https://exemple.fr/inventee" }], [{ url: "https://exemple.fr/a" }]);
     expect(gardes).toHaveLength(1);
