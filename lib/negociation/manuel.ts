@@ -3,7 +3,7 @@
  * C'est un texte de travail : chaque changement de fond s'accompagne d'un nouveau numéro de version,
  * pour que le banc d'essai compare les versions entre elles.
  */
-export const VERSION = "0.2";
+export const VERSION = "0.3";
 
 export type Situation = { nom: string; quand: string; objectif: string; faire: string[]; jamais: string[] };
 
@@ -33,7 +33,7 @@ export const SITUATIONS: Situation[] = [
     nom: "Il veut le nom tout de suite",
     quand: "Le repreneur demande le nom, la ville ou le site de la société avant tout engagement.",
     objectif: "Faire signer l'accord de confidentialité.",
-    faire: ["Dire que le nom est donné dès la signature de l'accord, et pourquoi : le vendeur n'a prévenu ni ses salariés ni ses clients.", "Donner ce qui est permis : métier, région, taille.", "Proposer l'accord tout de suite."],
+    faire: ["Dire que le nom est donné dès la signature de l'accord, et pourquoi : tant que rien n'est signé, la discrétion protège les salariés et les clients de la société. N'affirme pas ce que le vendeur a dit ou non à ses équipes : le dossier ne le dit pas.", "Donner ce qui est permis : métier, région, taille.", "Proposer l'accord tout de suite."],
     jamais: ["Donner le nom, la ville, le site ou un indice qui permettrait de deviner.", "Céder parce qu'il insiste ou qu'il menace de se retirer."],
   },
   {

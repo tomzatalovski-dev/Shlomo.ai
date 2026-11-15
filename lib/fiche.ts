@@ -3,7 +3,7 @@ import type { FicheAnonyme } from "./base";
 import { ecrire } from "./ia";
 import { normaliser } from "./identite";
 
-const REGIONS: Record<string, string> = {
+export const REGIONS: Record<string, string> = {
   "11": "Île-de-France", "24": "Centre-Val de Loire", "27": "Bourgogne-Franche-Comté", "28": "Normandie", "32": "Hauts-de-France",
   "44": "Grand Est", "52": "Pays de la Loire", "53": "Bretagne", "75": "Nouvelle-Aquitaine", "76": "Occitanie",
   "84": "Auvergne-Rhône-Alpes", "93": "Provence-Alpes-Côte d'Azur", "94": "Corse",

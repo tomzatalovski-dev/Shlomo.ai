@@ -3,7 +3,7 @@ import type { DossierPoste, RepreneurPoste } from "@/lib/base";
 import { conversation, dossierPour } from "@/lib/negociation/poste";
 
 const r = (siren: string, statut: RepreneurPoste["statut"], plus: Partial<RepreneurPoste> = {}): RepreneurPoste => ({ siren, nom: `R${siren}`, rang: 1, statut, exclu: false, echanges: [], ...plus });
-const d = (presentations: RepreneurPoste[]): DossierPoste => ({ id: "x", nom: "ATELIER VERDIER", siren: "123456789", jeton: "j", jeton_fiche: "f", fiche: { ville: "CHAMBERY", activite: "Menuiserie", region: "Auvergne-Rhône-Alpes", effectif: "10 à 19 salariés" }, presentations, interets: [] });
+const d = (presentations: RepreneurPoste[]): DossierPoste => ({ id: "x", nom: "ATELIER VERDIER", siren: "123456789", jeton: "j", jeton_fiche: "f", fiche: { ville: "CHAMBERY", activite: "Menuiserie", region: "84", effectif: "10 à 19 salariés" }, presentations, interets: [] });
 
 describe("faits transmis au négociateur", () => {
   it("ne compte que les repreneurs réellement en discussion", () => {
@@ -20,6 +20,9 @@ describe("faits transmis au négociateur", () => {
   it("ne considère l'accord signé qu'à partir de l'étape correspondante", () => {
     expect(dossierPour(d([r("111111111", "interesse")]), "111111111")!.accordSigne).toBe(false);
     expect(dossierPour(d([r("111111111", "confidentialite_signee")]), "111111111")!.accordSigne).toBe(true);
+  });
+  it("donne le nom de la région, pas son code", () => {
+    expect(dossierPour(d([r("111111111", "a_repondu")]), "111111111")!.region).toBe("Auvergne-Rhône-Alpes");
   });
   it("compte les offres réellement remises", () => {
     expect(dossierPour(d([r("111111111", "a_repondu"), r("222222222", "offre")]), "111111111")!.offresRecues).toBe(1);

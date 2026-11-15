@@ -1,6 +1,7 @@
 import type { DossierPoste, RepreneurPoste, StatutPresentation } from "../base";
 import type { Dossier } from "./gardefous";
 import type { Tour } from "./negociateur";
+import { REGIONS } from "../fiche";
 
 /** Étapes d'un repreneur, dans l'ordre. C'est la ligne unique que lisent le poste, le suivi du vendeur et le négociateur. */
 export const ETAPES: [StatutPresentation, string][] = [
@@ -31,7 +32,8 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
   return {
     vendeur: { nom: d.nom, ville: d.fiche?.ville ?? "", site: d.fiche?.site ?? undefined },
     activite: d.fiche?.activite ?? "",
-    region: d.fiche?.region ?? "",
+    // Le registre donne un code de région : le négociateur reçoit le nom.
+    region: REGIONS[d.fiche?.region ?? ""] ?? "",
     effectif: d.fiche?.effectif ?? "",
     fourchette: null,
     accordSigne: ACCORD.includes(lui.statut),
