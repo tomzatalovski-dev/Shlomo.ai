@@ -60,6 +60,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
               </div>
               <Etapes titre="Côté vendeur" etapes={VENDEUR} chiffres={chiffres} />
               <Etapes titre="Côté repreneur" etapes={REPRENEUR} chiffres={chiffres} />
+              <div className="actions"><a className="lien" href={`/poste?c=${code}`}>Poste de négociation</a><a className="lien" href={`/banc?c=${code}`}>Banc d'essai du négociateur</a></div>
             </>
           )}
         </main>

@@ -15,11 +15,13 @@ const STATUT: Record<StatutPresentation, string> = {
   interesse: "Intéressé",
   confidentialite_signee: "Confidentialité signée",
   rendez_vous: "Rendez-vous proposé",
+  offre: "Offre remise",
+  conclu: "Cession conclue",
   sans_suite: "Sans suite",
 };
-const CONTACTES: StatutPresentation[] = ["contacte", "relance", "a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "sans_suite"];
-const REPONSES: StatutPresentation[] = ["a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "sans_suite"];
-const INTERESSES: StatutPresentation[] = ["interesse", "confidentialite_signee", "rendez_vous"];
+const CONTACTES: StatutPresentation[] = ["contacte", "relance", "a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu", "sans_suite"];
+const REPONSES: StatutPresentation[] = ["a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu", "sans_suite"];
+const INTERESSES: StatutPresentation[] = ["interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu"];
 
 const date = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 const compter = (liste: Presentation[], statuts: StatutPresentation[]) => liste.filter((p) => statuts.includes(p.statut)).length;

@@ -27,7 +27,7 @@ async function appeler<T>(fonction: string, arguments_: Record<string, unknown>)
   return (await rep.json()) as T;
 }
 
-export type StatutPresentation = "identifie" | "contacte" | "relance" | "a_repondu" | "interesse" | "confidentialite_signee" | "rendez_vous" | "sans_suite";
+export type StatutPresentation = "identifie" | "contacte" | "relance" | "a_repondu" | "interesse" | "confidentialite_signee" | "rendez_vous" | "offre" | "conclu" | "sans_suite";
 
 export type Presentation = {
   siren: string;
@@ -156,4 +156,62 @@ export async function enregistrerEssai(code: string, e: { version: string; perso
 export async function lireEssais(code: string): Promise<BilanEssais | null> {
   if (!jetonValide(code)) return null;
   return appeler<BilanEssais | null>("lire_essais", { p_code: code });
+}
+
+/** Un message d'une conversation réelle avec un repreneur. « propose » : rédigé par le négociateur, pas encore envoyé. */
+export type Echange = { id: number; de: "repreneur" | "shlomo"; texte: string; etat: "recu" | "propose" | "envoye" | "ecarte"; situation?: string | null; lecture?: string | null; version?: string | null; fautes?: { detail: string; grave: boolean; arretee?: boolean }[]; repli?: boolean; cree_le: string };
+
+export type LignePoste = { id: string; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
+
+export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; echanges: Echange[] };
+
+export type DossierPoste = {
+  id: string;
+  nom: string;
+  siren: string;
+  jeton: string;
+  jeton_fiche: string;
+  fiche: { ville?: string | null; effectif?: string | null; site?: string | null; activite?: string | null; region?: string | null } | null;
+  presentations: RepreneurPoste[];
+  interets: { id: number; nom: string; societe?: string | null; contact: string; cree_le: string; siren?: string | null }[];
+};
+
+const SIREN = /^\d{9}$/;
+
+/** Dossiers dont le mandat autorise l'approche, pour le poste de négociation. Null si le code est faux. */
+export async function lirePoste(code: string): Promise<LignePoste[] | null> {
+  if (!jetonValide(code)) return null;
+  return appeler<LignePoste[] | null>("lire_poste", { p_code: code });
+}
+
+export async function lirePosteDossier(code: string, dossier: string): Promise<DossierPoste | null> {
+  if (!jetonValide(code) || !jetonValide(dossier)) return null;
+  return appeler<DossierPoste | null>("lire_poste_dossier", { p_code: code, p_dossier: dossier });
+}
+
+/** Fait avancer un repreneur d'une étape. La base écrit la ligne correspondante dans le suivi du vendeur. */
+export async function changerStatut(code: string, dossier: string, siren: string, statut: StatutPresentation): Promise<boolean> {
+  if (!jetonValide(code) || !jetonValide(dossier) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("changer_statut", { p_code: code, p_dossier: dossier, p_siren: siren, p_statut: statut });
+}
+
+export async function recevoirReponse(code: string, dossier: string, siren: string, texte: string): Promise<number | null> {
+  if (!jetonValide(code) || !jetonValide(dossier) || !SIREN.test(siren)) return null;
+  return appeler<number | null>("recevoir_reponse", { p_code: code, p_dossier: dossier, p_siren: siren, p_texte: texte });
+}
+
+export async function proposerReponse(code: string, dossier: string, siren: string, r: { texte: string; situation: string; lecture: string; version: string; fautes: unknown[]; repli: boolean }): Promise<number | null> {
+  if (!jetonValide(code) || !jetonValide(dossier) || !SIREN.test(siren)) return null;
+  return appeler<number | null>("proposer_reponse", { p_code: code, p_dossier: dossier, p_siren: siren, p_texte: r.texte, p_situation: r.situation, p_lecture: r.lecture, p_version: r.version, p_fautes: r.fautes, p_repli: r.repli });
+}
+
+/** Marque une réponse proposée comme envoyée (avec le texte réellement parti) ou comme écartée. */
+export async function traiterEchange(code: string, echange: number, etat: "envoye" | "ecarte", texte?: string): Promise<boolean> {
+  if (!jetonValide(code) || !Number.isInteger(echange)) return false;
+  return appeler<boolean>("traiter_echange", { p_code: code, p_echange: echange, p_etat: etat, p_texte: texte ?? null });
+}
+
+export async function rattacherInteret(code: string, dossier: string, interet: number, siren: string): Promise<boolean> {
+  if (!jetonValide(code) || !jetonValide(dossier) || !Number.isInteger(interet) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("rattacher_interet", { p_code: code, p_dossier: dossier, p_interet: interet, p_siren: siren });
 }

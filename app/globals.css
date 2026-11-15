@@ -387,3 +387,23 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .bulle p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
 .bulle .faute { margin-top: 8px; text-transform: none; letter-spacing: 0; font-size: 12px; color: #b4690e; }
 @media (max-width: 700px) { .bulle { max-width: 100%; } }
+
+/* Poste de négociation */
+.poste-fil { border-top: 1px solid #ededf0; padding: 14px 0; margin: 0; font-size: 14px; }
+.poste-fil:first-of-type { border-top: 0; }
+.poste-fil summary { color: var(--encre); }
+.poste-fil summary b { font-weight: 600; font-size: 15px; }
+.poste-outils { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: var(--gris); }
+.poste-outils label { display: inline-flex; gap: 8px; align-items: center; }
+.poste-outils select { border: 1px solid var(--contour); border-radius: 10px; padding: 7px 10px; font: inherit; font-size: 14px; background: #fff; color: var(--encre); }
+.poste-fil .bulle .actions, .proposition .actions { margin-top: 8px; gap: 14px; }
+.poste-fil button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 13px; min-height: 0; }
+.poste-fil button.lien:disabled { opacity: 0.45; cursor: default; }
+.poste-fil button.lien.discret { color: var(--gris); }
+.proposition { max-width: 100%; border-style: dashed; }
+.proposition textarea { width: 100%; margin-top: 8px; border: 1px solid var(--contour); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.5; resize: vertical; background: #fff; }
+.proposition .lecture { font-size: 13px; color: var(--gris); }
+.poste-saisie { margin-top: 14px; }
+.poste-saisie textarea { font-size: 14px; }
+.bouton.petit { min-height: 40px; padding: 0 18px; font-size: 14px; }
+.faute-poste { color: #b4690e; font-size: 13px; margin: 10px 0 0; }
