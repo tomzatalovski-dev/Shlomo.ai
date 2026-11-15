@@ -416,3 +416,4 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .decision small { color: var(--gris); font-size: 13px; }
 .decision button.lien, .carte button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 14px; min-height: 0; }
 .decision button.lien.discret { color: var(--gris); }
+.points .origine { color: var(--gris); font-size: 12px; white-space: nowrap; }

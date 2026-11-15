@@ -5,11 +5,12 @@ import { iaActive, lireNom, resumer } from "@/lib/ia";
 import { choisirSociete, nomsCandidats } from "@/lib/identite";
 import { composerMetiers } from "@/lib/metiers";
 import { mesurer } from "@/lib/base";
+import { enqueter, siteConfirme } from "@/lib/enquete";
 import type { Evenement, LectureSite, Societe } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /** Limite simple par adresse : 10 analyses par minute. À remplacer par un stockage partagé en production. */
 const appels = new Map<string, number[]>();
@@ -120,16 +121,59 @@ export async function GET(requete: Request) {
         dire(
           annees.length
             ? { type: "journal", texte: `Comptes publiés récupérés : ${annees.join(", ")}`, etat: "ok" }
-            : { type: "journal", texte: "Aucun compte publié accessible", etat: "alerte" },
+            : { type: "journal", texte: "Comptes non publiés ou déposés sous confidentialité : vous seul pouvez les fournir", etat: "alerte" },
         );
 
-        if (site && iaActive()) {
+        // L'enquête : ce que le web public dit de la société. Elle tourne pendant que la fiche se rédige quand le site est connu ;
+        // sans site, elle passe d'abord, car c'est elle qui peut le retrouver.
+        let texteFiche = site?.texte;
+        let origine = "du site";
+        const enquete = iaActive() ? enqueter(societe) : Promise.resolve(null);
+        let enqueteDite = false;
+        const direEnquete = (e: Awaited<typeof enquete>) => {
+          enqueteDite = true;
+          if (!e) return;
+          dire({ type: "journal", texte: `${e.requetes.length} recherche${e.requetes.length > 1 ? "s" : ""} sur le web, ${e.pages.length} page${e.pages.length > 1 ? "s" : ""} lue${e.pages.length > 1 ? "s" : ""}`, etat: "ok" });
+          if (e.faits.length) dire({ type: "faits", faits: e.faits, requetes: e.requetes, pages: e.pages });
+          dire(
+            e.faits.length
+              ? { type: "journal", texte: `${e.faits.length} fait${e.faits.length > 1 ? "s" : ""} public${e.faits.length > 1 ? "s" : ""} retenu${e.faits.length > 1 ? "s" : ""}, chacun avec sa source${e.ecartes ? ` ; ${e.ecartes} écarté${e.ecartes > 1 ? "s" : ""} faute de source vérifiable` : ""}`, etat: "ok" }
+              : { type: "journal", texte: "Aucun fait public vérifiable trouvé sur le web", etat: "alerte" },
+          );
+        };
+
+        if (!site && iaActive()) {
+          dire({ type: "encours", texte: "Recherche de votre société sur le web" });
+          const e = await enquete;
+          if (!e) dire({ type: "journal", texte: "La recherche sur le web n'a pas abouti", etat: "alerte" });
+          direEnquete(e);
+          if (e?.site) {
+            dire({ type: "encours", texte: `Lecture de ${e.site}` });
+            const trouve = await lireSite(e.site).catch(() => null);
+            const confirmation = trouve ? siteConfirme(trouve, societe) : false;
+            if (trouve && confirmation) {
+              site = trouve;
+              texteFiche = trouve.texte;
+              dire({ type: "journal", texte: confirmation === "sur" ? `Votre site retrouvé : ${trouve.domaine}, votre SIREN y figure` : `Site probable : ${trouve.domaine}, à confirmer`, etat: "ok" });
+              dire({ type: "site", domaine: trouve.domaine, titre: trouve.titre, description: trouve.description, confirmation });
+            } else {
+              dire({ type: "journal", texte: `${e.site} écarté : rien n'y prouve que c'est votre société`, etat: "alerte" });
+            }
+          }
+          if (!texteFiche && e?.activite) {
+            texteFiche = [e.activite, ...e.faits.map((f) => f.texte)].join("\n");
+            origine = "de sources publiques";
+          }
+          if (!texteFiche) dire({ type: "journal", texte: "Pas de site ni de description publique : décrivez votre activité en deux phrases, je ferai le reste", etat: "alerte" });
+        }
+
+        if (texteFiche && iaActive()) {
           dire({ type: "encours", texte: "Rédaction de la fiche" });
           try {
-            const resume = await resumer(societe, site.texte);
+            const resume = await resumer(societe, texteFiche);
             if (resume) {
               dire({ type: "resume", resume });
-              dire({ type: "journal", texte: "Fiche rédigée à partir du site", etat: "ok" });
+              dire({ type: "journal", texte: `Fiche rédigée à partir ${origine}`, etat: "ok" });
 
               // Les codes proposés par l'IA ne servent que si le registre les connaît.
               const proposes = composerMetiers(societe.codeActivite, resume.codes ?? []);
@@ -141,7 +185,7 @@ export async function GET(requete: Request) {
                 dire({ type: "journal", texte: `${liste.length} activité${liste.length > 1 ? "s" : ""} où chercher vos repreneurs`, etat: "ok" });
               }
             } else {
-              dire({ type: "journal", texte: "Le site ne permet pas de rédiger une description", etat: "alerte" });
+              dire({ type: "journal", texte: "Les sources ne permettent pas de rédiger une description", etat: "alerte" });
             }
           } catch (e) {
             const detail = e instanceof Error ? e.message : "inconnu";
@@ -150,6 +194,12 @@ export async function GET(requete: Request) {
           }
         } else if (site) {
           dire({ type: "journal", texte: "Rédaction par IA non activée sur ce serveur", etat: "alerte" });
+        }
+
+        // Le site était connu dès le départ : l'enquête a tourné en parallèle, on montre maintenant ce qu'elle a trouvé.
+        if (iaActive() && !enqueteDite) {
+          dire({ type: "encours", texte: "Recherche de ce que le web dit de vous" });
+          direEnquete(await enquete);
         }
 
         await mesurer("fiche_vue", societe.siren);

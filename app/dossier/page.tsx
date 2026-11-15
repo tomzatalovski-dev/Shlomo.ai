@@ -23,6 +23,8 @@ function Dossier() {
   const [evolution, setEvolution] = useState(false);
   const [site, setSite] = useState<{ domaine: string; titre?: string; description?: string } | null>(null);
   const [resume, setResume] = useState<ResumeIA | null>(null);
+  const [faits, setFaits] = useState<{ texte: string; source: string }[]>([]);
+  const [faitsVus, setFaitsVus] = useState(0);
   const [points, setPoints] = useState(0);
   const [description, setDescription] = useState("");
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
@@ -47,6 +49,12 @@ function Dossier() {
       setSite(e);
       if (e.description) setDescription((d) => d || e.description!);
       await attendre(500);
+    } else if (e.type === "faits") {
+      setFaits(e.faits);
+      for (let i = 1; i <= e.faits.length; i++) {
+        setFaitsVus(i);
+        await attendre(380);
+      }
     } else if (e.type === "societe") {
       setSociete(e.societe);
       setAvance({ pct: 55, texte: "Lecture de la fiche et des comptes publiés" });
@@ -290,6 +298,19 @@ function Dossier() {
                 <div>
                   <p className="source" style={{ marginBottom: 10 }}>Ce qui intéressera un repreneur</p>
                   <ul className="points">{resume.pointsForts.slice(0, points).map((p) => <li key={p} className="apparait">{p}</li>)}</ul>
+                </div>
+              )}
+
+              {faitsVus > 0 && (
+                <div>
+                  <p className="source" style={{ marginBottom: 10 }}>Ce que le web dit de vous · chaque fait renvoie à sa source</p>
+                  <ul className="points">
+                    {faits.slice(0, faitsVus).map((f) => {
+                      let domaine = "source";
+                      try { domaine = new URL(f.source).hostname.replace(/^www\./, ""); } catch {}
+                      return <li key={f.source + f.texte} className="apparait">{f.texte} <a className="origine" href={f.source} target="_blank" rel="noreferrer nofollow">{domaine}</a></li>;
+                    })}
+                  </ul>
                 </div>
               )}
 

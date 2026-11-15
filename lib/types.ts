@@ -123,8 +123,9 @@ export type Evenement =
   | { type: "journal"; texte: string; etat: "ok" | "alerte" }
   | { type: "encours"; texte: string }
   | { type: "societe"; societe: Societe }
-  | { type: "site"; domaine: string; titre?: string; description?: string }
+  | { type: "site"; domaine: string; titre?: string; description?: string; confirmation?: "sur" | "probable" }
   | { type: "resume"; resume: ResumeIA }
+  | { type: "faits"; faits: { texte: string; source: string }[]; requetes: string[]; pages: PageLue[] }
   | { type: "besoin_siren"; message: string; propositions?: Proposition[] }
   | { type: "metiers"; libelle?: string; liste: (Metier & { total?: number })[] }
   | { type: "erreur"; message: string }
