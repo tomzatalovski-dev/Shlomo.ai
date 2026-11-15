@@ -13,8 +13,9 @@
   --ambre: #9c5a0c;
   --rouge: #a3392b;
   --bleu: #2c57c4;
-  --titre: "Bricolage Grotesque Variable", "Hanken Grotesk Variable", system-ui, sans-serif;
-  --courant: "Hanken Grotesk Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* La police d'avant la passe visuelle, pour les titres comme pour le texte. */
+  --courant: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --titre: var(--courant);
   --ombre: 0 1px 2px rgba(19, 28, 51, 0.04), 0 16px 40px rgba(19, 28, 51, 0.06);
 }
 * { box-sizing: border-box; }
@@ -38,7 +39,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
 /* Accueil */
 .hero { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 104px 24px 88px; gap: 32px; }
-.hero h1 { margin: 0; font-family: var(--titre); font-size: clamp(38px, 6.2vw, 68px); font-weight: 650; letter-spacing: -0.035em; line-height: 1.02; max-width: 940px; text-wrap: balance; }
+.hero h1 { margin: 0; font-family: var(--titre); font-size: clamp(38px, 6.2vw, 68px); font-weight: 600; letter-spacing: -0.035em; line-height: 1.02; max-width: 940px; text-wrap: balance; }
 .hero h1 span { color: var(--gris); }
 .sous { margin: 0; color: var(--gris); font-size: 19px; line-height: 1.55; max-width: 34em; text-wrap: pretty; }
 .saisie { display: flex; gap: 8px; align-items: center; background: var(--carte); border: 1px solid var(--contour); border-radius: 999px; padding: 8px 8px 8px 28px; width: 100%; max-width: 640px; flex-wrap: wrap; }
@@ -73,13 +74,13 @@ button, input, textarea, select { font: inherit; color: inherit; }
 @keyframes pouls { 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { .lignes li.encours::before { animation: none; } }
 .promesse { font-size: 13px; color: var(--gris); padding-top: 16px; margin: 0; }
-.resultat h1 { margin: 0; font-family: var(--titre); font-size: clamp(30px, 4.2vw, 42px); font-weight: 650; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
+.resultat h1 { margin: 0; font-family: var(--titre); font-size: clamp(30px, 4.2vw, 42px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; text-wrap: balance; }
 .resultat .sous { font-size: 17px; margin-top: 14px; max-width: 40em; }
 .carte { background: var(--carte); border-radius: 24px; padding: 40px; display: flex; flex-direction: column; gap: 24px; }
 .carte.vide { background: transparent; border: 1px dashed var(--contour); }
 .os { display: block; height: 12px; border-radius: 6px; background: var(--voile); }
 .tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-.nom { font-family: var(--titre); font-size: 26px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
+.nom { font-family: var(--titre); font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 .lieu { color: var(--gris); font-size: 15px; margin-top: 6px; }
 .statut { color: var(--vert); font-size: 13px; font-weight: 600; }
 .chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
@@ -126,7 +127,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .ligne .note { font-weight: 600; }
 .carte.mandat { border: 1px solid var(--encre); flex-direction: row; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
 .carte.mandat > div { flex: 1 1 420px; }
-.grand { font-family: var(--titre); font-size: 28px; font-weight: 650; line-height: 1.15; letter-spacing: -0.025em; }
+.grand { font-family: var(--titre); font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.025em; }
 
 /* Repassage des cartes : un contour fin, un seul rayon, le score en évidence */
 .carte { border: 1px solid var(--trait); border-radius: 20px; }
@@ -142,7 +143,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .bas .masque { border: 0; padding: 0; margin: 0 0 2px; display: block; font-size: 14px; font-weight: 500; color: var(--encre); }
 .bas .meta { font-size: 13px; }
 .score { text-align: right; line-height: 1; }
-.score b { display: block; font-family: var(--titre); font-size: 38px; font-weight: 650; letter-spacing: -0.03em; }
+.score b { display: block; font-family: var(--titre); font-size: 38px; font-weight: 600; letter-spacing: -0.03em; }
 .score span { font-size: 12px; color: var(--gris); }
 .jauge { display: block; height: 3px; border-radius: 2px; background: var(--trait); overflow: hidden; }
 .jauge i { display: block; height: 100%; width: 0; background: var(--vert); transition: width 0.8s ease; }
@@ -238,7 +239,7 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 
 /* Ordre de grandeur de valeur, sur la fiche */
 .valeur { border: 1px solid var(--trait); border-radius: 16px; padding: 24px; display: grid; gap: 10px; }
-.valeur .fourchette { margin: 0; font-family: var(--titre); font-size: 32px; font-weight: 650; letter-spacing: -0.025em; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.valeur .fourchette { margin: 0; font-family: var(--titre); font-size: 32px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .valeur .message { font-size: 14px; }
 @media (max-width: 520px) { .valeur .fourchette { font-size: 22px; white-space: normal; } }
 
@@ -299,11 +300,11 @@ a.choix small { display: block; color: var(--gris); font-size: 12px; margin-top:
 .contrat-page.corps.seul { max-width: 820px; }
 .cles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .cles li { background: var(--carte); border: 1px solid var(--trait); border-radius: 16px; padding: 20px; display: grid; gap: 6px; align-content: start; }
-.cles b { font-family: var(--titre); font-size: 24px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
+.cles b { font-family: var(--titre); font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 .cles span { font-size: 13px; line-height: 1.4; color: var(--gris); }
 .contrat { background: var(--carte); border: 1px solid var(--trait); border-radius: 20px; padding: 48px 52px; display: grid; gap: 32px; box-shadow: var(--ombre); }
 .contrat-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--encre); }
-.surtitre { margin: 0; font-family: var(--titre); font-size: 24px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
+.surtitre { margin: 0; font-family: var(--titre); font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
 .contrat .date { margin: 4px 0 0; font-size: 13px; color: var(--gris); min-height: 18px; }
 .essai { font-size: 12px; font-weight: 600; color: var(--ambre); border: 1px solid var(--ambre); border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
 .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
