@@ -132,7 +132,7 @@ function Repreneurs() {
           ? "Le registre ne montre pas encore de repreneur évident."
           : n <= 3
             ? `${n} repreneur${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}.`
-            : `${n} repreneurs retenus. Voici les trois meilleurs.`;
+            : `${n} meilleurs repreneurs classés. Voici les trois premiers.`;
 
   return (
     <div className="page">
@@ -194,7 +194,7 @@ function Repreneurs() {
               <div className="chiffre"><span>{metiers ? "Sociétés de ces activités en France" : "Sociétés de votre métier en France"}</span><b>{metier === null ? "…" : <Compteur valeur={metier} duree={1100} format={nombre} />}</b></div>
               <div className="chiffre"><span>Examinées de près</span><b>{compte.vues}</b></div>
               <div className="chiffre"><span>Écartées</span><b>{compte.non}</b></div>
-              <div className="chiffre cle"><span>Retenues</span><b>{compte.oui}</b></div>
+              <div className="chiffre cle"><span>Compatibles</span><b>{compte.oui}</b></div>
             </div>
           )}
 

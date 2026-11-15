@@ -255,9 +255,10 @@ function Atelier() {
               <div className="entonnoir">
                 <div className="chiffre"><span>Repreneurs à approcher</span><b><Compteur valeur={utiles.length} /></b></div>
                 <div className="chiffre"><span>Décideurs identifiés</span><b><Compteur valeur={decideurs} duree={400} /></b></div>
-                <div className="chiffre"><span>Pages web lues</span><b><Compteur valeur={pagesLues} duree={300} /></b></div>
+                {/* Ces deux compteurs ne vivent que pendant le travail : à la relecture d'un dossier déjà préparé, on ne montre pas un zéro trompeur. */}
+                {pagesLues > 0 && <div className="chiffre"><span>Pages web lues</span><b><Compteur valeur={pagesLues} duree={300} /></b></div>}
                 <div className="chiffre"><span>Faits publics trouvés</span><b><Compteur valeur={utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0)} duree={400} /></b></div>
-                <div className="chiffre"><span>Messages relus par un second agent</span><b><Compteur valeur={relus} duree={400} />{corriges > 0 && <small className="part"> dont {corriges} corrigé{corriges > 1 ? "s" : ""}</small>}</b></div>
+                {relus > 0 && <div className="chiffre"><span>Messages relus par un second agent</span><b><Compteur valeur={relus} duree={400} />{corriges > 0 && <small className="part"> dont {corriges} corrigé{corriges > 1 ? "s" : ""}</small>}</b></div>}
                 <div className="chiffre"><span>Messages rédigés</span><b><Compteur valeur={messages} duree={400} /></b></div>
                 <div className="chiffre cle"><span>Prêtes à partir</span><b><Compteur valeur={pretes} duree={400} /></b></div>
               </div>
