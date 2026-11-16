@@ -241,7 +241,7 @@ function Atelier() {
           )}
         </div>
 
-        {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} />}
+        {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} trace={journal.length ? `Agent ${journal[journal.length - 1].agent} ${journal[journal.length - 1].texte}` : undefined} />}
 
         {!fini && !erreur && Object.keys(ecrans).length > 0 && (
           <section className="agents-net" aria-label="Les agents au travail">

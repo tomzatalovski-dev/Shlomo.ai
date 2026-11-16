@@ -78,7 +78,7 @@ export function Compteur({ valeur, duree = 900, format = String }: { valeur: num
  */
 const SEGMENTS = 24;
 
-export function Avance({ pct, texte }: { pct: number; texte: string }) {
+export function Avance({ pct, texte, trace }: { pct: number; texte: string; trace?: string }) {
   const fini = pct >= 100;
   const borne = Math.max(0, Math.min(100, Math.round(pct)));
   const pleins = Math.round((borne / 100) * SEGMENTS);
@@ -104,6 +104,11 @@ export function Avance({ pct, texte }: { pct: number; texte: string }) {
           );
         })}
       </div>
+      {!fini && (
+        <p className="avance-trace" aria-hidden="true">
+          {trace && <span key={trace}>{trace}</span>}
+        </p>
+      )}
     </div>
   );
 }

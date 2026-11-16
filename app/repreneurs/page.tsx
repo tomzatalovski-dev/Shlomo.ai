@@ -196,7 +196,7 @@ function Repreneurs() {
           )}
         </div>
 
-        {!erreur && <Avance pct={avance.pct} texte={avance.texte} />}
+        {!erreur && <Avance pct={avance.pct} texte={avance.texte} trace={examen || lignes[lignes.length - 1]?.texte} />}
 
         {erreur && (
           <div className="carte">

@@ -553,9 +553,12 @@ small { line-height: 1.45; }
 .segment.plein { background: #6b7280; }
 .segment.plein:hover { background: #4b5563; box-shadow: 0 0 14px rgba(75, 85, 99, 0.45); }
 .segment.tete { animation: segment-pouls 1.3s ease-in-out infinite; }
+@keyframes trace-passe { 0% { opacity: 0; filter: blur(5px); transform: translateY(5px); } 14% { opacity: 1; filter: blur(0); transform: none; } 70% { opacity: 1; } 100% { opacity: 0; filter: blur(3px); transform: translateY(-4px); } }
+.avance-trace { margin: 0; height: 20px; overflow: hidden; font-size: 13px; line-height: 20px; color: var(--gris); text-align: center; }
+.avance-trace span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: trace-passe 2.4s ease-out both; }
 .avance.fini .avance-texte { animation: avance-entre 0.5s ease-out; background: none; color: var(--encre); }
 @media (max-width: 520px) { .segments { gap: 2px; } .segment { border-radius: 3px; } }
-@media (prefers-reduced-motion: reduce) { .avance-texte { animation: none; background: none; color: var(--encre); } .segment { animation: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .avance-texte { animation: none; background: none; color: var(--encre); } .segment { animation: none; transition: none; } .avance-trace span { animation: none; } }
 
 /* ===== Épure : une colonne, une idée par écran ===== */
 .carte.decider { border: 1px solid var(--ambre); }

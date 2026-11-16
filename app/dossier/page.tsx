@@ -196,7 +196,7 @@ function Dossier() {
             <p className="sous">{fini && !valide ? "Vérifiez d'un coup d'œil. La description est modifiable." : !erreur && !besoinSiren && !valide ? "Chaque information s'affiche dès que je la trouve." : valide ? "J'ouvre la recherche de vos repreneurs." : ""}</p>
           </div>
 
-          {!erreur && !besoinSiren && <Avance pct={avance.pct} texte={avance.texte} />}
+          {!erreur && !besoinSiren && <Avance pct={avance.pct} texte={avance.texte} trace={lignes[lignes.length - 1]?.texte} />}
 
           {erreur && (
             <div className="carte">
