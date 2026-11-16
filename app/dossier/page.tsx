@@ -252,8 +252,8 @@ function Dossier() {
 
               <div className="chiffres">
                 {tuile(1, "Création", societe.anneeCreation ? <Compteur valeur={societe.anneeCreation} duree={600} /> : "Non publié")}
-                {tuile(2, `Effectif${societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}`, societe.effectif ?? "Non publié")}
-                {tuile(3, `Chiffre d'affaires${dernier ? ` ${dernier.annee}` : ""}`, dernier?.chiffreAffaires !== undefined ? <Compteur valeur={dernier.chiffreAffaires} format={euros} /> : sansChiffre)}
+                {tuile(2, `${/salari/.test(societe.effectif ?? "") ? "Salariés" : "Effectif"}${societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}`, (societe.effectif ?? "Non publié").replace(/\s*salariés?$/, ""))}
+                {tuile(3, `CA${dernier ? ` ${dernier.annee}` : ""}`, dernier?.chiffreAffaires !== undefined ? <Compteur valeur={dernier.chiffreAffaires} format={euros} /> : sansChiffre)}
                 {tuile(4, `Résultat${dernier ? ` ${dernier.annee}` : ""}`, dernier?.resultat !== undefined ? <Compteur valeur={dernier.resultat} format={euros} /> : sansChiffre)}
               </div>
 
