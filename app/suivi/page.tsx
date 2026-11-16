@@ -107,7 +107,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
             <h1>{autorise ? "Shlomo travaille pour vous." : "Votre mandat est signé."}</h1>
             <p className="sous">
               {suivi.mandat ? `Mandat de test${suivi.mandat.numero ? ` n° ${String(suivi.mandat.numero).padStart(4, "0")}` : ""} signé par ${suivi.mandat.signataire} le ${date(suivi.mandat.signe_le)}${suivi.mandat.echeance ? `, valable jusqu'au ${new Date(suivi.mandat.echeance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })}` : ""}, sans valeur juridique. ` : ""}
-              {autorise ? "Shlomo s'occupe de tout ; vos seules décisions s'affichent en haut de cette page." : "Vous n'avez pas autorisé l'approche : aucun repreneur ne sera contacté."}
+              {autorise ? (suivi.qualite === "validee" ? "" : suivi.qualite === "refusee" ? "Nous n'avons pas pu confirmer votre qualité de dirigeant : aucun message ne part. Écrivez-nous. " : "Nous confirmons votre qualité de dirigeant sous 24 heures ; aucun message ne part avant. ") + "Shlomo s'occupe de tout ; vos seules décisions s'affichent en haut de cette page." : "Vous n'avez pas autorisé l'approche : aucun repreneur ne sera contacté."}
             </p>
           </div>
 

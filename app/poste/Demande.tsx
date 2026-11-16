@@ -56,3 +56,22 @@ export function Purge({ code }: { code: string }) {
     }}>{etat && etat !== "…" ? etat : etat === "…" ? "Nettoyage…" : "Effacer les contacts restés sans suite depuis 180 jours"}</button>
   );
 }
+
+/** Un fondateur valide la qualité du signataire après l'avoir vérifiée lui-même. Sans cette validation, aucun envoi ne peut être noté. */
+export function Qualite({ code, dossier, etat }: { code: string; dossier: string; etat: "a_verifier" | "validee" | "refusee" }) {
+  const routeur = useRouter();
+  const [occupe, setOccupe] = useState(false);
+  const fixer = async (nouvel: string) => {
+    setOccupe(true);
+    await fetch("/api/poste", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code, dossier, action: "qualite", etat: nouvel }) }).catch(() => null);
+    setOccupe(false);
+    routeur.refresh();
+  };
+  return (
+    <div className="actions">
+      {etat !== "validee" && <button type="button" className="bouton petit" disabled={occupe} onClick={() => fixer("validee")}>J'ai vérifié : c'est bien le dirigeant</button>}
+      {etat !== "refusee" && <button type="button" className="lien discret" disabled={occupe} onClick={() => fixer("refusee")}>Ce n'est pas lui</button>}
+      {etat !== "a_verifier" && <button type="button" className="lien discret" disabled={occupe} onClick={() => fixer("a_verifier")}>Remettre en attente</button>}
+    </div>
+  );
+}

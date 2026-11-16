@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { lireActes, lirePoste, lirePosteDossier, type Acte, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
+import { lireActes, lirePoste, lireProspects, lirePosteDossier, type Acte, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
 import { direCreneau, euros } from "@/lib/creneaux";
 import { VERSION } from "@/lib/negociation/manuel";
 import { ETAPES } from "@/lib/negociation/poste";
-import Demande, { Essai, Purge } from "./Demande";
+import Demande, { Essai, Purge, Qualite } from "./Demande";
+import { chercherSociete } from "@/lib/registre";
+import { indicesDeQualite } from "@/lib/qualite";
 import Fil from "./Fil";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +65,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
     const libres = d.interets.filter((i) => !i.siren);
     const [actes, liste] = await Promise.all([lireActes(code, choisi).catch(() => null), lirePoste(code).catch(() => null)]);
     const essai = liste?.find((x) => x.id === d.id)?.essai ?? false;
+    // Indices recalculés à chaque affichage à partir du registre : rien de ce que le signataire a pu écrire n'est cru sur parole.
+    const registre = await chercherSociete(d.siren).catch(() => null);
+    const indices = indicesDeQualite(d.signataire ?? "", d.courriel, d.fiche?.site, registre?.dirigeants ?? []);
+    const qualite = d.qualite ?? "a_verifier";
     return (
       <Cadre>
         <div>
@@ -77,6 +83,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
             <a className="lien" href={`/fiche?f=${d.jeton_fiche}`} target="_blank" rel="noreferrer">Présentation anonyme</a>
             <Essai code={code} dossier={d.id} essai={essai} />
           </div>
+        </div>
+
+        <div className={qualite === "validee" ? "carte" : "carte decider"}>
+          <p className="message">
+            <b>{qualite === "validee" ? "Signataire vérifié : les envois sont ouverts." : qualite === "refusee" ? "Signataire refusé : aucun envoi n'est possible." : "Signataire à vérifier : les envois sont verrouillés."}</b>{" "}
+            Mandat signé par {d.signataire ?? "un signataire inconnu"}{d.courriel ? `, ${d.courriel}` : ", sans adresse"}.
+          </p>
+          <ul className="faits">
+            <li>{indices.nom ? `Son nom correspond à ${indices.dirigeant}${indices.fonction ? `, ${indices.fonction}` : ""}, inscrit au registre.` : registre ? `Son nom ne correspond à aucun dirigeant inscrit : ${registre.dirigeants.filter((x) => !x.societe).map((x) => x.nom).join(", ") || "aucune personne physique au registre"}.` : "Le registre ne répond pas : indice indisponible."}</li>
+            <li>{indices.adresse ? "Son adresse est au nom de domaine du site de la société." : d.fiche?.site ? `Son adresse n'est pas au nom de domaine du site (${d.fiche.site}).` : "Aucun site connu pour comparer son adresse."}</li>
+          </ul>
+          <p className="source">Ces deux indices ne prouvent rien : le nom d'un dirigeant est public. Vérifiez par un appel au numéro de la société, ou par un Kbis déposé dans le dossier, avant de valider.</p>
+          <Qualite code={code} dossier={d.id} etat={qualite} />
         </div>
 
         <div className="entonnoir">
@@ -124,6 +143,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
   }
 
   const dossiers = await lirePoste(code).catch(() => null);
+  const prospects = (await lireProspects(code).catch(() => null)) ?? [];
   if (!dossiers) return <Cadre><h1>Accès refusé.</h1><p className="sous">Cette page demande le code de pilotage.</p></Cadre>;
 
   return (
@@ -143,7 +163,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <tbody>
             {dossiers.map((d) => (
               <tr key={d.id}>
-                <td><a href={`/poste?c=${code}&d=${d.id}`}><b>{d.nom}</b></a>{d.essai && <span className="essai" style={{ marginLeft: 8 }}>Essai</span>}<br /><small>Signé par {d.signataire} le {jour(d.signe_le)}</small></td>
+                <td><a href={`/poste?c=${code}&d=${d.id}`}><b>{d.nom}</b></a>{d.essai && <span className="essai" style={{ marginLeft: 8 }}>Essai</span>}{d.qualite !== "validee" && <span className="essai" style={{ marginLeft: 8 }}>{d.qualite === "refusee" ? "Signataire refusé" : "Signataire à vérifier"}</span>}<br /><small>Signé par {d.signataire} le {jour(d.signe_le)}</small></td>
                 <td>{d.prets}</td>
                 <td>{d.contactes}</td>
                 <td>{d.reponses}</td>
@@ -155,6 +175,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
         </table>
         {dossiers.length === 0 && <p className="source">Aucun mandat n'autorise encore l'approche.</p>}
       </div>
+      {prospects.length > 0 && (
+        <div className="carte">
+          <p className="source">Dirigeants qui ont laissé leur adresse après avoir vu leurs repreneurs · à relancer s'ils n'ont pas signé</p>
+          <div>
+            {prospects.map((x) => (
+              <div key={x.siren + x.courriel} className="ligne">
+                <span className="quoi"><b style={{ fontWeight: 500 }}>{x.courriel}</b><small>SIREN {x.siren} · {jour(x.cree_le)}</small></span>
+                <span className="ou"><b className={x.signe ? "etat fort" : "etat"}>{x.signe ? "A signé" : "Pas encore signé"}</b></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Cadre>
   );
 }

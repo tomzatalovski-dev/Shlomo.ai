@@ -17,6 +17,27 @@ const INDICE: Record<"rachat" | "croissance" | "alerte", string> = {
 
 const nombre = (n: number) => (n >= 10_000 ? "10 000 +" : n.toLocaleString("fr-FR"));
 
+/** Pas prêt à signer : le dirigeant laisse son adresse, on garde le fil. */
+function Garder({ siren }: { siren: string }) {
+  const [courriel, setCourriel] = useState("");
+  const [etat, setEtat] = useState<"saisie" | "envoi" | "fait" | "rate">("saisie");
+  if (etat === "fait") return <p className="source">C'est noté. Vos repreneurs vous attendent : revenez quand vous voulez avec votre numéro SIREN.</p>;
+  return (
+    <form className="garder" onSubmit={async (e) => {
+      e.preventDefault();
+      setEtat("envoi");
+      const rep = await fetch("/api/prospect", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ siren, courriel }) }).catch(() => null);
+      setEtat(rep?.ok ? "fait" : "rate");
+    }}>
+      <label htmlFor="rappel">Pas prêt à signer aujourd'hui ? Laissez votre adresse, nous gardons le fil.</label>
+      <span>
+        <input id="rappel" type="email" required autoComplete="email" placeholder="vous@votresociete.fr" value={courriel} onChange={(e) => setCourriel(e.target.value)} />
+        <button type="submit" className="lien" disabled={etat === "envoi"}>{etat === "envoi" ? "Envoi…" : etat === "rate" ? "Réessayer" : "Garder mon dossier"}</button>
+      </span>
+    </form>
+  );
+}
+
 function Repreneurs() {
   const parametres = useSearchParams();
   const siren = parametres.get("siren") ?? "";
@@ -285,6 +306,9 @@ function Repreneurs() {
               </div>
               <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${versMandat}`}>Signer le mandat</a>
             </div>
+          )}
+          {n > 0 && (
+            <Garder siren={siren} />
           )}
         </main>
       </div>

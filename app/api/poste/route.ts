@@ -1,4 +1,4 @@
-import { BaseIndisponible, changerStatut, marquerEssai, opposer, purgerContacts, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
+import { BaseIndisponible, changerStatut, marquerEssai, opposer, purgerContacts, validerQualite, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { verifier } from "@/lib/negociation/gardefous";
 import { VERSION } from "@/lib/negociation/manuel";
@@ -35,6 +35,12 @@ export async function POST(requete: Request) {
       return n === null ? refus("Accès refusé.", 403) : Response.json({ fait: true, nettoyes: n });
     }
 
+    if (action === "qualite") {
+      const etat = texte(c?.etat, 20);
+      if (etat !== "validee" && etat !== "refusee" && etat !== "a_verifier") return refus("État inconnu.");
+      return (await validerQualite(code, dossier, etat)) ? Response.json({ fait: true }) : refus("Accès refusé.", 403);
+    }
+
     if (action === "essai") {
       return (await marquerEssai(code, dossier, c?.essai === true)) ? Response.json({ fait: true }) : refus("Accès refusé ou dossier introuvable.", 403);
     }
@@ -42,6 +48,10 @@ export async function POST(requete: Request) {
     if (action === "statut") {
       const statut = texte(c?.statut, 30) as StatutPresentation;
       if (!ETAPES.some(([s]) => s === statut)) return refus("Étape inconnue.");
+      if (statut === "contacte" || statut === "relance") {
+        const d = await lirePosteDossier(code, dossier);
+        if (d && d.qualite !== "validee") return refus("Envoi verrouillé : validez d'abord la qualité du signataire du mandat, en haut du dossier.", 423);
+      }
       return (await changerStatut(code, dossier, siren, statut)) ? Response.json({ fait: true }) : refus("Accès refusé ou repreneur introuvable.", 403);
     }
 
@@ -59,6 +69,7 @@ export async function POST(requete: Request) {
       const d = await lirePosteDossier(code, dossier);
       const faits = d && dossierPour(d, siren);
       if (!d || !faits) return refus("Accès refusé ou repreneur introuvable.", 403);
+      if (d.qualite !== "validee") return refus("Envoi verrouillé : validez d'abord la qualité du signataire du mandat, en haut du dossier.", 423);
       const recu = [...conversation(d.presentations.find((p) => p.siren === siren)!)].reverse().find((t) => t.de === "repreneur")?.texte ?? "";
       const graves = verifier(envoye, faits, recu).filter((f) => f.grave);
       if (graves.length) return Response.json({ erreur: "Ce texte ne peut pas partir.", fautes: graves }, { status: 422 });

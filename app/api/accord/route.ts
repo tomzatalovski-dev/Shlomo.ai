@@ -1,5 +1,6 @@
 import { BaseIndisponible, choisirCreneau, deposerOffre, jetonValide, signerAccord } from "@/lib/base";
-import { creneauValide } from "@/lib/creneaux";
+import { creneauValide, direCreneau } from "@/lib/creneaux";
+import { prevenirVendeur } from "@/lib/courriel";
 import { adresseDe, tropDappels } from "@/lib/limite";
 
 export const runtime = "nodejs";
@@ -17,21 +18,27 @@ export async function POST(requete: Request) {
   const c = (await requete.json().catch(() => null)) as Record<string, unknown> | null;
   const jeton = texte(c?.jeton, 40);
   if (!jetonValide(jeton)) return refus("Lien incomplet.");
+  const origine = new URL(requete.url).origin;
   try {
     if (c?.action === "creneau") {
       if (!creneauValide(c.creneau)) return refus("Créneau inconnu.");
-      return (await choisirCreneau(jeton, c.creneau)) ? Response.json({ fait: true }) : refus("Ce créneau n'est plus disponible.", 409);
+      if (!(await choisirCreneau(jeton, c.creneau))) return refus("Ce créneau n'est plus disponible.", 409);
+      const creneau = direCreneau(c.creneau);
+      await prevenirVendeur(jeton, origine, (r) => `Rendez-vous pris avec ${r}`, (r) => `${r} a choisi de vous rencontrer ${creneau}.`);
+      return Response.json({ fait: true });
     }
     if (c?.action === "offre") {
       const prix = Math.round(Number(String(c.prix ?? "").replace(/[^\d]/g, "")));
       if (!Number.isFinite(prix) || prix < 1000) return refus("Indiquez le prix que vous proposez, en euros.");
-      return (await deposerOffre(jeton, { prix, financement: texte(c.financement, 600), calendrier: texte(c.calendrier, 600), conditions: texte(c.conditions, 1200) }))
-        ? Response.json({ fait: true })
-        : refus("L'offre n'a pas pu être enregistrée.", 409);
+      if (!(await deposerOffre(jeton, { prix, financement: texte(c.financement, 600), calendrier: texte(c.calendrier, 600), conditions: texte(c.conditions, 1200) }))) return refus("L'offre n'a pas pu être enregistrée.", 409);
+      await prevenirVendeur(jeton, origine, (r) => `Une offre de ${r} attend votre réponse`, (r) => `${r} a déposé une offre de ${prix.toLocaleString("fr-FR")} €. Vous seul pouvez l'accepter, la refuser ou demander mieux.`);
+      return Response.json({ fait: true });
     }
     const signataire = texte(c?.signataire, 120);
     if (signataire.length < 3 || c?.accepte !== true) return refus("Indiquez votre nom et acceptez l'accord.");
-    return (await signerAccord(jeton, signataire, texte(c?.qualite, 120))) ? Response.json({ signe: true }) : refus("Cet accord est déjà signé ou n'est plus disponible.", 409);
+    if (!(await signerAccord(jeton, signataire, texte(c?.qualite, 120)))) return refus("Cet accord est déjà signé ou n'est plus disponible.", 409);
+    await prevenirVendeur(jeton, origine, (r) => `${r} a signé l'accord de confidentialité`, (r) => `${r} a signé l'accord de confidentialité. Votre nom ne lui est communiqué que si vous le décidez, depuis votre suivi.`);
+    return Response.json({ signe: true });
   } catch (e) {
     return refus("L'enregistrement a échoué. Réessayez dans un instant.", e instanceof BaseIndisponible ? 503 : 500);
   }

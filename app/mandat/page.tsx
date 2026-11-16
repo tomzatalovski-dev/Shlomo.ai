@@ -30,6 +30,7 @@ function Mandat() {
   const [societe, setSociete] = useState<Societe | null>(null);
   const [raison, setRaison] = useState("");
   const [nom, setNom] = useState("");
+  const [courriel, setCourriel] = useState("");
   const [accord, setAccord] = useState(false);
   const [autorisation, setAutorisation] = useState(true);
   const [etat, setEtat] = useState<"saisie" | "envoi" | "signe">("saisie");
@@ -45,7 +46,7 @@ function Mandat() {
   }, [siren]);
 
   const signataire = nom.trim();
-  const pret = accord && signataire.length > 2 && etat === "saisie";
+  const pret = accord && signataire.length > 2 && /^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$/.test(courriel.trim()) && etat === "saisie";
 
   async function signer() {
     setEtat("envoi");
@@ -53,7 +54,7 @@ function Mandat() {
     const rep = await fetch("/api/mandat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siren, signataire, autorisation, metiers, site, raison }),
+      body: JSON.stringify({ siren, signataire, courriel: courriel.trim(), autorisation, metiers, site, raison }),
     }).catch(() => null);
     const json = rep ? ((await rep.json().catch(() => null)) as { jeton?: string; erreur?: string } | null) : null;
     if (rep?.ok && json?.jeton) {
@@ -143,6 +144,11 @@ function Mandat() {
               <div className="champ">
                 <label htmlFor="signataire">Votre nom et prénom</label>
                 <input id="signataire" type="text" autoComplete="name" placeholder="Nom et prénom" value={nom} onChange={(e) => setNom(e.target.value)} disabled={etat !== "saisie"} />
+              </div>
+              <div className="champ">
+                <label htmlFor="courriel">Votre adresse électronique</label>
+                <input id="courriel" type="email" autoComplete="email" placeholder="vous@votresociete.fr" value={courriel} onChange={(e) => setCourriel(e.target.value)} disabled={etat !== "saisie"} />
+                <small className="source">Nous y envoyons votre lien de suivi et les étapes de votre dossier. Une adresse au nom de votre société accélère la vérification.</small>
               </div>
 
               <div className={signataire ? "paraphe rempli" : "paraphe"} aria-hidden="true">

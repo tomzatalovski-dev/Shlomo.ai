@@ -5,6 +5,7 @@ export function Pied() {
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/confidentialite">Données personnelles</a>
       <a href="/conditions">Conditions d'utilisation</a>
+      <a href="/retrouver">Retrouver mon dossier</a>
     </nav>
   );
 }

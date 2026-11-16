@@ -62,6 +62,8 @@ export type AccordSigne = { signataire: string; qualite?: string | null; signe_l
 export type Fourchette = { bas: number; haut: number };
 
 export type Suivi = {
+  qualite?: "a_verifier" | "validee" | "refusee";
+  courriel?: string | null;
   fourchette?: Fourchette | null;
   creneaux?: string[];
   documents?: DocumentDepose[];
@@ -176,7 +178,7 @@ export async function lireEssais(code: string): Promise<BilanEssais | null> {
 /** Un message d'une conversation réelle avec un repreneur. « propose » : rédigé par le négociateur, pas encore envoyé. */
 export type Echange = { id: number; de: "repreneur" | "shlomo"; texte: string; etat: "recu" | "propose" | "envoye" | "ecarte"; situation?: string | null; lecture?: string | null; version?: string | null; fautes?: { detail: string; grave: boolean; arretee?: boolean }[]; repli?: boolean; cree_le: string };
 
-export type LignePoste = { id: string; essai: boolean; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
+export type LignePoste = { id: string; essai: boolean; qualite?: "a_verifier" | "validee" | "refusee"; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
 
 export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; jeton_accord: string; revelation?: "autorisee" | "refusee" | null; accord?: AccordSigne | null; rendez_vous?: string | null; offres?: Offre[]; echanges: Echange[] };
 
@@ -187,6 +189,9 @@ export type DossierPoste = {
   jeton: string;
   jeton_fiche: string;
   fourchette?: Fourchette | null;
+  qualite?: "a_verifier" | "validee" | "refusee";
+  courriel?: string | null;
+  signataire?: string | null;
   creneaux?: string[];
   documents?: number;
   fiche: { ville?: string | null; effectif?: string | null; site?: string | null; activite?: string | null; region?: string | null } | null;
@@ -341,4 +346,37 @@ export async function opposer(code: string, siren: string, oppose: boolean): Pro
 export async function purgerContacts(code: string): Promise<number | null> {
   if (!jetonValide(code)) return null;
   return appeler<number | null>("purger_contacts", { p_code: code });
+}
+
+/** Le vendeur donne son adresse : elle sert à lui renvoyer son lien et à le prévenir à chaque étape. */
+export async function fixerCourriel(jeton: string, courriel: string): Promise<boolean> {
+  if (!jetonValide(jeton)) return false;
+  return appeler<boolean>("fixer_courriel", { p_jeton: jeton, p_courriel: courriel });
+}
+
+/** Lecture réservée au serveur : qui prévenir quand un repreneur agit. */
+export async function contactVendeur(cle: string, jetonAccord: string): Promise<{ courriel: string; jeton: string; nom: string; repreneur: string } | null> {
+  if (!jetonValide(jetonAccord)) return null;
+  return appeler("contact_vendeur", { p_cle: cle, p_jeton_accord: jetonAccord });
+}
+
+/** Lecture réservée au serveur : les dossiers rattachés à une adresse, pour renvoyer un lien perdu. */
+export async function liensParCourriel(cle: string, courriel: string): Promise<{ nom: string; jeton: string }[] | null> {
+  return appeler("liens_par_courriel", { p_cle: cle, p_courriel: courriel });
+}
+
+export async function garderProspect(siren: string, courriel: string): Promise<boolean> {
+  if (!SIREN.test(siren)) return false;
+  return appeler<boolean>("garder_prospect", { p_siren: siren, p_courriel: courriel });
+}
+
+export async function lireProspects(code: string): Promise<{ siren: string; courriel: string; cree_le: string; signe: boolean }[] | null> {
+  if (!jetonValide(code)) return null;
+  return appeler("lire_prospects", { p_code: code });
+}
+
+/** Un fondateur valide (ou refuse) la qualité du signataire. Sans validation, la base refuse de noter un envoi. */
+export async function validerQualite(code: string, dossier: string, etat: "a_verifier" | "validee" | "refusee"): Promise<boolean> {
+  if (!jetonValide(code) || !jetonValide(dossier)) return false;
+  return appeler<boolean>("valider_qualite", { p_code: code, p_dossier: dossier, p_etat: etat });
 }

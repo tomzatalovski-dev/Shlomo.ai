@@ -1,7 +1,9 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { reveler, trouverRepreneurs } from "@/lib/repreneurs";
-import { BaseIndisponible, mesurer, signerMandat } from "@/lib/base";
+import { BaseIndisponible, fixerCourriel, mesurer, signerMandat } from "@/lib/base";
+import { envoyer } from "@/lib/courriel";
+import { COURRIEL } from "@/lib/qualite";
 import { lireMetiers } from "@/lib/metiers";
 import { RAISONS } from "@/lib/fiche";
 import { adresseDe, tropDappels } from "@/lib/limite";
@@ -19,7 +21,7 @@ const refus = (message: string, statut = 400) => Response.json({ erreur: message
 export async function POST(requete: Request) {
   if (tropDappels(`mandat:${adresseDe(requete)}`, 4)) return refus("Trop de signatures en peu de temps. Réessayez dans une minute.", 429);
 
-  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown; site?: unknown; raison?: unknown } | null;
+  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; courriel?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown; site?: unknown; raison?: unknown } | null;
   const saisie = analyserSaisie(typeof corps?.siren === "string" ? corps.siren : "");
   const signataire = typeof corps?.signataire === "string" ? corps.signataire.trim().slice(0, 120) : "";
   if (saisie.type !== "siren") return refus("Numéro SIREN manquant ou invalide.");
@@ -28,6 +30,8 @@ export async function POST(requete: Request) {
   const site = siteSaisi.type === "site" ? siteSaisi.domaine : undefined;
   const raison = typeof corps?.raison === "string" && corps.raison in RAISONS ? corps.raison : undefined;
   if (signataire.length < 3) return refus("Indiquez votre nom et votre prénom.");
+  const courriel = typeof corps?.courriel === "string" ? corps.courriel.trim().toLowerCase().slice(0, 250) : "";
+  if (!COURRIEL.test(courriel)) return refus("Indiquez une adresse électronique : nous vous y envoyons votre lien de suivi.");
 
   try {
     const vendeur = await chercherSociete(saisie.siren);
@@ -59,6 +63,10 @@ export async function POST(requete: Request) {
       repreneurs: reveler(repreneurs),
     });
     await mesurer("mandat_signe", vendeur.siren);
+    // L'adresse et le courriel ne conditionnent pas la signature : en cas d'échec, le vendeur garde son lien à l'écran.
+    await fixerCourriel(jeton, courriel).catch(() => false);
+    const suivi = `${new URL(requete.url).origin}/suivi?d=${jeton}`;
+    await envoyer(courriel, `Votre mandat Shlomo pour ${vendeur.nom}`, `Bonjour ${signataire},\n\nVotre mandat est signé. Voici le lien de votre suivi, à conserver : il est personnel et ouvre votre dossier.\n${suivi}\n\nNous confirmons d'abord votre qualité de dirigeant. Aucun message ne part vers un repreneur avant cette vérification.`);
     return Response.json({ jeton });
   } catch (e) {
     if (e instanceof RegistreIndisponible) return refus("Le registre des entreprises ne répond pas. Réessayez dans quelques minutes.", 503);
