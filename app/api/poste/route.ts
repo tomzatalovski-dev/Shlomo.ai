@@ -1,4 +1,4 @@
-import { BaseIndisponible, changerStatut, marquerEssai, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
+import { BaseIndisponible, changerStatut, marquerEssai, opposer, purgerContacts, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { verifier } from "@/lib/negociation/gardefous";
 import { VERSION } from "@/lib/negociation/manuel";
@@ -26,6 +26,15 @@ export async function POST(requete: Request) {
   const action = texte(c?.action, 20);
 
   try {
+    if (action === "opposition") {
+      return (await opposer(code, siren, c?.oppose !== false)) ? Response.json({ fait: true }) : refus("Accès refusé.", 403);
+    }
+
+    if (action === "purge") {
+      const n = await purgerContacts(code);
+      return n === null ? refus("Accès refusé.", 403) : Response.json({ fait: true, nettoyes: n });
+    }
+
     if (action === "essai") {
       return (await marquerEssai(code, dossier, c?.essai === true)) ? Response.json({ fait: true }) : refus("Accès refusé ou dossier introuvable.", 403);
     }

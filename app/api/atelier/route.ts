@@ -2,7 +2,7 @@ import { chercherSociete } from "@/lib/registre";
 import { BaseIndisponible, enregistrerApproche, enregistrerPresentation, jetonValide, lireSuivi, mesurer, type Presentation } from "@/lib/base";
 import { presenter } from "@/lib/fiche";
 import { lireSite } from "@/lib/site";
-import { choisirDecideur, redigerEtRelire } from "@/lib/approche";
+import { choisirDecideur, redigerEtRelire, MENTION_PROSPECTION } from "@/lib/approche";
 import { veiller } from "@/lib/veille";
 import { iaActive } from "@/lib/ia";
 import { adresseDe, messagePlafond, plafondAtteint, tropDappels } from "@/lib/limite";
@@ -95,7 +95,7 @@ export async function GET(requete: Request) {
                 dire({ type: "etape", agent, siren: p.siren, etape: "relecture" });
                 dire({ type: "relecture", agent, siren: p.siren, issue, problemes });
               }
-              const texte = lienFiche ? `${redige}\n\nPrésentation anonyme de la société, sans nom ni ville : ${lienFiche}` : redige;
+              const texte = `${lienFiche ? `${redige}\n\nPrésentation anonyme de la société, sans nom ni ville : ${lienFiche}` : redige}\n\n${MENTION_PROSPECTION}`;
               dire({ type: "message", agent, siren: p.siren, texte });
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });

@@ -15,6 +15,7 @@ const CLES = [
 const ARTICLES = [
   { titre: "Objet", texte: "Vous confiez à Shlomo la recherche de repreneurs pour votre société." },
   { titre: "Rémunération", texte: "Rien à payer aujourd'hui. Commission de 5 % du prix de vente, minimum 5 000 €, seulement si la vente se fait avec un repreneur présenté par Shlomo." },
+  { titre: "Durée du mandat", texte: "Douze mois à compter de la signature. Il porte un numéro d'ordre, inscrit au registre des mandats et rappelé dans votre suivi." },
   { titre: "Durée de la protection", texte: "Cette commission reste due pendant 24 mois après chaque présentation, chacune étant datée et enregistrée." },
   { titre: "Confidentialité", texte: "Les repreneurs sont approchés sans que votre nom ni votre ville soient cités. Vous pouvez rayer qui vous voulez avant tout contact." },
 ];
@@ -82,7 +83,7 @@ function Mandat() {
         <main className="resultat">
           <div>
             <h1>Votre mandat.</h1>
-            <p className="sous">Une page, quatre articles. Vous signez en bas ; les agents se mettent au travail dans la seconde.</p>
+            <p className="sous">Une page, cinq articles. Vous signez en bas ; les agents se mettent au travail dans la seconde.</p>
           </div>
 
           <ul className="cles">

@@ -171,3 +171,10 @@ export async function redigerEtRelire(f: FaitsApproche): Promise<{ texte: string
   } catch {}
   return { texte: messageModele(f), issue: "remplace", problemes: avis.problemes };
 }
+
+/**
+ * Mention placée au pied de chaque premier message : d'où viennent les coordonnées, pour qui Shlomo écrit, comment s'opposer.
+ * Projet de rédaction, à faire valider par l'avocat. La liste d'opposition est tenue dans la base : un STOP vaut pour tous les dossiers.
+ */
+export const MENTION_PROSPECTION =
+  "Vos coordonnées professionnelles proviennent du registre public des entreprises. Shlomo vous écrit pour le compte d'une société à céder, dont le nom vous sera communiqué après un accord de confidentialité. Pour ne plus être contacté, répondez STOP : votre société ne recevra plus aucun message de notre part.";

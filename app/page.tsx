@@ -1,3 +1,4 @@
+import { Pied } from "./composants/Pied";
 export default function Accueil() {
   return (
     <div className="page">
@@ -40,6 +41,7 @@ export default function Accueil() {
       </section>
 
       <p className="pied">Shlomo est une intelligence artificielle. Ses estimations sont indicatives et ne remplacent pas un expert-comptable.</p>
+      <Pied />
     </div>
   );
 }

@@ -71,6 +71,7 @@ export default function Fil({ code, dossier, repreneur, etapes, ouvert }: { code
           </select>
         </label>
         <a className="lien" href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${repreneur.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
+        {!refuse && <button type="button" className="lien discret" disabled={occupe !== ""} onClick={() => { if (window.confirm(`Ne plus jamais contacter ${repreneur.nom}, sur aucun dossier ?`)) agir("opposition", { oppose: true }); }}>Elle a répondu STOP</button>}
         {repreneur.site && <a className="lien" href={repreneur.site.startsWith("http") ? repreneur.site : `https://${repreneur.site}`} target="_blank" rel="noreferrer nofollow">Site</a>}
       </div>
 
@@ -90,7 +91,12 @@ export default function Fil({ code, dossier, repreneur, etapes, ouvert }: { code
         </p>
       )}
 
-      {refuse && <p className="source">Cette société a demandé à ne pas être démarchée : aucun message ne doit lui être envoyé.</p>}
+      {refuse && (
+        <p className="source">
+          Cette société ne doit recevoir aucun message : elle s'y est opposée, auprès du registre ou auprès de nous.{" "}
+          <button type="button" className="lien discret" disabled={occupe !== ""} onClick={() => agir("opposition", { oppose: false })}>Lever notre opposition</button>
+        </p>
+      )}
 
       {!refuse && repreneur.message && (
         <div className="bulle nous">

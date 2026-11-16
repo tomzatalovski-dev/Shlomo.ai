@@ -43,3 +43,16 @@ export function Essai({ code, dossier, essai }: { code: string; dossier: string;
     }}>{essai ? "Dossier d'essai : le passer en vrai dossier" : "Marquer comme dossier d'essai"}</button>
   );
 }
+
+/** Efface les coordonnées et messages des repreneurs restés sans suite depuis plus longtemps que le délai réglé. */
+export function Purge({ code }: { code: string }) {
+  const [etat, setEtat] = useState("");
+  return (
+    <button type="button" className="lien" disabled={etat === "…"} onClick={async () => {
+      setEtat("…");
+      const rep = await fetch("/api/poste", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code, action: "purge" }) }).catch(() => null);
+      const corps = (await rep?.json().catch(() => null)) as { nettoyes?: number } | null;
+      setEtat(rep?.ok ? `${corps?.nettoyes ?? 0} ligne${(corps?.nettoyes ?? 0) > 1 ? "s" : ""} nettoyée${(corps?.nettoyes ?? 0) > 1 ? "s" : ""}` : "Échec");
+    }}>{etat && etat !== "…" ? etat : etat === "…" ? "Nettoyage…" : "Effacer les contacts restés sans suite depuis 180 jours"}</button>
+  );
+}

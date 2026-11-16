@@ -46,3 +46,12 @@ describe("relecture par un second agent", () => {
     expect(lireRelecture('{"verdict":"a_corriger","problemes":[]}')).toBeNull();
   });
 });
+
+import { MENTION_PROSPECTION } from "@/lib/approche";
+describe("mention de prospection", () => {
+  it("dit d'où viennent les coordonnées, pour qui Shlomo écrit et comment s'opposer", () => {
+    expect(MENTION_PROSPECTION).toMatch(/registre public/);
+    expect(MENTION_PROSPECTION).toMatch(/pour le compte d'une société à céder/);
+    expect(MENTION_PROSPECTION).toMatch(/STOP/);
+  });
+});

@@ -69,7 +69,7 @@ export type Suivi = {
   jeton_fiche?: string;
   presentation?: string | null;
   fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null; site?: string | null; activite?: string | null; anneeCreation?: number | null } | null;
-  mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string } | null;
+  mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string; numero?: number; echeance?: string } | null;
   presentations: Presentation[];
   evenements: { texte: string; cree_le: string }[];
 };
@@ -329,4 +329,16 @@ export async function lireActes(code: string, dossier: string): Promise<Acte[] |
 export async function marquerEssai(code: string, dossier: string, essai: boolean): Promise<boolean> {
   if (!jetonValide(code) || !jetonValide(dossier)) return false;
   return appeler<boolean>("marquer_essai", { p_code: code, p_dossier: dossier, p_essai: essai });
+}
+
+/** Inscrit une société sur la liste d'opposition (ou l'en retire) : plus aucun message ne lui est préparé, sur aucun dossier. */
+export async function opposer(code: string, siren: string, oppose: boolean): Promise<boolean> {
+  if (!jetonValide(code) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("opposer", { p_code: code, p_siren: siren, p_oppose: oppose });
+}
+
+/** Efface les coordonnées et messages des repreneurs restés sans suite au-delà du délai réglé. Renvoie le nombre de lignes nettoyées. */
+export async function purgerContacts(code: string): Promise<number | null> {
+  if (!jetonValide(code)) return null;
+  return appeler<number | null>("purger_contacts", { p_code: code });
 }

@@ -55,7 +55,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .six { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 28px; list-style: none; margin: 0 auto; padding: 0; max-width: 1240px; counter-reset: s; }
 .six li { counter-increment: s; font-size: 15px; line-height: 1.5; display: flex; gap: 14px; }
 .six li::before { content: counter(s); flex: none; width: 26px; height: 26px; border: 1px solid var(--contour); border-radius: 13px; display: grid; place-items: center; font-size: 12px; color: var(--gris); }
-.pied { font-size: 13px; color: var(--gris); text-align: center; padding: 0 24px 40px; margin: 0; }
+.pied { font-size: 13px; color: var(--gris); text-align: center; padding: 0 24px 20px; margin: 0; }
 
 /* Dossier */
 .corps { display: flex; gap: 32px clamp(32px, 5vw, 72px); padding: 32px clamp(24px, 5vw, 64px) 96px; flex-wrap: wrap; align-items: flex-start; }
@@ -476,3 +476,13 @@ small { line-height: 1.45; }
 .creneau:hover:not(:disabled) { border-color: var(--encre); }
 .creneau:disabled { opacity: 0.5; cursor: default; }
 .formulaire-offre { display: grid; gap: 16px; }
+
+/* Pages légales */
+.liens-pied { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; padding: 0 24px 40px; font-size: 13px; }
+.liens-pied a { color: var(--gris); text-underline-offset: 3px; }
+.resultat .liens-pied { padding: 8px 0 0; justify-content: flex-start; }
+.alerte-douce { border-left: 3px solid var(--ambre); padding: 4px 0 4px 16px; font-size: 15px; }
+.contrat.legal { gap: 36px; }
+.contrat.legal h2 { margin: 0 0 10px; font-size: 19px; font-weight: 600; letter-spacing: -0.015em; }
+.contrat.legal p { margin: 0 0 10px; font-size: 15px; line-height: 1.65; color: var(--texte); max-width: 42em; }
+.contrat.legal p:last-child { margin-bottom: 0; }

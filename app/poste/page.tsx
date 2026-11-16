@@ -3,7 +3,7 @@ import { lireActes, lirePoste, lirePosteDossier, type Acte, type RepreneurPoste,
 import { direCreneau, euros } from "@/lib/creneaux";
 import { VERSION } from "@/lib/negociation/manuel";
 import { ETAPES } from "@/lib/negociation/poste";
-import Demande, { Essai } from "./Demande";
+import Demande, { Essai, Purge } from "./Demande";
 import Fil from "./Fil";
 
 export const dynamic = "force-dynamic";
@@ -134,6 +134,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
         <div className="actions">
           <a className="lien" href={`/banc?c=${code}`}>Banc d'essai du négociateur</a>
           <a className="lien" href={`/pilotage?c=${code}`}>Pilotage</a>
+          <Purge code={code} />
         </div>
       </div>
       <div className="carte tableau-carte">
