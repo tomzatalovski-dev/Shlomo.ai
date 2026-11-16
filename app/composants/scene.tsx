@@ -80,14 +80,18 @@ export function Avance({ pct, texte }: { pct: number; texte: string }) {
   const fini = pct >= 100;
   const borne = Math.max(0, Math.min(100, Math.round(pct)));
   return (
-    <div className={fini ? "avance fini" : "avance"}>
-      <div className="avance-tete">
-        <span className="avance-texte">{texte}</span>
-        <span className="avance-pct">{fini ? "Terminé" : `${borne} %`}</span>
-      </div>
-      <div className="avance-piste" role="progressbar" aria-valuenow={borne} aria-valuemin={0} aria-valuemax={100} aria-label={texte}>
-        <div className="avance-plein" style={{ width: `${borne}%` }} />
-      </div>
+    <div className={fini ? "avance fini" : "avance"} role="progressbar" aria-valuenow={borne} aria-valuemin={0} aria-valuemax={100} aria-label={texte}>
+      <span className="orbe" style={{ "--p": borne } as import("react").CSSProperties} aria-hidden="true">
+        <span className="orbe-halo" />
+        <span className="orbe-coeur" />
+        {fini && (
+          <svg className="orbe-coche" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 12.5l3.4 3.4L17 9" />
+          </svg>
+        )}
+      </span>
+      <span key={texte} className="avance-texte">{texte}</span>
+      {!fini && <span className="avance-pct">{borne} %</span>}
     </div>
   );
 }
