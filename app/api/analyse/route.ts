@@ -5,6 +5,7 @@ import { iaActive, lireNom, resumer } from "@/lib/ia";
 import { choisirSociete, nomsCandidats } from "@/lib/identite";
 import { composerMetiers } from "@/lib/metiers";
 import { mesurer } from "@/lib/base";
+import { messagePlafond, plafondAtteint } from "@/lib/limite";
 import { enqueter, siteConfirme } from "@/lib/enquete";
 import { etatDesComptes, lireAnnonces } from "@/lib/bodacc";
 import type { Evenement, LectureSite, Societe } from "@/lib/types";
@@ -36,6 +37,11 @@ export async function GET(requete: Request) {
       try {
         if (tropDappels(ip)) {
           dire({ type: "erreur", message: "Trop de recherches en peu de temps. Réessayez dans une minute." });
+          return;
+        }
+        const plafond = await plafondAtteint("analyse", requete, 20, 400);
+        if (plafond) {
+          dire({ type: "erreur", message: messagePlafond(plafond) });
           return;
         }
 

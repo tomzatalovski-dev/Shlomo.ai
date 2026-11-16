@@ -1,4 +1,4 @@
-import { BaseIndisponible, changerStatut, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
+import { BaseIndisponible, changerStatut, marquerEssai, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { verifier } from "@/lib/negociation/gardefous";
 import { VERSION } from "@/lib/negociation/manuel";
@@ -26,6 +26,10 @@ export async function POST(requete: Request) {
   const action = texte(c?.action, 20);
 
   try {
+    if (action === "essai") {
+      return (await marquerEssai(code, dossier, c?.essai === true)) ? Response.json({ fait: true }) : refus("Accès refusé ou dossier introuvable.", 403);
+    }
+
     if (action === "statut") {
       const statut = texte(c?.statut, 30) as StatutPresentation;
       if (!ETAPES.some(([s]) => s === statut)) return refus("Étape inconnue.");

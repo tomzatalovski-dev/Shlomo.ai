@@ -5,7 +5,7 @@ import { mesurer } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { veiller } from "@/lib/veille";
 import { lireMetiers } from "@/lib/metiers";
-import { adresseDe, tropDappels } from "@/lib/limite";
+import { adresseDe, messagePlafond, plafondAtteint, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -30,6 +30,11 @@ export async function GET(requete: Request) {
       try {
         if (tropDappels(`repreneurs:${adresseDe(requete)}`, 6)) {
           dire({ type: "erreur", message: "Trop de recherches en peu de temps. Réessayez dans une minute." });
+          return;
+        }
+        const plafond = await plafondAtteint("repreneurs", requete, 20, 300);
+        if (plafond) {
+          dire({ type: "erreur", message: messagePlafond(plafond) });
           return;
         }
         if (saisie.type !== "siren") {

@@ -5,7 +5,7 @@ import { lireSite } from "@/lib/site";
 import { choisirDecideur, redigerEtRelire } from "@/lib/approche";
 import { veiller } from "@/lib/veille";
 import { iaActive } from "@/lib/ia";
-import { adresseDe, tropDappels } from "@/lib/limite";
+import { adresseDe, messagePlafond, plafondAtteint, tropDappels } from "@/lib/limite";
 import type { EvenementAtelier, LigneAtelier } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -40,6 +40,8 @@ export async function GET(requete: Request) {
       try {
         if (!jetonValide(jeton)) return dire({ type: "erreur", message: "Ce lien n'est pas reconnu." });
         if (tropDappels(`atelier:${adresseDe(requete)}`, 6)) return dire({ type: "erreur", message: "Trop de demandes en peu de temps. Réessayez dans une minute." });
+        const plafond = await plafondAtteint("atelier", requete, 20, 100);
+        if (plafond) return dire({ type: "erreur", message: messagePlafond(plafond) });
 
         const suivi = await lireSuivi(jeton);
         if (!suivi) return dire({ type: "erreur", message: "Ce lien n'est pas reconnu." });

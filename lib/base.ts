@@ -176,7 +176,7 @@ export async function lireEssais(code: string): Promise<BilanEssais | null> {
 /** Un message d'une conversation réelle avec un repreneur. « propose » : rédigé par le négociateur, pas encore envoyé. */
 export type Echange = { id: number; de: "repreneur" | "shlomo"; texte: string; etat: "recu" | "propose" | "envoye" | "ecarte"; situation?: string | null; lecture?: string | null; version?: string | null; fautes?: { detail: string; grave: boolean; arretee?: boolean }[]; repli?: boolean; cree_le: string };
 
-export type LignePoste = { id: string; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
+export type LignePoste = { id: string; essai: boolean; nom: string; siren: string; signataire: string; signe_le: string; repreneurs: number; prets: number; contactes: number; reponses: number; interesses: number; demandes: number; a_envoyer: number; activite: string };
 
 export type RepreneurPoste = { siren: string; nom: string; rang: number; ville?: string | null; effectif?: string | null; score?: number | null; statut: StatutPresentation; statut_le?: string | null; exclu: boolean; canal?: "a_envoyer" | "refus_demarchage" | null; decideur?: string | null; qualite?: string | null; message?: string | null; site?: string | null; signaux?: Signal[] | null; jeton_accord: string; revelation?: "autorisee" | "refusee" | null; accord?: AccordSigne | null; rendez_vous?: string | null; offres?: Offre[]; echanges: Echange[] };
 
@@ -304,4 +304,29 @@ export async function deposerOffre(jetonAccord: string, o: { prix: number; finan
 export async function repondreOffre(jeton: string, offre: number, reponse: "acceptee" | "refusee" | "a_ameliorer"): Promise<boolean> {
   if (!UUID(jeton) || !Number.isInteger(offre)) return false;
   return appeler<boolean>("repondre_offre", { p_jeton: jeton, p_offre: offre, p_reponse: reponse });
+}
+
+/**
+ * Compte un appel dans la base et dit s'il reste sous le plafond. Partagé entre tous les serveurs, contrairement à la limite en mémoire.
+ * Si la base ne répond pas, on laisse passer : la limite en mémoire reste en place, et on ne ferme pas le site pour un compteur.
+ */
+export async function sousLePlafond(cle: string, secondes: number, maximum: number): Promise<boolean> {
+  try {
+    return await appeler<boolean>("compter_appel", { p_cle: cle.slice(0, 120), p_secondes: secondes, p_max: maximum }, 4_000);
+  } catch {
+    return true;
+  }
+}
+
+export type Acte = { id: number; acteur: "vendeur" | "repreneur"; acte: string; detail: Record<string, unknown>; cree_le: string; repreneur?: string | null };
+
+/** Journal des actes d'un dossier, écrit par la base elle-même. Null si le code est faux. */
+export async function lireActes(code: string, dossier: string): Promise<Acte[] | null> {
+  if (!jetonValide(code) || !jetonValide(dossier)) return null;
+  return appeler<Acte[] | null>("lire_actes", { p_code: code, p_dossier: dossier });
+}
+
+export async function marquerEssai(code: string, dossier: string, essai: boolean): Promise<boolean> {
+  if (!jetonValide(code) || !jetonValide(dossier)) return false;
+  return appeler<boolean>("marquer_essai", { p_code: code, p_dossier: dossier, p_essai: essai });
 }

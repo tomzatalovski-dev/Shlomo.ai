@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { lirePoste, lirePosteDossier, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
+import { lireActes, lirePoste, lirePosteDossier, type Acte, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
+import { direCreneau, euros } from "@/lib/creneaux";
 import { VERSION } from "@/lib/negociation/manuel";
 import { ETAPES } from "@/lib/negociation/poste";
-import Demande from "./Demande";
+import Demande, { Essai } from "./Demande";
 import Fil from "./Fil";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,29 @@ function poids(p: RepreneurPoste): number {
   if (p.echanges.some((e) => e.etat === "propose")) return -100;
   if (p.statut === "sans_suite" || p.canal === "refus_demarchage") return 100;
   return -(ORDRE.get(p.statut) ?? 0);
+}
+
+const quand = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Paris" });
+
+/** Un acte du journal, dit en clair. Le détail vient de la base, tel qu'elle l'a enregistré au moment de l'acte. */
+function direActe(a: Acte): string {
+  const d = a.detail as Record<string, string | number | boolean | null | undefined>;
+  const qui = a.repreneur ?? "un repreneur";
+  switch (a.acte) {
+    case "mandat_signe": return `Mandat signé par ${d.signataire} (version ${d.version}${d.autorisation_approche ? ", approche autorisée" : ""})`;
+    case "accord_signe": return `Accord de confidentialité signé par ${d.signataire}${d.qualite ? `, ${d.qualite}` : ""}, pour ${qui}`;
+    case "nom_autorisee": return `Le vendeur a autorisé la communication de son nom à ${qui}`;
+    case "nom_refusee": return `Le vendeur a refusé que son nom soit communiqué à ${qui}`;
+    case "fourchette_validee": return `Le vendeur a validé sa fourchette : ${euros(Number(d.bas))} à ${euros(Number(d.haut))}`;
+    case "rendez_vous_choisi": return d.creneau ? `${qui} a choisi le rendez-vous du ${direCreneau(String(d.creneau))}` : `Rendez-vous retiré pour ${qui}`;
+    case "offre_deposee": return `${qui} a déposé une offre de ${euros(Number(d.prix))}`;
+    case "offre_acceptee": return `Le vendeur a accepté l'offre de ${euros(Number(d.prix))} de ${qui}`;
+    case "offre_refusee": return `Le vendeur a refusé l'offre de ${euros(Number(d.prix))} de ${qui}`;
+    case "offre_a_ameliorer": return `Le vendeur a demandé à ${qui} d'améliorer son offre de ${euros(Number(d.prix))}`;
+    case "repreneur_raye": return `Le vendeur a rayé ${qui} de la liste`;
+    case "repreneur_retabli": return `Le vendeur a rétabli ${qui} dans la liste`;
+    default: return a.acte;
+  }
 }
 
 function Cadre({ children }: { children: React.ReactNode }) {
@@ -37,6 +61,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
     const actifs = d.presentations.filter((p) => !p.exclu).sort((a, b) => poids(a) - poids(b) || a.rang - b.rang);
     const compte = (statuts: StatutPresentation[]) => actifs.filter((p) => statuts.includes(p.statut)).length;
     const libres = d.interets.filter((i) => !i.siren);
+    const [actes, liste] = await Promise.all([lireActes(code, choisi).catch(() => null), lirePoste(code).catch(() => null)]);
+    const essai = liste?.find((x) => x.id === d.id)?.essai ?? false;
     return (
       <Cadre>
         <div>
@@ -49,6 +75,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <div className="actions">
             <a className="lien" href={`/suivi?d=${d.jeton}`} target="_blank" rel="noreferrer">Suivi vu par le vendeur</a>
             <a className="lien" href={`/fiche?f=${d.jeton_fiche}`} target="_blank" rel="noreferrer">Présentation anonyme</a>
+            <Essai code={code} dossier={d.id} essai={essai} />
           </div>
         </div>
 
@@ -79,6 +106,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <p className="source">Conversations · manuel v{VERSION}</p>
           {actifs.map((p, i) => <Fil key={p.siren} code={code} dossier={d.id} repreneur={p} etapes={ETAPES} ouvert={p.echanges.some((e) => e.etat === "propose") || (i === 0 && p.echanges.length > 0)} />)}
         </div>
+
+        {actes && actes.length > 0 && (
+          <div className="carte">
+            <p className="source">Journal des actes · écrit par la base à l'instant de chaque acte, sans intervention du site ni de l'équipe</p>
+            <div>
+              {actes.map((x) => (
+                <div key={x.id} className="ligne">
+                  <span className="quoi"><b style={{ fontWeight: 500 }}>{direActe(x)}</b><small>{quand(x.cree_le)}</small></span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Cadre>
     );
   }
@@ -102,7 +142,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <tbody>
             {dossiers.map((d) => (
               <tr key={d.id}>
-                <td><a href={`/poste?c=${code}&d=${d.id}`}><b>{d.nom}</b></a><br /><small>Signé par {d.signataire} le {jour(d.signe_le)}</small></td>
+                <td><a href={`/poste?c=${code}&d=${d.id}`}><b>{d.nom}</b></a>{d.essai && <span className="essai" style={{ marginLeft: 8 }}>Essai</span>}<br /><small>Signé par {d.signataire} le {jour(d.signe_le)}</small></td>
                 <td>{d.prets}</td>
                 <td>{d.contactes}</td>
                 <td>{d.reponses}</td>

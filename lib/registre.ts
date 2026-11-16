@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { Societe } from "./types";
 
 /**
@@ -92,7 +93,7 @@ export function mapperSociete(r: Brut): Societe {
 export class RegistreIndisponible extends Error {}
 
 /** Appelle le registre, avec trois essais. Renvoie null si la demande est refusée. */
-async function appeler(parametres: Record<string, string>): Promise<{ resultats: Brut[]; total: number } | null> {
+async function appelerEnDirect(parametres: Record<string, string>): Promise<{ resultats: Brut[]; total: number } | null> {
   const url = `${BASE}/search?${new URLSearchParams(parametres)}`;
   let derniere: unknown;
 
@@ -120,6 +121,26 @@ async function appeler(parametres: Record<string, string>): Promise<{ resultats:
     }
   }
   throw new RegistreIndisponible(String(derniere));
+}
+
+/**
+ * Copie de secours : chaque réponse du registre est gardée douze heures côté serveur.
+ * Une société déjà consultée s'affiche donc aussitôt, et reste disponible si le registre ralentit ou tombe :
+ * passé le délai, l'ancienne réponse est servie pendant qu'une nouvelle est demandée, et elle reste en place si la demande échoue.
+ * Une panne n'est jamais gardée (l'appel lève une erreur), et la copie vit sur le serveur : un visiteur ne peut pas la modifier.
+ */
+const appelerAvecCopie = unstable_cache((cle: string) => appelerEnDirect(JSON.parse(cle) as Record<string, string>), ["registre-v1"], { revalidate: 12 * 3600 });
+
+async function appeler(parametres: Record<string, string>): Promise<{ resultats: Brut[]; total: number } | null> {
+  // Hors du serveur Next (tests), il n'y a pas de copie : on appelle le registre directement.
+  if (!process.env.NEXT_RUNTIME) return appelerEnDirect(parametres);
+  try {
+    return await appelerAvecCopie(JSON.stringify(Object.fromEntries(Object.entries(parametres).sort(([a], [b]) => a.localeCompare(b)))));
+  } catch (e) {
+    if (e instanceof RegistreIndisponible) throw e;
+    // La copie elle-même a un souci : on ne prive pas le visiteur du registre pour autant.
+    return appelerEnDirect(parametres);
+  }
 }
 
 /** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */

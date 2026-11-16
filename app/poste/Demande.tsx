@@ -29,3 +29,17 @@ export default function Demande({ code, dossier, interet, repreneurs }: { code: 
     </span>
   );
 }
+
+/** Range un dossier parmi les essais, ou le remet parmi les vrais. */
+export function Essai({ code, dossier, essai }: { code: string; dossier: string; essai: boolean }) {
+  const routeur = useRouter();
+  const [occupe, setOccupe] = useState(false);
+  return (
+    <button type="button" className="lien" disabled={occupe} onClick={async () => {
+      setOccupe(true);
+      await fetch("/api/poste", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code, dossier, action: "essai", essai: !essai }) }).catch(() => null);
+      setOccupe(false);
+      routeur.refresh();
+    }}>{essai ? "Dossier d'essai : le passer en vrai dossier" : "Marquer comme dossier d'essai"}</button>
+  );
+}
