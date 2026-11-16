@@ -1,4 +1,5 @@
 import { Pied } from "./composants/Pied";
+import { Recherche } from "./composants/Recherche";
 export default function Accueil() {
   return (
     <div className="page">
@@ -14,12 +15,7 @@ export default function Accueil() {
           Donnez votre site ou votre numéro SIREN. Shlomo comprend votre société et cherche qui a une vraie raison de la racheter, sous vos yeux.
         </p>
 
-        <form className="saisie" action="/dossier" method="get">
-          <label className="cache" htmlFor="q">Site internet ou numéro SIREN</label>
-          <input id="q" name="q" type="text" placeholder="votresociete.fr ou numéro SIREN" autoComplete="off" required />
-          <button className="bouton" type="submit">Trouver mes repreneurs</button>
-        </form>
-        <p className="aide">L'un des deux suffit. Rien d'autre à remplir.</p>
+        <Recherche />
 
         <ul className="garanties">
           <li>Gratuit jusqu'à la signature du mandat</li>
