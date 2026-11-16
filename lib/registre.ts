@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { natureDe } from "./nature";
 import type { Societe } from "./types";
 
 /**
@@ -26,17 +27,6 @@ const EFFECTIFS: Record<string, string> = {
   "53": "10 000 salariés et plus",
 };
 
-const FORMES: Record<string, string> = {
-  "1000": "Entrepreneur individuel",
-  "5202": "SNC",
-  "5498": "EURL",
-  "5499": "SARL",
-  "5599": "SA",
-  "5710": "SAS",
-  "5720": "SASU",
-  "6540": "SCI",
-  "9220": "Association",
-};
 
 type Brut = Record<string, any>;
 
@@ -71,7 +61,8 @@ export function mapperSociete(r: Brut): Societe {
     siren: String(r.siren),
     nom: sansDoublon(r.nom_complet ?? r.nom_raison_sociale ?? "Société sans nom publié"),
     active: r.etat_administratif !== "C",
-    formeJuridique: forme ? (FORMES[forme] ?? `Forme juridique ${forme}`) : undefined,
+    formeJuridique: natureDe(forme).libelle,
+    horsParcours: natureDe(forme).horsParcours,
     anneeCreation: Number.isFinite(annee) ? annee : undefined,
     codeActivite: r.activite_principale ?? undefined,
     effectif: r.tranche_effectif_salarie ? EFFECTIFS[String(r.tranche_effectif_salarie)] : undefined,

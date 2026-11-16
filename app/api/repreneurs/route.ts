@@ -50,6 +50,10 @@ export async function GET(requete: Request) {
           return;
         }
         dire({ type: "vendeur", nom: vendeur.nom, siren: vendeur.siren });
+        if (vendeur.horsParcours) {
+          dire({ type: "erreur", message: vendeur.horsParcours });
+          return;
+        }
 
         const metiers = lireMetiers(parametres.get("m"), vendeur.codeActivite);
         if (metiers.length === 0) {

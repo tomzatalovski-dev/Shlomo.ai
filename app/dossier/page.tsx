@@ -29,6 +29,7 @@ function Dossier() {
   const [points, setPoints] = useState(0);
   const [description, setDescription] = useState("");
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
+  const [hors, setHors] = useState<string | null>(null);
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [metier, setMetier] = useState<{ libelle?: string; liste: (Metier & { total?: number })[] } | null>(null);
   const [activites, setActivites] = useState(0);
@@ -61,6 +62,7 @@ function Dossier() {
       }
     } else if (e.type === "societe") {
       setSociete(e.societe);
+      if (e.societe.horsParcours) return;
       setAvance({ pct: 55, texte: "Lecture de la fiche et des comptes publiés" });
       for (let i = 1; i <= 4; i++) {
         await attendre(700);
@@ -89,6 +91,9 @@ function Dossier() {
         await attendre(600);
         setActivites(i);
       }
+    } else if (e.type === "hors_parcours") {
+      setHors(e.message);
+      setEncours(null);
     } else if (e.type === "besoin_siren") {
       setPropositions(e.propositions ?? []);
       setBesoinSiren(e.message);
@@ -125,7 +130,7 @@ function Dossier() {
     let termine = false;
     flux.onmessage = (m) => {
       const e = JSON.parse(m.data) as Evenement;
-      if (e.type === "fin" || e.type === "erreur" || e.type === "besoin_siren") {
+      if (e.type === "fin" || e.type === "erreur" || e.type === "besoin_siren" || e.type === "hors_parcours") {
         termine = true;
         flux.close();
       }
@@ -150,6 +155,8 @@ function Dossier() {
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
+    : hors
+      ? "Cette structure ne se vend pas avec Shlomo."
     : besoinSiren
       ? propositions.length ? "Est-ce bien votre société ?" : "Il me manque votre numéro SIREN."
       : valide
@@ -193,10 +200,10 @@ function Dossier() {
         <main className="resultat">
           <div>
             <h1>{titre}</h1>
-            <p className="sous">{fini && !valide ? "Vérifiez d'un coup d'œil. La description est modifiable." : !erreur && !besoinSiren && !valide ? "Chaque information s'affiche dès que je la trouve." : valide ? "J'ouvre la recherche de vos repreneurs." : ""}</p>
+            <p className="sous">{fini && !valide ? "Vérifiez d'un coup d'œil. La description est modifiable." : !erreur && !besoinSiren && !valide && !hors ? "Chaque information s'affiche dès que je la trouve." : valide ? "J'ouvre la recherche de vos repreneurs." : ""}</p>
           </div>
 
-          {!erreur && !besoinSiren && <Avance pct={avance.pct} texte={avance.texte} trace={lignes[lignes.length - 1]?.texte} />}
+          {!erreur && !besoinSiren && !hors && <Avance pct={avance.pct} texte={avance.texte} trace={lignes[lignes.length - 1]?.texte} />}
 
           {erreur && (
             <div className="carte">
@@ -205,6 +212,14 @@ function Dossier() {
                 <button type="button" className="bouton petit" onClick={() => window.location.reload()}>Réessayer</button>
                 <a className="lien" href="/">Revenir à l'accueil</a>
               </div>
+            </div>
+          )}
+
+          {hors && (
+            <div className="carte">
+              <p className="message"><b>{societe?.nom}</b>{societe?.formeJuridique ? ` · ${societe.formeJuridique}` : ""}</p>
+              <p className="message">{hors}</p>
+              <div className="actions"><a className="bouton petit" href="/">Essayer un autre SIREN</a></div>
             </div>
           )}
 
@@ -238,7 +253,7 @@ function Dossier() {
             </div>
           )}
 
-          {societe && (
+          {societe && !societe.horsParcours && (
             <div className="carte apparait">
               <div className="tete">
                 <div>

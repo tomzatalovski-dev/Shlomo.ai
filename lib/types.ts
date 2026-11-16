@@ -15,6 +15,8 @@ export type Societe = {
   nom: string;
   active: boolean;
   formeJuridique?: string;
+  /** Si présent : cette structure ne se vend pas par ce parcours, et voici pourquoi. */
+  horsParcours?: string;
   anneeCreation?: number;
   codeActivite?: string;
   effectif?: string;
@@ -133,6 +135,7 @@ export type Evenement =
   | { type: "annonces"; liste: { date: string; famille: string; genre: string; detail?: string; confidentiel?: boolean; url: string }[]; total: number; comptes: "confidentiels" | "deposes" | "aucun_depot" }
   | { type: "faits"; faits: { texte: string; source: string }[]; requetes: string[]; pages: PageLue[] }
   | { type: "besoin_siren"; message: string; propositions?: Proposition[] }
+  | { type: "hors_parcours"; message: string }
   | { type: "metiers"; libelle?: string; liste: (Metier & { total?: number })[] }
   | { type: "erreur"; message: string }
   | { type: "fin" };

@@ -119,8 +119,11 @@ export async function GET(requete: Request) {
         dire({ type: "journal", texte: `Société trouvée : ${societe.nom}`, etat: "ok" });
         dire({ type: "societe", societe });
 
-        if (societe.formeJuridique === "Association") {
-          dire({ type: "journal", texte: "C'est une association : elle ne se vend pas comme une société, ce parcours n'est pas fait pour elle", etat: "alerte" });
+        // Ce qui ne se vend pas est dit tout de suite : ni recherche web, ni liste de repreneurs.
+        if (societe.horsParcours) {
+          dire({ type: "journal", texte: `${societe.formeJuridique ?? "Cette structure"} : hors du parcours de cession`, etat: "alerte" });
+          dire({ type: "hors_parcours", message: societe.horsParcours });
+          return;
         }
         if (!societe.active) dire({ type: "journal", texte: "Le registre indique une société cessée", etat: "alerte" });
 
