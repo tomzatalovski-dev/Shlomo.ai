@@ -624,3 +624,56 @@ small { line-height: 1.45; }
 @media (prefers-reduced-motion: reduce) { .repreneur-net { animation: none; } .indice-net.attente { animation: none; background: none; color: var(--gris); } }
 .pied-net .masque { display: inline; border: 0; padding: 0; margin: 0; background: none; font-size: 13px; letter-spacing: 0; text-transform: none; border-radius: 0; }
 .pied-net .masque::after { content: " ·"; color: var(--gris); font-weight: 400; }
+
+/* Atelier épuré : trois agents, trois lignes */
+.agents-net { display: grid; }
+.agent-net { display: grid; grid-template-columns: 76px 1fr; gap: 16px; padding: 18px 0; border-top: 1px solid var(--trait); font-size: 15px; opacity: 0.5; transition: opacity 0.4s ease; }
+.agent-net:first-child { border-top: 0; }
+.agent-net.actif { opacity: 1; }
+.qui-net { font-size: 13px; color: var(--gris); padding-top: 2px; }
+.quoi-net { display: grid; gap: 4px; min-width: 0; }
+.quoi-net b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quoi-net small { font-size: 13px; color: var(--gris); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fait-net { font-size: 14px; color: var(--gris); }
+.vivant { color: transparent; background: linear-gradient(90deg, var(--gris) 0%, var(--gris) 38%, var(--encre) 50%, var(--gris) 62%, var(--gris) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: avance-reflet 2.2s linear infinite; }
+.lettre-net { display: grid; gap: 12px; }
+.lettre-net .lettre { background: var(--carte); border-radius: 24px; padding: 32px; max-width: none; }
+.etat-net { font-size: 13px; color: var(--gris); text-align: right; white-space: nowrap; }
+.etat-net.fort { color: var(--encre); font-weight: 500; }
+.etat-net.alerte { color: var(--ambre); }
+.marque { display: inline-block; margin-left: 10px; font-size: 12px; font-weight: 500; color: var(--encre); border: 1px solid var(--contour); border-radius: 999px; padding: 2px 10px; vertical-align: 1px; }
+.marque.alerte { color: var(--ambre); border-color: var(--ambre); }
+.flux-ligne .ou button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 13px; min-height: 0; }
+@media (max-width: 700px) { .agent-net { grid-template-columns: 62px 1fr; } .lettre-net .lettre { padding: 22px; border-radius: 20px; } .etat-net { grid-column: 1 / -1; text-align: left; } }
+@media (prefers-reduced-motion: reduce) { .vivant { animation: none; background: none; color: var(--gris); } }
+
+/* Épure appliquée aux pages à deux colonnes : le contenu d'abord, le journal en bas, les tuiles à plat */
+.epure .corps:not(.seul) { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 56px; max-width: 860px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 40px) 120px; }
+.epure .corps:not(.seul) .resultat { order: 1; flex: none; max-width: none; gap: 44px; }
+.epure .corps:not(.seul) .journal { order: 2; flex: none; width: 100%; border-top: 1px solid var(--trait); padding-top: 28px; }
+.epure .journal .qui { display: none; }
+.epure .journal h2 { font-size: 14px; font-weight: 500; color: var(--gris); }
+.epure .journal .lignes { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px 32px; }
+.epure .resultat h1 { font-size: clamp(34px, 5vw, 52px); letter-spacing: -0.035em; line-height: 1.05; }
+.epure .resultat .sous { font-size: 18px; max-width: 34em; }
+.epure .carte { border-radius: 28px; }
+.epure .chiffres, .epure .entonnoir { gap: 28px 0; }
+.epure .chiffre, .epure .entonnoir .chiffre.cle { background: none; border: 0; border-radius: 0; padding: 0 24px; border-left: 1px solid var(--trait); box-shadow: none; }
+.epure .chiffres .chiffre:first-child, .epure .entonnoir .chiffre:first-child { padding-left: 0; border-left: 0; }
+.epure .chiffre span { font-size: 13px; }
+.epure .chiffre b { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; margin-top: 8px; }
+.epure .entonnoir .chiffre b { font-size: 36px; }
+.epure .entonnoir .chiffre::after { display: none; }
+.epure .valeur { border: 0; padding: 0; }
+.epure .points { display: grid; gap: 12px; }
+.epure .points li { border: 0; border-radius: 0; padding: 0; font-size: 15px; }
+.epure .activites li { border: 0; border-top: 1px solid var(--trait); border-radius: 0; padding: 14px 0; }
+.epure .activites li:first-child { border-top: 0; }
+.epure .carte.liste { background: none; padding: 0; border-radius: 0; }
+.epure .cles li { border: 0; background: none; padding: 0 20px; border-left: 1px solid var(--trait); border-radius: 0; }
+.epure .cles li:first-child { padding-left: 0; border-left: 0; }
+@media (max-width: 700px) {
+  .epure .corps:not(.seul) { padding: 24px 20px 80px; gap: 40px; }
+  .epure .chiffre, .epure .entonnoir .chiffre.cle, .epure .cles li { padding: 0 0 0 16px; }
+  .epure .chiffres .chiffre:nth-child(odd), .epure .entonnoir .chiffre:nth-child(odd), .epure .cles li:nth-child(odd) { padding-left: 0; border-left: 0; }
+}

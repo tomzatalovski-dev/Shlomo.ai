@@ -208,139 +208,115 @@ function Atelier() {
   const pct = fini ? 100 : utiles.length ? Math.max(6, Math.round((traites / utiles.length) * 92)) : 6;
   const agentSur = (siren: string, colonne: Colonne) => [1, 2, 3].find((n) => postes[n]?.siren === siren && postes[n]?.colonne === colonne);
 
-  const cellule = (l: LigneAtelier, colonne: Colonne, contenu: React.ReactNode) => {
-    const n = agentSur(l.siren, colonne);
-    return (
-      <td className={n ? `vise a${n}` : undefined}>
-        {contenu}
-        {n && <Agent n={n} />}
-      </td>
-    );
+  const etatDeLigne = (l: LigneAtelier) => {
+    // Un agent est sur cette ligne : on dit ce qu'il y fait, en direct.
+    const n = [1, 2, 3].find((a) => postes[a]?.siren === l.siren);
+    if (n && ecrans[n]?.actif && ecrans[n]?.etat) return <span className="etat-net vivant">{ecrans[n].etat}</span>;
+    if (l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier") return <span className="etat-net alerte">À vérifier avant envoi</span>;
+    return <span className={l.etat === "pret" ? "etat-net fort" : "etat-net"}>{l.etat === "pret" && prioriteDe(l.signaux) === "prioritaire" ? "Prête, en priorité" : ETAT[l.etat]}</span>;
   };
+  const faits = utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0);
+  const lu = ouvert && lignes ? lignes.find((l) => l.siren === ouvert) : null;
+  const montre = lu?.message ? { titre: `Message pour ${lu.nom}`, vivant: false, texte: lu.message } : direct ? { titre: `Agent ${direct.agent} écrit à ${direct.pour}`, vivant: !fini, texte: direct.texte } : null;
 
   return (
-    <div className="page">
+    <div className="page epure">
       <header className="haut">
         <a className="logo" href="/">Shlomo.ai</a>
-        <ol className="etapes" aria-label="Étapes">
-          <li className="fait">1</li><li className="fait">2</li><li className="fait">3</li><li className="fait">4</li>
-          <li className="ici">5 · Prospection</li>
-          <li>6</li>
-        </ol>
+        <span className="repere">{societe ? `${societe} · ` : ""}étape 5 sur 6</span>
       </header>
 
-      <div className="corps">
-        <aside className="journal">
-          <div className="qui"><b>{societe || "Votre dossier"}</b><span>Mandat signé, approche autorisée</span></div>
-          <h2>Ce que font les agents</h2>
-          <ul className="lignes fil agents">
-            {journal.map((j) => (
-              <li key={j.cle} className="apparait"><span><Agent n={j.agent} /> {j.texte}</span></li>
-            ))}
-            {!journal.length && !fini && !erreur && <li className="encours">Ouverture du dossier</li>}
-          </ul>
-          <p className="promesse">Aucun message ne cite votre nom ni votre ville. Rien ne part sans relecture.</p>
-        </aside>
-
-        <main className="resultat">
-          <div>
-            <h1>{erreur ? "La préparation s'est arrêtée." : fini ? (pretes ? `${pretes} approche${pretes > 1 ? "s sont prêtes" : " est prête"} à partir${aVerifier ? `, ${aVerifier} à vérifier` : ""}.` : aVerifier ? `${aVerifier} approche${aVerifier > 1 ? "s" : ""} à vérifier avant envoi.` : "Aucune approche à préparer.") : "Trois agents préparent vos approches."}</h1>
-            <p className="sous">{erreur ?? (fini ? "Vous n'avez rien eu à faire. Les repreneurs qui ont déjà racheté passent en tête ; ceux qui semblent en difficulté passent en dernier." : "Pour chaque repreneur : qui décide, ce qu'il a annoncé publiquement, et le message qui lui donnera envie de vous appeler. Vous n'avez rien à faire.")}</p>
-          </div>
-
-          {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} />}
-
+      <main className="colonne">
+        <div className="entete">
+          <h1>{erreur ? "La préparation s'est arrêtée." : fini ? (pretes ? `${pretes} approche${pretes > 1 ? "s prêtes" : " prête"} à partir.` : aVerifier ? `${aVerifier} approche${aVerifier > 1 ? "s" : ""} à vérifier.` : "Aucune approche à préparer.") : "Vos agents préparent chaque approche."}</h1>
+          <p className="sous">{erreur ?? (fini ? `Vous n'avez rien eu à faire.${aVerifier && pretes ? ` ${aVerifier} approche${aVerifier > 1 ? "s restent" : " reste"} à vérifier avant envoi.` : ""} Les repreneurs qui ont déjà racheté passent en tête.` : "Pour chaque repreneur : qui décide, ce qu'il a annoncé publiquement, et le message qui lui donnera envie de vous appeler.")}</p>
           {lignes && (
-            <>
-              <div className="entonnoir">
-                <div className="chiffre"><span>Repreneurs à approcher</span><b><Compteur valeur={utiles.length} /></b></div>
-                <div className="chiffre"><span>Décideurs identifiés</span><b><Compteur valeur={decideurs} duree={400} /></b></div>
-                {/* Ces deux compteurs ne vivent que pendant le travail : à la relecture d'un dossier déjà préparé, on ne montre pas un zéro trompeur. */}
-                {pagesLues > 0 && <div className="chiffre"><span>Pages web lues</span><b><Compteur valeur={pagesLues} duree={300} /></b></div>}
-                <div className="chiffre"><span>Faits publics trouvés</span><b><Compteur valeur={utiles.reduce((n, l) => n + (l.signaux?.length ?? 0), 0)} duree={400} /></b></div>
-                {relus > 0 && <div className="chiffre"><span>Messages relus par un second agent</span><b><Compteur valeur={relus} duree={400} />{corriges > 0 && <small className="part"> dont {corriges} corrigé{corriges > 1 ? "s" : ""}</small>}</b></div>}
-                <div className="chiffre"><span>Messages rédigés</span><b><Compteur valeur={messages} duree={400} /></b></div>
-                <div className="chiffre cle"><span>Prêtes à partir</span><b><Compteur valeur={pretes} duree={400} /></b></div>
-              </div>
+            <p className="bilan" aria-live="polite">
+              <b><Compteur valeur={decideurs} duree={400} /></b> décideur{decideurs > 1 ? "s" : ""} identifié{decideurs > 1 ? "s" : ""} sur {utiles.length}
+              {pagesLues > 0 && <>, <b><Compteur valeur={pagesLues} duree={300} /></b> pages lues</>}
+              {faits > 0 && <>, <b><Compteur valeur={faits} duree={400} /></b> fait{faits > 1 ? "s" : ""} public{faits > 1 ? "s" : ""}</>}
+              , <b><Compteur valeur={messages} duree={400} /></b> message{messages > 1 ? "s" : ""} rédigé{messages > 1 ? "s" : ""}
+              {relus > 0 && <> dont <Compteur valeur={relus} duree={400} /> relu{relus > 1 ? "s" : ""} par un second agent{corriges > 0 ? ` et ${corriges} corrigé${corriges > 1 ? "s" : ""}` : ""}</>}.
+            </p>
+          )}
+        </div>
 
-              {presentation && presentation.etat !== "sans" && (
-                <div className="carte apparait">
-                  <p className="source">{presentation.etat === "prete" ? "Présentation anonyme de votre société, remise aux repreneurs" : "Un agent lit votre site et rédige la présentation anonyme de votre société"}</p>
-                  {presentation.texte && <p className="lettre" style={{ minHeight: 0 }}>{presentation.texte}{presentation.etat !== "prete" && <span className="curseur" />}</p>}
+        {!erreur && <Avance pct={pct} texte={fini ? "Préparation terminée" : `${traites} repreneur${traites > 1 ? "s" : ""} traité${traites > 1 ? "s" : ""} sur ${utiles.length}`} />}
+
+        {!fini && !erreur && Object.keys(ecrans).length > 0 && (
+          <section className="agents-net" aria-label="Les agents au travail">
+            {AGENTS.map((n) => {
+              const ecran = ecrans[n];
+              const trace = ecran?.traces.at(-1);
+              return (
+                <div key={n} className={ecran?.actif ? "agent-net actif" : "agent-net"}>
+                  <span className="qui-net">Agent {n}</span>
+                  <span className="quoi-net">
+                    <b>{ecran?.cible ?? "En attente"}</b>
+                    <span className={ecran?.actif ? "fait-net vivant" : "fait-net"}>{ecran?.etat || "attend son premier repreneur"}</span>
+                    {trace && <small>{trace.genre === "page" ? `${trace.texte} ${trace.detail ?? ""}` : trace.texte}</small>}
+                  </span>
                 </div>
-              )}
+              );
+            })}
+          </section>
+        )}
 
-              {Object.keys(ecrans).length > 0 && (
-                <div className="ecrans">
-                  {AGENTS.map((n) => {
-                    const ecran = ecrans[n];
-                    return (
-                      <div key={n} className={`ecran a${n}${ecran?.actif ? " actif" : ""}`}>
-                        <p className="ecran-tete"><Agent n={n} /><span>{ecran?.cible ?? "en attente"}</span></p>
-                        <p className="ecran-etat">{ecran?.actif && <i className="pouls" />}{ecran?.etat || "attend son premier repreneur"}</p>
-                        <ul>
-                          {/* La ligne la plus récente en haut : elle reste visible, les anciennes sortent par le bas. */}
-                          {ecran?.traces.slice().reverse().map((t) => (
-                            <li key={t.cle} className={`trace ${t.genre}`}>
-                              {t.genre === "page" ? <><b>{t.texte}</b> {t.detail}</> : t.texte}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        {montre && (
+          <section className="lettre-net">
+            <p className="intertitre">{montre.titre}</p>
+            <p className="lettre">{montre.texte}{montre.vivant ? <span className="curseur" /> : null}</p>
+          </section>
+        )}
 
-              <div className="carte tableau-carte apparait">
-                <table className="tableau">
-                  <thead><tr><th>Repreneur</th><th>Qui décide</th><th>Message</th><th>État</th></tr></thead>
-                  <tbody>
-                    {affichees.map((l) => (
-                      <tr key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "eteint" : undefined}>
-                        {cellule(l, "nom", <>
-                          <b>{l.rang}. {l.nom}{l.signaux?.some((x) => x.genre === "rachat") && <span className="pastille">A déjà racheté</span>}{l.signaux?.some((x) => x.genre === "alerte") && <span className="pastille" style={{ color: "var(--ambre)", borderColor: "var(--ambre)" }}>À vérifier</span>}</b>
-                          <small>{[l.ville, l.effectif, l.site].filter(Boolean).join(" · ")}</small>
-                          {l.signaux?.map((x) => (
-                            <small key={x.source + x.texte} className={`signal apparait${x.genre === "alerte" ? " alerte" : ""}`}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
-                          ))}
-                        </>)}
-                        {cellule(l, "decideur", l.decideur ? <><b>{l.decideur}</b><small>{l.qualite}</small></> : l.decideur === "" ? <small>Non publié</small> : <i className="vide" />)}
-                        {cellule(l, "message", l.message ? <button className="lien" type="button" onClick={() => setOuvert(ouvert === l.siren ? null : l.siren)}>{ouvert === l.siren ? "Refermer" : "Lire le message"}</button> : <i className="vide" />)}
-                        {cellule(l, "etat", l.etat === "pret" && prioriteDe(l.signaux) === "a_verifier" ? <span className="etat" style={{ color: "var(--ambre)" }}>À vérifier avant envoi</span> : <span className={l.etat === "pret" ? "etat fort" : "etat"}>{l.etat === "pret" && prioriteDe(l.signaux) === "prioritaire" ? "Prête, en priorité" : ETAT[l.etat]}</span>)}
-                      </tr>
+        {presentation && presentation.etat !== "sans" && presentation.texte && (
+          <section className="lettre-net apparait">
+            <p className="intertitre">{presentation.etat === "prete" ? "Présentation anonyme de votre société, remise aux repreneurs" : "Un agent rédige la présentation anonyme de votre société"}</p>
+            <p className="lettre" style={{ minHeight: 0 }}>{presentation.texte}{presentation.etat !== "prete" && <span className="curseur" />}</p>
+          </section>
+        )}
+
+        {lignes && (
+          <section>
+            <p className="intertitre">{fini ? "Vos repreneurs, dans l'ordre où les approcher" : "Vos repreneurs"}</p>
+            <div className="flux">
+              {affichees.map((l) => (
+                <div key={l.siren} className={l.etat === "raye" || l.etat === "refus" ? "flux-ligne ecartee" : "flux-ligne"}>
+                  <span className="quoi">
+                    <b>{l.rang}. {l.nom}</b>
+                    {l.signaux?.some((x) => x.genre === "rachat") && <span className="marque">A déjà racheté</span>}
+                    {l.signaux?.some((x) => x.genre === "alerte") && <span className="marque alerte">À vérifier</span>}
+                    <small>{l.decideur ? `${l.decideur}${l.qualite ? `, ${l.qualite}` : ""}` : l.decideur === "" ? "Décideur non publié" : [l.ville, l.effectif].filter(Boolean).join(" · ")}</small>
+                    {l.signaux?.map((x) => (
+                      <small key={x.source + x.texte} className="apparait">{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {(() => {
-                const lu = ouvert ? lignes.find((l) => l.siren === ouvert) : null;
-                const montre = lu?.message ? { titre: `Message pour ${lu.nom}`, agent: 0, texte: lu.message } : direct ? { titre: `écrit à ${direct.pour}`, agent: direct.agent, texte: direct.texte } : null;
-                return montre ? (
-                  <div className="carte">
-                    <p className="source">{montre.agent ? <><Agent n={montre.agent} /> {montre.titre}</> : montre.titre}</p>
-                    <p className="lettre">{montre.texte}{montre.agent && !fini ? <span className="curseur" /> : null}</p>
-                  </div>
-                ) : null;
-              })()}
-            </>
-          )}
-
-          {(fini || erreur) && (
-            <div className="carte apparait">
-              <p className="message">
-                {erreur
-                  ? "Le travail déjà fait est conservé dans votre suivi."
-                  : "À ce stade du projet, l'équipe Shlomo relit chaque message et l'envoie elle-même. Chaque envoi, chaque réponse et chaque rendez-vous proposé s'inscrit dans votre suivi."}
-              </p>
-              <div className="actions">
-                <a className="bouton" href={`/suivi?d=${encodeURIComponent(jeton)}`}>Voir mon suivi</a>
-              </div>
+                  </span>
+                  <span className="ou">{l.message ? <button className="lien" type="button" onClick={() => setOuvert(ouvert === l.siren ? null : l.siren)}>{ouvert === l.siren ? "Refermer" : "Lire le message"}</button> : null}</span>
+                  {etatDeLigne(l)}
+                </div>
+              ))}
             </div>
-          )}
-        </main>
-      </div>
+          </section>
+        )}
+
+        {(fini || erreur) && (
+          <section className="appel apparait">
+            <h2>{erreur ? "Le travail déjà fait est conservé." : "La suite se lit dans votre suivi."}</h2>
+            <p>{erreur ? "Rechargez la page, ou ouvrez votre suivi : rien n'est perdu." : "L'équipe Shlomo relit chaque message et l'envoie elle-même. Chaque envoi, chaque réponse et chaque rendez-vous s'y inscrit."}</p>
+            <a className="bouton" href={`/suivi?d=${encodeURIComponent(jeton)}`}>Voir mon suivi</a>
+          </section>
+        )}
+
+        {journal.length > 0 && (
+          <details className="detail">
+            <summary>Voir le journal des agents</summary>
+            <ul className="lignes">
+              {journal.slice().reverse().map((j) => <li key={j.cle}>Agent {j.agent} {j.texte}</li>)}
+            </ul>
+          </details>
+        )}
+        <p className="promesse">Aucun message ne cite votre nom ni votre ville. Rien ne part sans relecture.</p>
+      </main>
     </div>
   );
 }

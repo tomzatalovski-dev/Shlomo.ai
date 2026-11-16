@@ -70,14 +70,10 @@ function Mandat() {
   const retour = `/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}`;
 
   return (
-    <div className="page">
+    <div className="page epure">
       <header className="haut">
         <a className="logo" href="/">Shlomo.ai</a>
-        <ol className="etapes" aria-label="Étapes">
-          <li className="fait">1</li><li className="fait">2</li><li className="fait">3</li>
-          <li className="ici">4 · Mandat</li>
-          <li>5</li><li>6</li>
-        </ol>
+        <span className="repere">{societe?.nom ? `${societe.nom} · ` : ""}étape 4 sur 6</span>
       </header>
 
       <div className="corps seul contrat-page">

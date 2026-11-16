@@ -168,13 +168,10 @@ function Dossier() {
     );
 
   return (
-    <div className="page">
+    <div className="page epure">
       <header className="haut">
         <a className="logo" href="/">Shlomo.ai</a>
-        <ol className="etapes" aria-label="Étapes">
-          <li className="ici">1 · Comprendre la société</li>
-          <li>2</li><li>3</li><li>4</li><li>5</li><li>6</li>
-        </ol>
+        <span className="repere">{societe?.nom ? `${societe.nom} · ` : ""}étape 1 sur 6</span>
       </header>
 
       <div className="corps">

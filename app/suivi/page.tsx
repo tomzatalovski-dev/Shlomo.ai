@@ -36,13 +36,10 @@ const compter = (liste: Presentation[], statuts: StatutPresentation[]) => liste.
 
 function Cadre({ children }: { children: React.ReactNode }) {
   return (
-    <div className="page">
+    <div className="page epure">
       <header className="haut">
         <a className="logo" href="/">Shlomo.ai</a>
-        <ol className="etapes" aria-label="Étapes">
-          <li className="fait">1</li><li>2</li><li>3</li><li className="fait">4</li>
-          <li className="ici">Suivi de l'approche</li>
-        </ol>
+        <span className="repere">Votre suivi</span>
       </header>
       {children}
     </div>
