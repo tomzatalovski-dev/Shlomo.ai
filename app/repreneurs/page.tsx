@@ -62,6 +62,7 @@ function Repreneurs() {
   const [reveles, setReveles] = useState<RepreneurRevele[] | null>(null);
   const [examinees, setExaminees] = useState(0);
   const [indices, setIndices] = useState<Record<number, ("rachat" | "croissance" | "alerte")[]>>({});
+  const [bilans, setBilans] = useState<Record<number, Extract<EvenementRepreneurs, { type: "bilan" }>>>({});
   const [veille, setVeille] = useState<"non" | "encours" | "faite">("non");
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -79,6 +80,9 @@ function Repreneurs() {
     } else if (e.type === "journal") {
       setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
       await attendre(450 * rythme);
+    } else if (e.type === "bilan") {
+      setBilans((b) => ({ ...b, [e.rang]: e }));
+      await attendre(700 * rythme);
     } else if (e.type === "vendeur") {
       setVendeur(e);
     } else if (e.type === "metier") {
@@ -165,8 +169,12 @@ function Repreneurs() {
         <span className="profil-net">{r.profil}</span>
         <span className="score-net"><b><Compteur valeur={r.score} duree={1200} format={(v) => String(Math.round(v))} /></b> sur 100</span>
       </div>
-      <h2>{r.raison}.</h2>
-      {r.details.length > 0 && <p className="details-net">{r.details.join(" · ")}</p>}
+      <h2>{bilans[r.rang]?.titre ?? r.raison}.</h2>
+      {(bilans[r.rang]?.titre ? [r.raison, ...r.details] : r.details).length > 0 && <p className="details-net">{(bilans[r.rang]?.titre ? [r.raison, ...r.details] : r.details).join(" · ")}</p>}
+      {bilans[r.rang] && bilans[r.rang].lignes.length > 0 && (
+        <p className="indice-net bilan-net"><b>Bilan {bilans[r.rang].annee} lu ligne à ligne.</b> {bilans[r.rang].lignes.join(" · ")}</p>
+      )}
+      {bilans[r.rang]?.reserves.map((x) => <p key={x} className="indice-net alerte">À vérifier : {x.charAt(0).toLowerCase() + x.slice(1)}</p>)}
       {veille === "encours" && !indices[r.rang] && <p className="indice-net attente">Je lis ce qu'elle a annoncé publiquement…</p>}
       {indices[r.rang]?.map((g) => <p key={g} className={`indice-net ${g}`}>{INDICE[g]}</p>)}
       {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice-net">Rien de notable annoncé publiquement.</p>}

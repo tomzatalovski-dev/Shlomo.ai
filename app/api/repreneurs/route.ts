@@ -4,6 +4,7 @@ import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { mesurer } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { veiller } from "@/lib/veille";
+import { bilanActif, direBilan, lireBilan } from "@/lib/bilan";
 import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, messagePlafond, plafondAtteint, tropDappels } from "@/lib/limite";
 import type { EvenementRepreneurs } from "@/lib/types";
@@ -95,6 +96,20 @@ export async function GET(requete: Request) {
             }),
           );
           if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${premiers.length > 1 ? `${premiers.length} premiers repreneurs` : "premier repreneur"}`, etat: "ok" });
+        }
+        // Lecture du dernier bilan des trois premiers : a-t-il de quoi payer ? Montants arrondis, rien qui nomme la société.
+        if (bilanActif() && repreneurs.length > 0) {
+          dire({ type: "encours", texte: "Lecture du dernier bilan de vos premiers repreneurs" });
+          let lus = 0;
+          await Promise.all(
+            repreneurs.slice(0, 3).map(async (r, i) => {
+              const bilan = await lireBilan(r.societe.siren);
+              if (!bilan) return;
+              lus++;
+              dire({ type: "bilan", rang: i + 1, ...direBilan(bilan) });
+            }),
+          );
+          dire({ type: "journal", texte: lus ? `${lus} bilan${lus > 1 ? "s" : ""} lu${lus > 1 ? "s" : ""} ligne à ligne` : "Bilans confidentiels ou trop anciens : je garde les chiffres du registre", etat: lus ? "ok" : "alerte" });
         }
         await mesurer("repreneurs_vus", vendeur.siren);
         dire({ type: "fin" });

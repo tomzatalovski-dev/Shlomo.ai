@@ -688,3 +688,7 @@ small { line-height: 1.45; }
   .epure .chiffre, .epure .entonnoir .chiffre.cle, .epure .cles li { padding: 0 0 0 16px; }
   .epure .chiffres .chiffre:nth-child(odd), .epure .entonnoir .chiffre:nth-child(odd), .epure .cles li:nth-child(odd) { padding-left: 0; border-left: 0; }
 }
+
+/* Bilan lu sur la carte d'un repreneur : même ligne que les indices, les chiffres en gris. */
+.indice-net.bilan-net { font-weight: 400; color: var(--gris); }
+.indice-net.bilan-net b { font-weight: 600; color: var(--encre); }

@@ -99,6 +99,7 @@ export type EvenementRepreneurs =
   | { type: "passage"; profil: ProfilRepreneur; libelle: string; candidats: CandidatMasque[]; echec?: boolean }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
   | { type: "indices"; rang: number; genres: ("rachat" | "croissance" | "alerte")[]; pages: number }
+  | { type: "bilan"; rang: number; annee: number; titre?: string; lignes: string[]; reserves: string[] }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }
   | { type: "fin" };
