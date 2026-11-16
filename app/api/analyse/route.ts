@@ -235,7 +235,7 @@ export async function GET(requete: Request) {
           type: "erreur",
           message:
             e instanceof RegistreIndisponible
-              ? "Le registre des entreprises ne répond pas. Réessayez dans quelques minutes."
+              ? "Le registre public des entreprises ne répond pas en ce moment. Ce n'est pas votre saisie : réessayez dans un instant."
               : "Un imprévu a interrompu la recherche. Réessayez.",
         });
       } finally {

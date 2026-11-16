@@ -94,9 +94,22 @@ function Dossier() {
       setBesoinSiren(e.message);
       setEncours(null);
     } else if (e.type === "erreur") {
+      // Une panne passagère du registre ne doit pas coûter un visiteur : on relance une fois, seul, avant de lui montrer l'erreur.
+      let dejaRelance = !/registre|connexion|imprévu/i.test(e.message);
+      if (!dejaRelance) try {
+        dejaRelance = sessionStorage.getItem("relance") === window.location.search;
+        if (!dejaRelance) sessionStorage.setItem("relance", window.location.search);
+      } catch {}
+      if (!dejaRelance) {
+        setEncours("Le registre tarde à répondre, nouvel essai");
+        await attendre(3500);
+        window.location.reload();
+        return;
+      }
       setErreur(e.message);
       setEncours(null);
     } else if (e.type === "fin") {
+      try { sessionStorage.removeItem("relance"); } catch {}
       await attendre(400);
       setAvance({ pct: 100, texte: "Étape 1 terminée" });
       setEncours(null);
@@ -188,7 +201,10 @@ function Dossier() {
           {erreur && (
             <div className="carte">
               <p className="message">{erreur}</p>
-              <div className="actions"><a className="lien" href="/">Revenir à l'accueil</a></div>
+              <div className="actions">
+                <button type="button" className="bouton petit" onClick={() => window.location.reload()}>Réessayer</button>
+                <a className="lien" href="/">Revenir à l'accueil</a>
+              </div>
             </div>
           )}
 
