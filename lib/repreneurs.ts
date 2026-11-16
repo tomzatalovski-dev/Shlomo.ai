@@ -69,7 +69,7 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     else if (rapport > 10 && rapport <= 30) score += 9;
     else if (rapport > 30 && rapport <= 100) score += 5;
     else score += 3;
-    dire(rapport >= 2 && rapport <= 10 ? 3 : 2, fois >= 2 ? `Environ ${fois} fois votre taille : de quoi vous reprendre sans se mettre en danger` : "Un peu plus grande que vous");
+    dire(rapport >= 2 && rapport <= 10 ? 3 : 2, fois >= 2 ? `Environ ${fois} fois votre taille` : "Un peu plus grande que vous");
   } else {
     dire(1, "Plus grande que vous");
   }
