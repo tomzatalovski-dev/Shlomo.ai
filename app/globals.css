@@ -551,3 +551,23 @@ small { line-height: 1.45; }
   .invite button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 }
 @media (prefers-reduced-motion: reduce) { .invite, .invite::before { animation: none; } .invite-signe { transition: none; } }
+
+/* Ligne d'avancement : la même partout */
+@keyframes avance-lueur { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+@keyframes avance-pouls { 0%, 100% { box-shadow: 0 0 0 0 rgba(44, 87, 196, 0.45); } 60% { box-shadow: 0 0 0 7px rgba(44, 87, 196, 0); } }
+.avance { display: grid; gap: 12px; }
+.avance-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
+.avance-texte { display: inline-flex; align-items: center; gap: 10px; color: var(--encre); font-weight: 500; min-height: 20px; }
+.avance-texte i { width: 8px; height: 8px; border-radius: 50%; background: var(--bleu); flex: none; animation: avance-pouls 1.6s ease-out infinite; }
+.avance-pct { color: var(--gris); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.avance-piste { position: relative; height: 8px; border-radius: 999px; background: var(--voile); box-shadow: inset 0 0 0 1px var(--trait); }
+.avance-plein { position: relative; height: 100%; min-width: 8px; border-radius: 999px; transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(90deg, var(--encre) 0%, var(--bleu) 35%, var(--vert) 50%, var(--bleu) 65%, var(--encre) 100%); background-size: 200% 100%; animation: avance-lueur 2.4s linear infinite; }
+/* La tête de la ligne : un point lumineux là où le travail en est. */
+.avance-plein::after { content: ""; position: absolute; right: -3px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--carte);
+  border: 3px solid var(--bleu); box-shadow: 0 0 14px 2px rgba(44, 87, 196, 0.45); }
+.avance.fini .avance-plein { animation: none; background: var(--vert); }
+.avance.fini .avance-plein::after { display: none; }
+.avance.fini .avance-texte i { animation: none; background: var(--vert); }
+.avance.fini .avance-pct { color: var(--vert); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { .avance-plein, .avance-texte i { animation: none; } }
