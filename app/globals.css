@@ -622,3 +622,5 @@ small { line-height: 1.45; }
   .repere { font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .repreneur-net { animation: none; } .indice-net.attente { animation: none; background: none; color: var(--gris); } }
+.pied-net .masque { display: inline; border: 0; padding: 0; margin: 0; background: none; font-size: 13px; letter-spacing: 0; text-transform: none; border-radius: 0; }
+.pied-net .masque::after { content: " ·"; color: var(--gris); font-weight: 400; }
