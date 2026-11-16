@@ -692,3 +692,14 @@ small { line-height: 1.45; }
 /* Bilan lu sur la carte d'un repreneur : même ligne que les indices, les chiffres en gris. */
 .indice-net.bilan-net { font-weight: 400; color: var(--gris); }
 .indice-net.bilan-net b { font-weight: 600; color: var(--encre); }
+
+/* Épure partout : aucun aplat. Les boutons sont un contour à l'encre, le fond ne se remplit jamais. */
+.bouton, a.bouton { background: transparent; color: var(--encre); border: 1.5px solid var(--encre); transition: background 0.2s ease, transform 0.2s ease; }
+.bouton:hover:not(:disabled) { background: rgba(19, 28, 51, 0.06); }
+.bouton:active:not(:disabled) { transform: scale(0.98); }
+.bouton:disabled { border-color: var(--contour); color: var(--gris); opacity: 1; }
+.invite button, .invite:has(input:placeholder-shown) button { background: transparent; color: var(--encre); border: 1.5px solid var(--encre); }
+.invite:has(input:placeholder-shown) button { border-color: var(--contour); color: var(--gris); }
+.invite button:hover { background: rgba(19, 28, 51, 0.06); }
+.partage > div:last-child { background: transparent; color: var(--encre); border-color: var(--encre); }
+.partage > div:last-child span { color: var(--gris); }
