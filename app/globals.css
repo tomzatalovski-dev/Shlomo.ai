@@ -1,6 +1,6 @@
 :root {
-  /* Palette : un papier froid, une encre bleu nuit pour tout ce qui agit ou se signe,
-     le vert pour ce qui est vérifié, l'ambre pour ce qui reste à vérifier. Rien d'autre. */
+  /* Palette : un papier froid et une encre bleu nuit. Une seule couleur, l'ambre, réservée à ce qui attend une décision
+     ou une vérification ; le rouge pour l'erreur. Les anciens jetons vert et bleu valent désormais l'encre. */
   --fond: #f3f4f7;
   --carte: #ffffff;
   --voile: #eef0f5;
@@ -9,10 +9,10 @@
   --gris: #5b6275;
   --trait: #e4e7ee;
   --contour: #cdd2dc;
-  --vert: #136b4c;
+  --vert: #131c33;
   --ambre: #9c5a0c;
   --rouge: #a3392b;
-  --bleu: #2c57c4;
+  --bleu: #131c33;
   /* La police d'avant la passe visuelle, pour les titres comme pour le texte. */
   --courant: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --titre: var(--courant);
@@ -550,3 +550,75 @@ small { line-height: 1.45; }
 .avance.fini .avance-texte { animation: none; background: none; color: var(--encre); }
 .avance.fini .avance-pct { color: var(--encre); }
 @media (prefers-reduced-motion: reduce) { .avance-texte { animation: none; background: none; color: var(--encre); } }
+
+/* ===== Épure : une colonne, une idée par écran ===== */
+.carte.decider { border: 1px solid var(--ambre); }
+.etapes li:not(.ici) { display: none; }
+.etapes li.ici { border: 0; padding: 0; font-size: 13px; font-weight: 500; color: var(--gris); background: none; }
+.etapes li.ici::after { display: none; }
+.lien, .resultat a:not(.bouton), .colonne a:not(.bouton) { color: var(--encre); }
+.repere { margin-left: auto; font-size: 13px; color: var(--gris); }
+.epure .haut { justify-content: space-between; }
+.colonne { width: 100%; max-width: 860px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 40px) 120px; display: grid; gap: 44px; }
+.entete { display: grid; gap: 16px; }
+.colonne h1 { margin: 0; font-size: clamp(34px, 5vw, 52px); font-weight: 600; letter-spacing: -0.035em; line-height: 1.05; text-wrap: balance; }
+.colonne .sous { font-size: 18px; max-width: 34em; }
+.bilan { margin: 0; font-size: 18px; line-height: 1.5; color: var(--gris); max-width: 36em; font-variant-numeric: tabular-nums; }
+.bilan b { color: var(--encre); font-weight: 600; }
+.colonne .examen { margin: -24px 0 0; font-size: 14px; color: var(--gris); min-height: 20px; }
+
+/* Les lignes : du blanc et un filet, pas de boîte */
+.flux { display: grid; }
+.flux-ligne { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 24px; align-items: baseline; padding: 18px 0; border-top: 1px solid var(--trait); font-size: 15px; }
+.flux-ligne:first-child { border-top: 0; }
+.flux-ligne .quoi b { font-weight: 500; }
+.flux-ligne .quoi small { display: block; margin-top: 4px; color: var(--gris); font-size: 13px; line-height: 1.5; }
+.flux-ligne .ou { color: var(--gris); font-size: 13px; text-align: right; }
+.flux-ligne .note { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.flux-ligne.ecartee { opacity: 0.45; }
+.intertitre { margin: 0 0 4px; font-size: 14px; color: var(--gris); }
+
+/* Le podium : le premier en grand, seul ; les deux suivants côte à côte. Ils sortent du flou un par un. */
+@keyframes net { from { opacity: 0; filter: blur(18px); transform: translateY(14px) scale(0.985); } to { opacity: 1; filter: blur(0); transform: none; } }
+.podium { display: grid; gap: 20px; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.repreneur-net { background: var(--carte); border-radius: 28px; padding: 32px; display: grid; gap: 14px; align-content: start; animation: net 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.repreneur-net.grand { padding: 48px; gap: 18px; box-shadow: 0 1px 2px rgba(19, 28, 51, 0.04), 0 24px 60px rgba(19, 28, 51, 0.08); }
+.repreneur-net .tete { display: flex; align-items: baseline; gap: 12px; font-size: 14px; color: var(--gris); }
+.rang-net { color: var(--encre); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rang-net::before { content: "N° "; font-weight: 400; color: var(--gris); }
+.score-net { margin-left: auto; white-space: nowrap; }
+.score-net b { color: var(--encre); font-weight: 600; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.repreneur-net.grand .score-net b { font-size: 44px; letter-spacing: -0.04em; }
+.repreneur-net h2 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; }
+.repreneur-net.grand h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -0.03em; line-height: 1.12; max-width: 18em; }
+.details-net { margin: 0; font-size: 15px; line-height: 1.55; color: var(--gris); }
+.repreneur-net.grand .details-net { font-size: 17px; }
+.indice-net { margin: 0; font-size: 15px; line-height: 1.5; color: var(--encre); }
+.indice-net.attente { color: transparent; background: linear-gradient(90deg, var(--gris) 0%, var(--gris) 38%, var(--encre) 50%, var(--gris) 62%, var(--gris) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: avance-reflet 2.2s linear infinite; }
+.indice-net.alerte { color: var(--ambre); }
+.pied-net { margin: 6px 0 0; padding-top: 16px; border-top: 1px solid var(--trait); display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--gris); }
+.pied-net .masque { color: var(--encre); font-weight: 500; filter: blur(0); }
+
+/* L'appel : une phrase, un bouton */
+.appel { display: grid; gap: 16px; justify-items: start; padding-top: 12px; }
+.appel h2 { margin: 0; font-size: clamp(26px, 3.4vw, 34px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.12; max-width: 18em; text-wrap: balance; }
+.appel p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--gris); max-width: 34em; }
+.appel .bouton { display: inline-flex; align-items: center; text-decoration: none; margin-top: 4px; }
+.appel .garder { margin-top: 12px; }
+
+.detail { font-size: 14px; color: var(--gris); }
+.detail summary { cursor: pointer; list-style: none; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); width: fit-content; }
+.detail summary::-webkit-details-marker { display: none; }
+.detail .lignes { margin-top: 16px; }
+.colonne .promesse { margin: -28px 0 0; font-size: 13px; color: var(--gris); }
+@media (max-width: 700px) {
+  .colonne { padding: 24px 20px 80px; gap: 36px; }
+  .duo { grid-template-columns: 1fr; }
+  .repreneur-net, .repreneur-net.grand { padding: 26px; border-radius: 22px; }
+  .repreneur-net.grand .score-net b { font-size: 34px; }
+  .flux-ligne { grid-template-columns: 1fr auto; }
+  .flux-ligne .ou { grid-column: 1; grid-row: 2; text-align: left; }
+  .repere { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .repreneur-net { animation: none; } .indice-net.attente { animation: none; background: none; color: var(--gris); } }

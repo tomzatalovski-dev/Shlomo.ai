@@ -152,166 +152,127 @@ function Repreneurs() {
         : n === 0
           ? "Le registre ne montre pas encore de repreneur évident."
           : n <= 3
-            ? `${n} repreneur${n > 1 ? "s" : ""} retenu${n > 1 ? "s" : ""}.`
-            : `${n} meilleurs repreneurs classés. Voici les trois premiers.`;
+            ? n > 1 ? "Vos meilleurs repreneurs." : "Votre meilleur repreneur."
+            : "Vos trois meilleurs repreneurs.";
+
+  const [premier, ...autres] = premiers;
+  const carte = (r: (typeof premiers)[number], grand: boolean) => (
+    <article key={r.rang} className={grand ? "repreneur-net grand" : "repreneur-net"} style={{ animationDelay: `${(r.rang - 1) * 0.45}s` }}>
+      <div className="tete">
+        <span className="rang-net">{r.rang}</span>
+        <span className="profil-net">{r.profil}</span>
+        <span className="score-net"><b><Compteur valeur={r.score} duree={1200} format={(v) => String(Math.round(v))} /></b> sur 100</span>
+      </div>
+      <h2>{r.raison}.</h2>
+      {r.details.length > 0 && <p className="details-net">{r.details.join(" · ")}</p>}
+      {veille === "encours" && !indices[r.rang] && <p className="indice-net attente">Je lis ce qu'elle a annoncé publiquement…</p>}
+      {indices[r.rang]?.map((g) => <p key={g} className={`indice-net ${g}`}>{INDICE[g]}</p>)}
+      {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice-net">Rien de notable annoncé publiquement.</p>}
+      <p className="pied-net"><span className="masque">Nom masqué</span>{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
+    </article>
+  );
 
   return (
-    <div className="page">
+    <div className="page epure">
       <header className="haut">
         <a className="logo" href="/">Shlomo.ai</a>
-        <ol className="etapes" aria-label="Étapes">
-          <li className="fait">1</li><li>2</li><li>3</li>
-          <li className="ici">4 · Sociétés repreneuses</li>
-          <li>5</li><li>6</li>
-        </ol>
+        <span className="repere">{vendeur?.nom ? `${vendeur.nom} · ` : ""}étape 4 sur 6</span>
       </header>
 
-      <div className="corps">
-        <aside className="journal">
-          <div className="qui">
-            <b>{vendeur?.nom ?? "Votre société"}</b>
-            <span>{vendeur ? `SIREN ${vendeur.siren}` : "Recherche en cours"}</span>
+      <main className="colonne">
+        <div className="entete">
+          <h1>{titre}</h1>
+          {cherche && <p className="sous">Je pars de toutes les sociétés de votre métier et je ne garde que celles qui ont une raison de vous racheter.</p>}
+          {aDesNoms && <p className="sous">Mandat de test signé par {par || "vous"}, sans valeur juridique. Les noms ne sont visibles que de vous.</p>}
+          {liste !== null && n === 0 && !erreur && !aDesNoms && (
+            <p className="sous">{metiers ? "Aucune société plus grande que vous n'apparaît dans ces activités." : "Aucune société plus grande que vous n'apparaît sous votre code d'activité. Donnez l'adresse de votre site à l'étape 1 : je chercherai aussi parmi les activités voisines."}</p>
+          )}
+          {!erreur && (compte.vues > 0 || metier !== null) && (
+            <p className="bilan" aria-live="polite">
+              {compte.vues > 0 ? <><b><Compteur valeur={compte.vues} duree={500} format={nombre} /></b> sociétés examinées, <b><Compteur valeur={compte.oui} duree={500} format={nombre} /></b> compatibles</> : "Recherche en cours"}
+              {metier !== null && <>, parmi <Compteur valeur={metier} duree={1100} format={nombre} /> {metiers ? "dans vos activités" : "de votre métier"} en France</>}.
+              {!cherche && n > 0 && !aDesNoms ? " Les noms s'affichent après la signature du mandat." : ""}
+            </p>
+          )}
+        </div>
+
+        {!erreur && <Avance pct={avance.pct} texte={avance.texte} />}
+
+        {erreur && (
+          <div className="carte">
+            <p className="message">{erreur}</p>
+            <div className="actions"><a className="lien" href="/">Revenir à l'accueil</a></div>
           </div>
-          <h2>{encours ? "Shlomo cherche vos repreneurs" : "Premier passage terminé"}</h2>
-          <ul className="lignes" aria-live="polite">
-            {lignes.map((l, i) => (
-              <li key={i} className={l.etat === "alerte" ? "alerte apparait" : "apparait"}>{l.texte}</li>
+        )}
+
+        {cherche && <p className="examen" aria-live="off">{examen || " "}</p>}
+
+        {cherche && recents.length > 0 && (
+          <div className="flux">
+            {recents.map((c) => (
+              <div key={c.cle} className={c.retenu ? "flux-ligne apparait" : "flux-ligne ecartee apparait"}>
+                <span className="quoi"><b>{c.retenu ? c.raison : "Écartée"}</b><small>{c.retenu ? (c.details ?? []).join(" · ") : c.motif}</small></span>
+                <span className="ou">{[c.libelle, c.effectif].filter(Boolean).join(" · ")}</span>
+                <span className="note">{c.retenu ? c.score : "—"}</span>
+              </div>
             ))}
-            {encours && <li className="encours">{encours}…</li>}
-          </ul>
-          <p className="promesse">Rien n'est envoyé sans votre accord.</p>
-        </aside>
-
-        <main className="resultat">
-          <div>
-            <h1>{titre}</h1>
-            {cherche && <p className="sous">Je pars de toutes les sociétés de votre métier, et je ne garde que celles qui ont une raison de vous racheter.</p>}
-            {aDesNoms && (
-              <p className="sous">Mandat de test signé par {par || "vous"}, sans valeur juridique. Les noms ne sont visibles que de vous, parmi {examinees} sociétés examinées.</p>
-            )}
-            {liste !== null && n > 0 && (
-              <p className="sous">
-                {metiers ? "Des sociétés de votre activité et d'activités voisines, plus grandes que vous, notées sur leur taille, leurs comptes publiés et leur proximité." : "Des sociétés de votre code d'activité, plus grandes que vous. Ce code ne décrit pas toujours votre vrai métier : donnez l'adresse de votre site à l'étape 1 pour que je cherche aussi parmi les activités voisines."} Les noms s'affichent après la signature du mandat.
-              </p>
-            )}
-            {liste !== null && n === 0 && !erreur && !aDesNoms && (
-              <p className="sous">
-                {metiers ? "Aucune société plus grande que vous n'apparaît dans ces activités." : "Aucune société plus grande que vous n'apparaît sous votre code d'activité. Donnez l'adresse de votre site à l'étape 1 : je chercherai aussi parmi les activités voisines."}
-              </p>
-            )}
           </div>
+        )}
 
-          {!erreur && <Avance pct={avance.pct} texte={avance.texte} />}
-
-          {erreur && (
-            <div className="carte">
-              <p className="message">{erreur}</p>
-              <div className="actions"><a className="lien" href="/">Revenir à l'accueil</a></div>
-            </div>
-          )}
-
-          {!erreur && (
-            <div className="entonnoir">
-              <div className="chiffre"><span>{metiers ? "Sociétés de ces activités en France" : "Sociétés de votre métier en France"}</span><b>{metier === null ? "…" : <Compteur valeur={metier} duree={1100} format={nombre} />}</b></div>
-              <div className="chiffre"><span>Examinées de près</span><b>{compte.vues}</b></div>
-              <div className="chiffre"><span>Écartées</span><b>{compte.non}</b></div>
-              <div className="chiffre cle"><span>Compatibles</span><b>{compte.oui}</b></div>
-            </div>
-          )}
-
-          {cherche && <p className="examen" aria-live="off">{examen || " "}</p>}
-
-          {cherche && recents.length > 0 && (
-            <div className="carte liste">
-              {recents.map((c) => (
-                <div key={c.cle} className={c.retenu ? "ligne apparait" : "ligne ecartee apparait"}>
-                  <span className="quoi">
-                    <b>{c.retenu ? c.raison : "Écartée"}</b>
-                    <small>{c.retenu ? (c.details ?? []).join(" · ") : c.motif}</small>
-                  </span>
-                  <span className="ou">{[c.libelle, c.effectif].filter(Boolean).join(" · ")}</span>
-                  <span className="note">{c.retenu ? c.score : "—"}</span>
-                  {c.retenu && <span className="jauge"><i style={{ width: `${c.score}%` }} /></span>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {aDesNoms && (
-            <>
-              <div className="carte liste apparait">
-                {reveles!.map((r) => (
-                  <div key={r.siren} className="ligne">
-                    <span className="quoi">
-                      <b>{r.rang}. {r.nom}</b>
-                      <small>{[r.ville, r.effectif, ...r.raisons].filter(Boolean).join(" · ")}</small>
-                    </span>
-                    <span className="ou">
-                      {r.profil}
-                      <br />
-                      <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${r.siren}`} target="_blank" rel="noreferrer">Voir sa fiche publique</a>
-                    </span>
-                    <span className="note">{r.score}</span>
-                  </div>
-                ))}
+        {aDesNoms && (
+          <div className="flux apparait">
+            {reveles!.map((r) => (
+              <div key={r.siren} className="flux-ligne">
+                <span className="quoi"><b>{r.rang}. {r.nom}</b><small>{[r.ville, r.effectif, ...r.raisons].filter(Boolean).join(" · ")}</small></span>
+                <span className="ou">{r.profil}<br /><a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${r.siren}`} target="_blank" rel="noreferrer">Fiche publique</a></span>
+                <span className="note">{r.score}</span>
               </div>
-              <div className="carte apparait">
-                <p className="message">La suite arrive avec la prochaine version : trouver la bonne personne dans chaque société, puis préparer le message d'approche que vous validerez.</p>
-              </div>
-            </>
-          )}
+            ))}
+          </div>
+        )}
 
-          {premiers.length > 0 && (
-            <div className="trio">
-              {premiers.map((r) => (
-                <div key={r.rang} className={r.rang === 1 ? "carte repreneur premier apparait" : "carte repreneur apparait"} style={{ animationDelay: `${(r.rang - 1) * 0.25}s` }}>
-                  <div className="rang"><span className="num">{r.rang}</span><span>{r.profil}</span></div>
-                  <p className="pourquoi">{r.raison}.</p>
-                  {r.details.length > 0 && <ul className="faits">{r.details.map((d) => <li key={d}>{d}</li>)}</ul>}
-                  {veille === "encours" && !indices[r.rang] && <p className="indice attente"><i className="pouls" />Je lis ce qu'elle a annoncé publiquement…</p>}
-                  {indices[r.rang]?.map((g) => (
-                    <p key={g} className={`indice apparait ${g}`}>{INDICE[g]}</p>
-                  ))}
-                  {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice apparait neutre">Rien de notable annoncé publiquement.</p>}
-                  <div className="bas">
-                    <div>
-                      <span className="masque">Nom masqué</span>
-                      <p className="meta">{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
-                    </div>
-                    <div className="score"><b>{r.score}</b><span>sur 100</span></div>
-                  </div>
-                  <span className="jauge" role="img" aria-label={`Score ${r.score} sur 100`}><i style={{ width: `${r.score}%` }} /></span>
-                </div>
-              ))}
-            </div>
-          )}
+        {premier && (
+          <section className="podium" aria-label="Vos meilleurs repreneurs">
+            {carte(premier, true)}
+            {autres.length > 0 && <div className="duo">{autres.map((r) => carte(r, false))}</div>}
+          </section>
+        )}
 
-          {suivants.length > 0 && (
-            <div className="carte liste apparait">
+        {suivants.length > 0 && (
+          <section className="apparait">
+            <p className="intertitre">Les {suivants.length} suivants</p>
+            <div className="flux">
               {suivants.map((r) => (
-                <div key={r.rang} className="ligne">
+                <div key={r.rang} className="flux-ligne">
                   <span className="quoi"><b>{r.raison}</b>{r.details.length > 0 && <small>{r.details.join(" · ")}</small>}</span>
                   <span className="ou">{[r.profil, r.effectif].filter(Boolean).join(" · ")}</span>
                   <span className="note">{r.score}</span>
                 </div>
               ))}
             </div>
-          )}
+          </section>
+        )}
 
-          {n > 0 && (
-            <div className="carte mandat apparait">
-              <div>
-                <div className="grand">{accroche}</div>
-                <p className="sous">Gratuit jusqu'ici. Commission de 5 %, avec un minimum de 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
-              </div>
-              <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${versMandat}`}>Signer le mandat</a>
-            </div>
-          )}
-          {n > 0 && (
+        {n > 0 && (
+          <section className="appel apparait">
+            <h2>{accroche}</h2>
+            <p>Gratuit jusqu'ici. Commission de 5 %, minimum 5 000 €, uniquement si la vente se fait avec un repreneur présenté par Shlomo.</p>
+            <a className="bouton" href={`/mandat?siren=${encodeURIComponent(siren)}${versMandat}`}>Signer le mandat</a>
             <Garder siren={siren} />
-          )}
-        </main>
-      </div>
+          </section>
+        )}
+
+        {lignes.length > 0 && (
+          <details className="detail">
+            <summary>{encours ? "Voir ce que fait Shlomo" : "Voir le détail de la recherche"}</summary>
+            <ul className="lignes">
+              {lignes.map((l, i) => <li key={i} className={l.etat === "alerte" ? "alerte" : undefined}>{l.texte}</li>)}
+              {encours && <li className="encours">{encours}…</li>}
+            </ul>
+          </details>
+        )}
+        <p className="promesse">Rien n'est envoyé sans votre accord.</p>
+      </main>
     </div>
   );
 }
