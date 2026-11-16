@@ -76,22 +76,34 @@ export function Compteur({ valeur, duree = 900, format = String }: { valeur: num
  * La ligne d'avancement, la même sur toutes les pages où Shlomo travaille.
  * Le pourcentage est celui du travail réellement fait ; le reflet qui passe sur le texte dit seulement « en cours », il s'arrête à la fin.
  */
+const SEGMENTS = 24;
+
 export function Avance({ pct, texte }: { pct: number; texte: string }) {
   const fini = pct >= 100;
   const borne = Math.max(0, Math.min(100, Math.round(pct)));
+  const pleins = Math.round((borne / 100) * SEGMENTS);
+  const [survol, setSurvol] = useState<number | null>(null);
   return (
-    <div className={fini ? "avance fini" : "avance"} role="progressbar" aria-valuenow={borne} aria-valuemin={0} aria-valuemax={100} aria-label={texte}>
-      <span className="orbe" style={{ "--p": borne } as import("react").CSSProperties} aria-hidden="true">
-        <span className="orbe-halo" />
-        <span className="orbe-coeur" />
-        {fini && (
-          <svg className="orbe-coche" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M7 12.5l3.4 3.4L17 9" />
-          </svg>
-        )}
-      </span>
-      <span key={texte} className="avance-texte">{texte}</span>
-      {!fini && <span className="avance-pct">{borne} %</span>}
+    <div className={fini ? "avance fini" : "avance"}>
+      <div className="avance-tete">
+        <span key={texte} className="avance-texte">{texte}</span>
+        <span className="avance-pct">{fini ? "Terminé" : `${borne} %`}</span>
+      </div>
+      <div className="segments" role="progressbar" aria-valuenow={borne} aria-valuemin={0} aria-valuemax={100} aria-label={texte} onMouseLeave={() => setSurvol(null)}>
+        {Array.from({ length: SEGMENTS }).map((_, i) => {
+          const ecart = survol === null ? 9 : Math.abs(survol - i);
+          const vague = ecart === 0 ? 1 : ecart <= 3 ? 0.65 * Math.cos((ecart / 3) * (Math.PI / 2)) : 0;
+          const classe = i < pleins ? (i === pleins - 1 && !fini ? "segment plein tete" : "segment plein") : "segment";
+          return (
+            <span
+              key={i}
+              className={classe}
+              onMouseEnter={() => setSurvol(i)}
+              style={{ transform: `scaleY(${1 + 0.45 * vague}) translateY(${-1 * vague}px)`, transitionDelay: survol === null ? `${i * 18}ms` : "0ms" }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
