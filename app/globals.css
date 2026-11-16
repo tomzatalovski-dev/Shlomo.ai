@@ -511,63 +511,42 @@ small { line-height: 1.45; }
 .garder input:focus { outline: 0; border-color: var(--encre); box-shadow: 0 0 0 4px rgba(19, 28, 51, 0.08); }
 .garder button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 15px; }
 
-/* Le champ de l'accueil : une invite, pas une barre de recherche */
-@property --tour { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-@keyframes tour { to { --tour: 360deg; } }
-.invite { position: relative; width: 100%; max-width: 700px; border-radius: 28px; padding: 1.5px; isolation: isolate;
-  background: conic-gradient(from var(--tour), var(--contour) 0deg, var(--contour) 200deg, var(--bleu) 262deg, var(--vert) 312deg, var(--contour) 360deg);
-  animation: tour 7s linear infinite; transition: transform 0.25s ease; }
-/* Le halo : la même lumière, floue, sous le champ. Il s'intensifie quand on écrit. */
-.invite::before { content: ""; position: absolute; inset: -2px; border-radius: inherit; z-index: -1; filter: blur(22px); opacity: 0.22; transition: opacity 0.35s ease;
-  background: conic-gradient(from var(--tour), transparent 0deg, transparent 190deg, var(--bleu) 262deg, var(--vert) 312deg, transparent 360deg); }
-.invite:focus-within::before { opacity: 0.5; }
-.invite:focus-within { animation-duration: 3.5s; }
-.invite.envoi { animation-duration: 1.2s; }
-.invite.envoi::before { opacity: 0.7; }
-.invite-corps { display: flex; align-items: center; gap: 14px; background: var(--carte); border-radius: 26.5px; padding: 10px 10px 10px 24px; min-height: 76px;
-  box-shadow: 0 1px 2px rgba(19, 28, 51, 0.04), 0 18px 44px rgba(19, 28, 51, 0.07); }
-.invite-signe { width: 22px; height: 22px; flex: none; fill: var(--encre); transition: transform 0.6s ease, fill 0.3s ease; }
-.invite:focus-within .invite-signe { transform: rotate(90deg) scale(1.08); fill: var(--bleu); }
-.invite input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 20px; letter-spacing: -0.01em; min-height: 56px; text-align: left; }
-.invite input::placeholder { color: #9aa0b0; }
-.invite button { flex: none; display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: 20px; background: var(--encre); color: var(--carte); min-height: 56px; padding: 0 22px 0 24px;
-  font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.2s ease; }
-.invite button:hover:not(:disabled) { background: #22304f; }
-.invite button:active:not(:disabled) { transform: scale(0.97); }
-.invite button:disabled { opacity: 0.7; cursor: default; }
-.invite button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s ease; }
-.invite button:hover:not(:disabled) svg { transform: translateX(3px); }
-.invite-lecture { margin: -8px 0 0; font-size: 14px; color: var(--gris); display: inline-flex; align-items: center; gap: 9px; min-height: 22px; transition: color 0.2s ease; }
-.invite-lecture i { width: 7px; height: 7px; border-radius: 50%; background: var(--contour); transition: background 0.2s ease, box-shadow 0.2s ease; }
-.invite-lecture.compris { color: var(--vert); font-weight: 500; }
-.invite-lecture.compris i { background: var(--vert); box-shadow: 0 0 0 4px rgba(19, 107, 76, 0.14); }
-.invite-lecture.doute { color: var(--ambre); }
-.invite-lecture.doute i { background: var(--ambre); }
+/* Le champ de l'accueil : une seule surface blanche, un trait fin, un bouton rond. Aucune couleur. */
+.invite { width: 100%; max-width: 680px; }
+.invite-corps { display: flex; align-items: center; gap: 12px; background: var(--carte); border-radius: 22px; padding: 8px 8px 8px 26px; min-height: 68px;
+  box-shadow: 0 0 0 1px rgba(19, 28, 51, 0.08), 0 1px 2px rgba(19, 28, 51, 0.04), 0 12px 32px rgba(19, 28, 51, 0.06);
+  transition: box-shadow 0.25s ease, transform 0.25s ease; }
+.invite:focus-within .invite-corps { box-shadow: 0 0 0 1px rgba(19, 28, 51, 0.28), 0 1px 2px rgba(19, 28, 51, 0.05), 0 18px 44px rgba(19, 28, 51, 0.1); }
+.invite.envoi .invite-corps { transform: scale(0.992); }
+.invite input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 19px; letter-spacing: -0.01em; min-height: 52px; text-align: left; caret-color: var(--encre); }
+.invite input::placeholder { color: #a3a8b5; }
+.invite button { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--encre); color: var(--carte); cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease; }
+.invite button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.invite button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.invite:has(input:placeholder-shown) button { background: var(--contour); }
+.invite button:hover:not(:disabled) { transform: scale(1.05); }
+.invite button:active:not(:disabled) { transform: scale(0.95); }
+.invite button:disabled { opacity: 0.55; cursor: default; }
+.invite-lecture { margin: -10px 0 0; font-size: 14px; color: var(--gris); min-height: 22px; transition: color 0.25s ease; }
+.invite-lecture.compris { color: var(--encre); }
+.invite-lecture.compris::before { content: "✓"; margin-right: 8px; font-size: 12px; }
 @media (max-width: 700px) {
-  .invite { border-radius: 24px; }
-  .invite-corps { border-radius: 22.5px; padding: 8px 8px 8px 18px; gap: 10px; min-height: 66px; }
-  .invite input { font-size: 17px; min-height: 50px; }
-  .invite button { min-height: 50px; width: 50px; padding: 0; justify-content: center; border-radius: 17px; }
-  .invite button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .invite-corps { border-radius: 20px; padding: 7px 7px 7px 20px; min-height: 60px; }
+  .invite input { font-size: 17px; min-height: 46px; }
+  .invite button { width: 46px; height: 46px; }
 }
-@media (prefers-reduced-motion: reduce) { .invite, .invite::before { animation: none; } .invite-signe { transition: none; } }
 
-/* Ligne d'avancement : la même partout */
-@keyframes avance-lueur { from { background-position: 0% 0; } to { background-position: -200% 0; } }
-@keyframes avance-pouls { 0%, 100% { box-shadow: 0 0 0 0 rgba(44, 87, 196, 0.45); } 60% { box-shadow: 0 0 0 7px rgba(44, 87, 196, 0); } }
-.avance { display: grid; gap: 12px; }
-.avance-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; }
-.avance-texte { display: inline-flex; align-items: center; gap: 10px; color: var(--encre); font-weight: 500; min-height: 20px; }
-.avance-texte i { width: 8px; height: 8px; border-radius: 50%; background: var(--bleu); flex: none; animation: avance-pouls 1.6s ease-out infinite; }
+/* Ligne d'avancement : la même partout. Un trait fin, à l'encre, et un texte qui scintille pendant le travail. */
+@keyframes avance-reflet { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.avance { display: grid; gap: 14px; }
+.avance-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 15px; }
+.avance-texte { min-height: 22px; font-weight: 500; letter-spacing: -0.005em; color: transparent;
+  background: linear-gradient(90deg, var(--gris) 0%, var(--gris) 38%, var(--encre) 50%, var(--gris) 62%, var(--gris) 100%); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; animation: avance-reflet 2.2s linear infinite; }
 .avance-pct { color: var(--gris); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
-.avance-piste { position: relative; height: 8px; border-radius: 999px; background: var(--voile); box-shadow: inset 0 0 0 1px var(--trait); }
-.avance-plein { position: relative; height: 100%; min-width: 8px; border-radius: 999px; transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-  background: linear-gradient(90deg, var(--encre) 0%, var(--bleu) 35%, var(--vert) 50%, var(--bleu) 65%, var(--encre) 100%); background-size: 200% 100%; animation: avance-lueur 2.4s linear infinite; }
-/* La tête de la ligne : un point lumineux là où le travail en est. */
-.avance-plein::after { content: ""; position: absolute; right: -3px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--carte);
-  border: 3px solid var(--bleu); box-shadow: 0 0 14px 2px rgba(44, 87, 196, 0.45); }
-.avance.fini .avance-plein { animation: none; background: var(--vert); }
-.avance.fini .avance-plein::after { display: none; }
-.avance.fini .avance-texte i { animation: none; background: var(--vert); }
-.avance.fini .avance-pct { color: var(--vert); font-weight: 500; }
-@media (prefers-reduced-motion: reduce) { .avance-plein, .avance-texte i { animation: none; } }
+.avance-piste { height: 3px; border-radius: 999px; background: rgba(19, 28, 51, 0.08); overflow: hidden; }
+.avance-plein { height: 100%; border-radius: 999px; background: var(--encre); transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1); }
+.avance.fini .avance-texte { animation: none; background: none; color: var(--encre); }
+.avance.fini .avance-pct { color: var(--encre); }
+@media (prefers-reduced-motion: reduce) { .avance-texte { animation: none; background: none; color: var(--encre); } }

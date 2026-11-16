@@ -51,16 +51,15 @@ export function Recherche() {
     <>
       <form className={envoi ? "invite envoi" : "invite"} action="/dossier" method="get" onSubmit={() => setEnvoi(true)}>
         <div className="invite-corps">
-          <svg className="invite-signe" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l1.9 5.6a3 3 0 0 0 1.9 1.9l5.7 2-5.7 1.9a3 3 0 0 0-1.9 1.9L12 21.5l-1.9-5.7a3 3 0 0 0-1.9-1.9l-5.7-1.9 5.7-2a3 3 0 0 0 1.9-1.9z" /></svg>
           <label className="cache" htmlFor="q">Site internet ou numéro SIREN</label>
           <input id="q" name="q" type="text" inputMode="url" enterKeyHint="go" placeholder={exemple || " "} autoComplete="off" autoCapitalize="none" spellCheck={false} required value={valeur} onChange={(e) => setValeur(e.target.value)} />
           <button type="submit" aria-label="Trouver mes repreneurs" disabled={envoi}>
             <span>Trouver mes repreneurs</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
           </button>
         </div>
       </form>
-      <p className={`invite-lecture ${lu.etat}`} aria-live="polite"><i aria-hidden="true" />{envoi ? "Shlomo ouvre votre dossier…" : lu.texte}</p>
+      <p className={`invite-lecture ${lu.etat}`} aria-live="polite">{envoi ? "Shlomo ouvre votre dossier…" : lu.texte}</p>
     </>
   );
 }

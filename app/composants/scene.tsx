@@ -74,7 +74,7 @@ export function Compteur({ valeur, duree = 900, format = String }: { valeur: num
 
 /**
  * La ligne d'avancement, la même sur toutes les pages où Shlomo travaille.
- * Le pourcentage est celui du travail réellement fait ; la lumière qui parcourt la ligne dit seulement « en cours », elle s'arrête à la fin.
+ * Le pourcentage est celui du travail réellement fait ; le reflet qui passe sur le texte dit seulement « en cours », il s'arrête à la fin.
  */
 export function Avance({ pct, texte }: { pct: number; texte: string }) {
   const fini = pct >= 100;
@@ -82,7 +82,7 @@ export function Avance({ pct, texte }: { pct: number; texte: string }) {
   return (
     <div className={fini ? "avance fini" : "avance"}>
       <div className="avance-tete">
-        <span className="avance-texte"><i aria-hidden="true" />{texte}</span>
+        <span className="avance-texte">{texte}</span>
         <span className="avance-pct">{fini ? "Terminé" : `${borne} %`}</span>
       </div>
       <div className="avance-piste" role="progressbar" aria-valuenow={borne} aria-valuemin={0} aria-valuemax={100} aria-label={texte}>
