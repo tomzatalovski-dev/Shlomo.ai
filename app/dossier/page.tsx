@@ -99,7 +99,10 @@ function Dossier() {
       if (!dejaRelance) try {
         dejaRelance = sessionStorage.getItem("relance") === window.location.search;
         if (!dejaRelance) sessionStorage.setItem("relance", window.location.search);
-      } catch {}
+      } catch {
+        // Sans mémoire de session, on ne peut pas savoir si la relance a déjà eu lieu : on ne relance pas, pour ne jamais boucler.
+        dejaRelance = true;
+      }
       if (!dejaRelance) {
         setEncours("Le registre tarde à répondre, nouvel essai");
         await attendre(3500);
