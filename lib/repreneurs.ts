@@ -45,76 +45,97 @@ function rapportDeTaille(vendeur: Societe, candidat: Societe): number | undefine
 
 const pourcent = (x: number) => String(Math.round(x * 10) / 10).replace(".", ",");
 
+/** Au-delà, des comptes ne disent plus rien de la société d'aujourd'hui : on ne les cite pas et ils ne comptent pas. */
+export const COMPTES_RECENTS = 3;
+
 /**
  * Note un candidat et écrit ses raisons, à partir des seuls faits du registre.
  * Cinq critères : lien avec le métier, proximité, taille, santé des comptes, ancienneté et implantation.
+ * Les raisons sont rangées de la plus parlante à la moins parlante ; ce qui joue contre lui part dans les réserves, jamais dans les raisons.
  */
-export function noter(vendeur: Societe, candidat: Societe, profil: ProfilRepreneur, metier?: Metier): Repreneur {
+export function noter(vendeur: Societe, candidat: Societe, profil: ProfilRepreneur, metier?: Metier, annee = new Date().getFullYear()): Repreneur {
   const voisin = metier?.lien === "voisin";
   let score = (voisin ? 42 : 48) + (profil === "departement" ? 10 : profil === "region" ? 6 : 2);
-  const raisons: string[] = [];
-  if (voisin) raisons.push(metier?.libelle ? `Activité voisine de la vôtre : ${metier.libelle}` : "Activité voisine de la vôtre");
+  const atouts: { texte: string; force: number }[] = [];
+  const reserves: string[] = [];
+  const dire = (force: number, texte: string) => atouts.push({ texte, force });
 
   const rapport = rapportDeTaille(vendeur, candidat);
   if (rapport !== undefined) {
     const fois = rapport >= 10 ? Math.round(rapport / 5) * 5 : Math.round(rapport);
-    raisons.push(fois >= 2 ? `Environ ${fois} fois votre effectif` : "Un peu plus grande que vous");
     // Le bon repreneur est assez grand pour absorber le vendeur, pas au point de ne pas le voir.
     if (rapport >= 3 && rapport <= 10) score += 14;
     else if (rapport >= 2 && rapport < 3) score += 10;
     else if (rapport > 10 && rapport <= 30) score += 9;
     else if (rapport > 30 && rapport <= 100) score += 5;
     else score += 3;
+    dire(rapport >= 2 && rapport <= 10 ? 3 : 2, fois >= 2 ? `Environ ${fois} fois votre taille : de quoi vous reprendre sans se mettre en danger` : "Un peu plus grande que vous");
   } else {
-    raisons.push("Plus grande que vous");
+    dire(1, "Plus grande que vous");
   }
 
-  const comptes = candidat.finances.filter((f) => f.chiffreAffaires !== undefined || f.resultat !== undefined);
+  const comptes = candidat.finances.filter((f) => (f.chiffreAffaires !== undefined || f.resultat !== undefined) && f.annee >= annee - COMPTES_RECENTS);
   const dernier = comptes.at(-1);
   if (dernier?.resultat !== undefined) {
     const marge = dernier.chiffreAffaires && dernier.chiffreAffaires > 0 ? dernier.resultat / dernier.chiffreAffaires : undefined;
     if (dernier.resultat <= 0) {
-      score -= 8;
-      raisons.push(`Résultat négatif publié en ${dernier.annee}`);
+      score -= 14;
+      reserves.push(`Résultat négatif publié en ${dernier.annee}`);
     } else if (marge !== undefined) {
       score += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
-      raisons.push(`Résultat positif en ${dernier.annee}, soit ${pourcent(marge * 100)} % du chiffre d'affaires`);
+      dire(marge >= 0.08 ? 5 : 4, `Rentable : ${pourcent(marge * 100)} % de marge nette en ${dernier.annee}`);
     } else {
       score += 6;
-      raisons.push(`Résultat positif publié en ${dernier.annee}`);
+      dire(4, `Rentable : résultat positif publié en ${dernier.annee}`);
     }
   }
 
   const caVendeur = vendeur.finances.at(-1)?.chiffreAffaires;
   if (dernier?.chiffreAffaires && caVendeur && dernier.chiffreAffaires >= 3 * caVendeur) {
     score += 6;
-    raisons.push("Chiffre d'affaires au moins trois fois supérieur au vôtre");
+    dire(2, "Chiffre d'affaires au moins trois fois supérieur au vôtre");
   }
 
-  const ventes = comptes.filter((f) => f.chiffreAffaires && f.chiffreAffaires > 0);
-  if (ventes.length >= 2) {
+  // La croissance se mesure jusqu'à six ans en arrière, à condition que le dernier chiffre soit récent.
+  const ventes = candidat.finances.filter((f) => f.chiffreAffaires && f.chiffreAffaires > 0 && f.annee >= annee - 2 * COMPTES_RECENTS);
+  if (ventes.length >= 2 && ventes.at(-1)!.annee >= annee - COMPTES_RECENTS) {
     const evolution = ventes.at(-1)!.chiffreAffaires! / ventes[0].chiffreAffaires! - 1;
     if (evolution >= 0.1) {
       score += 5;
-      raisons.push(`Chiffre d'affaires en hausse de ${Math.round(evolution * 100)} % depuis ${ventes[0].annee}`);
+      dire(6, `En croissance : chiffre d'affaires en hausse de ${Math.round(evolution * 100)} % depuis ${ventes[0].annee}`);
     } else if (evolution <= -0.1) {
-      score -= 3;
-      raisons.push(`Chiffre d'affaires en baisse de ${Math.round(-evolution * 100)} % depuis ${ventes[0].annee}`);
+      score -= 5;
+      reserves.push(`Chiffre d'affaires en baisse de ${Math.round(-evolution * 100)} % depuis ${ventes[0].annee}`);
     }
   }
 
   if (candidat.etablissements && candidat.etablissements >= 2) {
     score += candidat.etablissements >= 5 ? 5 : 3;
-    raisons.push(`${candidat.etablissements} établissements : elle sait gérer plusieurs sites`);
+    dire(candidat.etablissements >= 5 ? 5 : 3, `Déjà ${candidat.etablissements} établissements : elle sait en intégrer un de plus`);
   }
 
-  const age = candidat.anneeCreation ? new Date().getFullYear() - candidat.anneeCreation : 0;
+  const age = candidat.anneeCreation ? annee - candidat.anneeCreation : 0;
   if (age >= 10) {
     score += Math.min(5, 2 + Math.floor(age / 10));
-    raisons.push(age >= 25 ? `Installée depuis ${age} ans` : "Installée depuis plus de dix ans");
+    dire(1, age >= 25 ? `Installée depuis ${age} ans` : "Installée depuis plus de dix ans");
   }
 
-  return { societe: candidat, profil, metier, score: Math.max(1, Math.min(score, 97)), raisons };
+  if (voisin && metier?.libelle) dire(0, `Son métier : ${metier.libelle.toLowerCase()}`);
+
+  // Tri stable : à force égale, l'ordre d'écriture est gardé.
+  const raisons = atouts.map((a, i) => ({ ...a, i })).sort((x, y) => y.force - x.force || x.i - y.i).map((a) => a.texte);
+  return { societe: candidat, profil, metier, score: Math.max(1, Math.min(score, 97)), raisons, reserves };
+}
+
+/** Deux repreneurs ne portent pas le même titre : le suivant met en avant sa raison suivante, s'il en a une autre. */
+export function distinguer(repreneurs: Repreneur[]): Repreneur[] {
+  const pris = new Set<string>();
+  return repreneurs.map((r) => {
+    const libre = r.raisons.findIndex((x) => !pris.has(x));
+    const raisons = libre > 0 ? [r.raisons[libre], ...r.raisons.filter((_, i) => i !== libre)] : r.raisons;
+    if (raisons[0]) pris.add(raisons[0]);
+    return { ...r, raisons };
+  });
 }
 
 /** Écarte ce qui ne peut pas être un repreneur, ou qu'on n'a pas le droit de solliciter. */
@@ -153,7 +174,7 @@ export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metie
   // À note égale : le plus gros chiffre d'affaires publié, puis le plus grand effectif.
   const ventes = (r: Repreneur) => r.societe.finances.at(-1)?.chiffreAffaires ?? 0;
   const taille = (r: Repreneur) => TRANCHES.indexOf(r.societe.trancheEffectif ?? "NN");
-  return retenus.sort((a, b) => b.score - a.score || ventes(b) - ventes(a) || taille(b) - taille(a)).slice(0, maximum);
+  return distinguer(retenus.sort((a, b) => b.score - a.score || ventes(b) - ventes(a) || taille(b) - taille(a)).slice(0, maximum));
 }
 
 /** Retire tout ce qui permettrait d'identifier le repreneur avant la signature du mandat. */
@@ -166,6 +187,7 @@ export function masquer(repreneurs: Repreneur[]): RepreneurMasque[] {
     score: r.score,
     raison: r.raisons[0],
     details: r.raisons.slice(1),
+    reserves: r.reserves,
   }));
 }
 
@@ -180,6 +202,7 @@ export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
     profil: libelleProfil(r.profil, r.metier),
     score: r.score,
     raisons: r.raisons,
+    reserves: r.reserves,
   }));
 }
 

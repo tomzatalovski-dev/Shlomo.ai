@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classer, masquer, noter, retenable, tranchesAuDessus } from "@/lib/repreneurs";
+import { classer, distinguer, masquer, noter, retenable, tranchesAuDessus } from "@/lib/repreneurs";
 import type { Societe } from "@/lib/types";
 
 const base: Societe = { siren: "100000009", nom: "VENDEUR", active: true, codeActivite: "43.32A", trancheEffectif: "11", effectif: "10 à 19 salariés", dirigeants: [], finances: [{ annee: 2023, chiffreAffaires: 1_800_000, resultat: 160_000 }], source: "test" };
@@ -21,28 +21,29 @@ describe("repreneurs", () => {
   });
 
   it("note mieux un voisin rentable qu'un groupe lointain sans comptes", () => {
-    const voisin = noter(base, soc("200000007", { finances: [{ annee: 2023, chiffreAffaires: 6_000_000, resultat: 300_000 }] }), "departement");
+    const voisin = noter(base, soc("200000007", { finances: [{ annee: 2023, chiffreAffaires: 6_000_000, resultat: 300_000 }] }), "departement", undefined, 2024);
     const lointain = noter(base, soc("300000005", { trancheEffectif: "42" }), "national");
     expect(voisin.score).toBeGreaterThan(lointain.score);
-    expect(voisin.raisons).toContain("Résultat positif en 2023, soit 5 % du chiffre d'affaires");
+    expect(voisin.raisons).toContain("Rentable : 5 % de marge nette en 2023");
     expect(voisin.raisons).toContain("Chiffre d'affaires au moins trois fois supérieur au vôtre");
   });
 
   it("départage deux sociétés de même taille par leurs comptes, leur croissance et leurs sites", () => {
     const plate = noter(base, soc("200000007"), "departement");
-    const solide = noter(base, soc("300000005", { etablissements: 3, anneeCreation: 1990, finances: [{ annee: 2021, chiffreAffaires: 4_000_000, resultat: 200_000 }, { annee: 2023, chiffreAffaires: 6_000_000, resultat: 600_000 }] }), "departement");
-    const fragile = noter(base, soc("400000003", { finances: [{ annee: 2023, chiffreAffaires: 3_000_000, resultat: -50_000 }] }), "departement");
+    const solide = noter(base, soc("300000005", { etablissements: 3, anneeCreation: 1990, finances: [{ annee: 2021, chiffreAffaires: 4_000_000, resultat: 200_000 }, { annee: 2023, chiffreAffaires: 6_000_000, resultat: 600_000 }] }), "departement", undefined, 2024);
+    const fragile = noter(base, soc("400000003", { finances: [{ annee: 2023, chiffreAffaires: 3_000_000, resultat: -50_000 }] }), "departement", undefined, 2024);
     expect(solide.score).toBeGreaterThan(plate.score);
     expect(plate.score).toBeGreaterThan(fragile.score);
-    expect(solide.raisons).toContain("Chiffre d'affaires en hausse de 50 % depuis 2021");
-    expect(solide.raisons).toContain("3 établissements : elle sait gérer plusieurs sites");
+    expect(solide.raisons).toContain("En croissance : chiffre d'affaires en hausse de 50 % depuis 2021");
+    expect(solide.raisons).toContain("Déjà 3 établissements : elle sait en intégrer un de plus");
   });
 
-  it("note une activité voisine un peu moins bien, et le dit en premier", () => {
+  it("note une activité voisine un peu moins bien, et nomme son métier sans en faire un titre", () => {
     const meme = noter(base, soc("200000007"), "region", { code: "43.32A", libelle: "Menuiserie", lien: "meme" });
     const voisine = noter(base, soc("300000005"), "region", { code: "43.91B", libelle: "Couverture", lien: "voisin" });
     expect(meme.score).toBeGreaterThan(voisine.score);
-    expect(voisine.raisons[0]).toBe("Activité voisine de la vôtre : Couverture");
+    expect(voisine.raisons.at(-1)).toBe("Son métier : couverture");
+    expect(voisine.raisons[0]).not.toMatch(/métier/);
     expect(masquer([voisine])[0].profil).toBe("Activité voisine, votre région");
   });
 
@@ -102,5 +103,26 @@ describe("reveler", () => {
   it("donne le nom et le SIREN, réservés au vendeur qui a signé", () => {
     const liste = reveler(classer(base, [{ profil: "departement", societes: [soc("200000007")] }]));
     expect(liste[0]).toMatchObject({ rang: 1, nom: "SOCIETE 200000007", siren: "200000007", ville: "LYON" });
+  });
+
+  it("range ce qui joue contre un repreneur dans les réserves, jamais dans les raisons", () => {
+    const fragile = noter(base, soc("400000003", { finances: [{ annee: 2023, chiffreAffaires: 3_000_000, resultat: -50_000 }] }), "departement", undefined, 2024);
+    expect(fragile.reserves).toEqual(["Résultat négatif publié en 2023"]);
+    expect(fragile.raisons.join(" ")).not.toMatch(/négatif/);
+  });
+
+  it("ne cite pas et ne compte pas des comptes de plus de trois ans", () => {
+    const vieux = noter(base, soc("200000007", { finances: [{ annee: 2017, chiffreAffaires: 6_000_000, resultat: 1_600_000 }] }), "departement", undefined, 2026);
+    const sans = noter(base, soc("300000005"), "departement", undefined, 2026);
+    expect(vieux.raisons.join(" ")).not.toMatch(/2017/);
+    expect(vieux.score).toBe(sans.score);
+  });
+
+  it("ne donne pas deux fois le même titre", () => {
+    const a = noter(base, soc("200000007"), "departement");
+    const b = noter(base, soc("300000005", { anneeCreation: 1990 }), "departement");
+    const [x, y] = distinguer([a, b]);
+    expect(x.raisons[0]).not.toBe(y.raisons[0]);
+    expect(y.raisons).toHaveLength(b.raisons.length);
   });
 });

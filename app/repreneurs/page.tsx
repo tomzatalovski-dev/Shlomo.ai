@@ -15,7 +15,7 @@ const INDICE: Record<"rachat" | "croissance" | "alerte", string> = {
   alerte: "Un signal de difficulté, à vérifier",
 };
 
-const nombre = (n: number) => (n >= 10_000 ? "10 000 +" : n.toLocaleString("fr-FR"));
+const nombre = (n: number) => (n >= 10_000 ? "plus de 10 000" : n.toLocaleString("fr-FR"));
 
 /** Pas prêt à signer : le dirigeant laisse son adresse, on garde le fil. */
 function Garder({ siren }: { siren: string }) {
@@ -132,7 +132,9 @@ function Repreneurs() {
     return () => flux.close();
   }, [siren, suite, signe, jouer]);
 
-  const premiers = liste?.slice(0, 3) ?? [];
+  // Une fois la veille lue, un repreneur en difficulté passe derrière les deux autres ; un acheteur déjà actif passe devant.
+  const poids = (rang: number) => (veille !== "faite" ? 1 : indices[rang]?.includes("alerte") ? 2 : indices[rang]?.includes("rachat") ? 0 : 1);
+  const premiers = (liste?.slice(0, 3) ?? []).slice().sort((a, b) => poids(a.rang) - poids(b.rang) || a.rang - b.rang);
   const suivants = liste?.slice(3) ?? [];
   const n = liste?.length ?? 0;
   const aDesNoms = Boolean(reveles && reveles.length > 0);
@@ -156,10 +158,10 @@ function Repreneurs() {
             : "Vos trois meilleurs repreneurs.";
 
   const [premier, ...autres] = premiers;
-  const carte = (r: (typeof premiers)[number], grand: boolean) => (
+  const carte = (r: (typeof premiers)[number], grand: boolean, place: number) => (
     <article key={r.rang} className={grand ? "repreneur-net grand" : "repreneur-net"} style={{ animationDelay: `${(r.rang - 1) * 0.45}s` }}>
       <div className="tete">
-        <span className="rang-net">{r.rang}</span>
+        <span className="rang-net">{place}</span>
         <span className="profil-net">{r.profil}</span>
         <span className="score-net"><b><Compteur valeur={r.score} duree={1200} format={(v) => String(Math.round(v))} /></b> sur 100</span>
       </div>
@@ -168,6 +170,7 @@ function Repreneurs() {
       {veille === "encours" && !indices[r.rang] && <p className="indice-net attente">Je lis ce qu'elle a annoncé publiquement…</p>}
       {indices[r.rang]?.map((g) => <p key={g} className={`indice-net ${g}`}>{INDICE[g]}</p>)}
       {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice-net">Rien de notable annoncé publiquement.</p>}
+      {r.reserves?.map((x) => <p key={x} className="indice-net alerte">À vérifier : {x.charAt(0).toLowerCase() + x.slice(1)}</p>)}
       <p className="pied-net"><span className="masque">Nom masqué</span>{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
     </article>
   );
@@ -223,7 +226,7 @@ function Repreneurs() {
           <div className="flux apparait">
             {reveles!.map((r) => (
               <div key={r.siren} className="flux-ligne">
-                <span className="quoi"><b>{r.rang}. {r.nom}</b><small>{[r.ville, r.effectif, ...r.raisons].filter(Boolean).join(" · ")}</small></span>
+                <span className="quoi"><b>{r.rang}. {r.nom}</b><small>{[r.ville, r.effectif, ...r.raisons, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].filter(Boolean).join(" · ")}</small></span>
                 <span className="ou">{r.profil}<br /><a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${r.siren}`} target="_blank" rel="noreferrer">Fiche publique</a></span>
                 <span className="note">{r.score}</span>
               </div>
@@ -233,8 +236,8 @@ function Repreneurs() {
 
         {premier && (
           <section className="podium" aria-label="Vos meilleurs repreneurs">
-            {carte(premier, true)}
-            {autres.length > 0 && <div className="duo">{autres.map((r) => carte(r, false))}</div>}
+            {carte(premier, true, 1)}
+            {autres.length > 0 && <div className="duo">{autres.map((r, i) => carte(r, false, i + 2))}</div>}
           </section>
         )}
 
@@ -244,7 +247,7 @@ function Repreneurs() {
             <div className="flux">
               {suivants.map((r) => (
                 <div key={r.rang} className="flux-ligne">
-                  <span className="quoi"><b>{r.raison}</b>{r.details.length > 0 && <small>{r.details.join(" · ")}</small>}</span>
+                  <span className="quoi"><b>{r.raison}</b>{r.details.length + (r.reserves?.length ?? 0) > 0 && <small>{[...r.details, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].join(" · ")}</small>}</span>
                   <span className="ou">{[r.profil, r.effectif].filter(Boolean).join(" · ")}</span>
                   <span className="note">{r.score}</span>
                 </div>

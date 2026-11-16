@@ -557,6 +557,8 @@ small { line-height: 1.45; }
 .avance-trace { margin: 0; height: 20px; overflow: hidden; font-size: 13px; line-height: 20px; color: var(--gris); text-align: center; }
 .avance-trace span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: trace-passe 2.4s ease-out both; }
 .avance.fini .avance-texte { animation: avance-entre 0.5s ease-out; background: none; color: var(--encre); }
+@keyframes avance-sortie { to { opacity: 0; filter: blur(4px); } }
+.avance.fini { animation: avance-sortie 0.6s 1.6s ease-in forwards; }
 @media (max-width: 520px) { .segments { gap: 2px; } .segment { border-radius: 3px; } }
 @media (prefers-reduced-motion: reduce) { .avance-texte { animation: none; background: none; color: var(--encre); } .segment { animation: none; transition: none; } .avance-trace span { animation: none; } }
 
@@ -632,7 +634,7 @@ small { line-height: 1.45; }
 }
 @media (prefers-reduced-motion: reduce) { .repreneur-net { animation: none; } .indice-net.attente { animation: none; background: none; color: var(--gris); } }
 .pied-net .masque { display: inline; border: 0; padding: 0; margin: 0; background: none; font-size: 13px; letter-spacing: 0; text-transform: none; border-radius: 0; }
-.pied-net .masque::after { content: " ·"; color: var(--gris); font-weight: 400; }
+.pied-net .masque { white-space: nowrap; flex: none; }
 
 /* Atelier épuré : trois agents, trois lignes */
 .agents-net { display: grid; }

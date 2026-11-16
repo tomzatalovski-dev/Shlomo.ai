@@ -50,6 +50,8 @@ export type Repreneur = {
   metier?: Metier;
   score: number;
   raisons: string[];
+  /** Ce qui joue contre lui dans ses comptes publiés. Jamais repris dans un message d'approche. */
+  reserves: string[];
 };
 
 /** Ce que le navigateur reçoit avant la signature du mandat : ni nom, ni SIREN, ni ville. */
@@ -61,6 +63,7 @@ export type RepreneurMasque = {
   score: number;
   raison: string;
   details: string[];
+  reserves?: string[];
 };
 
 /** Ce que le vendeur reçoit une fois le mandat signé. */
@@ -73,6 +76,7 @@ export type RepreneurRevele = {
   profil: string;
   score: number;
   raisons: string[];
+  reserves?: string[];
 };
 
 /** Une société examinée, telle que l'écran peut la montrer pendant la recherche : jamais de nom. */

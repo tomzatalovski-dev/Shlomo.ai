@@ -83,6 +83,14 @@ export function Avance({ pct, texte, trace }: { pct: number; texte: string; trac
   const borne = Math.max(0, Math.min(100, Math.round(pct)));
   const pleins = Math.round((borne / 100) * SEGMENTS);
   const [survol, setSurvol] = useState<number | null>(null);
+  // Le travail fini, la barre a dit ce qu'elle avait à dire : elle se retire.
+  const [partie, setPartie] = useState(false);
+  useEffect(() => {
+    if (!fini) return setPartie(false);
+    const t = setTimeout(() => setPartie(true), 2200);
+    return () => clearTimeout(t);
+  }, [fini]);
+  if (partie) return null;
   return (
     <div className={fini ? "avance fini" : "avance"}>
       <div className="avance-tete">
