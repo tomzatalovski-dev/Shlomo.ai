@@ -539,7 +539,7 @@ small { line-height: 1.45; }
 
 /* Avancement : la même partout. Une barre en segments gris qui se remplissent en cascade, et un texte qui scintille. */
 @keyframes avance-reflet { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-@keyframes avance-entre { from { opacity: 0; filter: blur(6px); transform: translateY(4px); } to { opacity: 1; filter: blur(0); transform: none; } }
+@keyframes avance-entre { from { opacity: 0; filter: blur(6px); transform: translateY(4px); } to { opacity: 1; filter: none; transform: none; } }
 @keyframes segment-pouls { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .avance { display: grid; gap: 12px; }
 .avance-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
@@ -553,7 +553,7 @@ small { line-height: 1.45; }
 .segment.plein { background: #6b7280; }
 .segment.plein:hover { background: #4b5563; box-shadow: 0 0 14px rgba(75, 85, 99, 0.45); }
 .segment.tete { animation: segment-pouls 1.3s ease-in-out infinite; }
-@keyframes trace-passe { 0% { opacity: 0; filter: blur(5px); transform: translateY(5px); } 14% { opacity: 1; filter: blur(0); transform: none; } 70% { opacity: 1; } 100% { opacity: 0; filter: blur(3px); transform: translateY(-4px); } }
+@keyframes trace-passe { 0% { opacity: 0; filter: blur(5px); transform: translateY(5px); } 14% { opacity: 1; filter: none; transform: none; } 70% { opacity: 1; } 100% { opacity: 0; filter: blur(3px); transform: translateY(-4px); } }
 .avance-trace { margin: 0; height: 20px; overflow: hidden; font-size: 13px; line-height: 20px; color: var(--gris); text-align: center; }
 .avance-trace span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: trace-passe 2.4s ease-out both; }
 .avance.fini .avance-texte { animation: avance-entre 0.5s ease-out; background: none; color: var(--encre); }
@@ -590,7 +590,7 @@ small { line-height: 1.45; }
 .intertitre { margin: 0 0 4px; font-size: 14px; color: var(--gris); }
 
 /* Le podium : le premier en grand, seul ; les deux suivants côte à côte. Ils sortent du flou un par un. */
-@keyframes net { from { opacity: 0; filter: blur(18px); transform: translateY(14px) scale(0.985); } to { opacity: 1; filter: blur(0); transform: none; } }
+@keyframes net { from { opacity: 0; filter: blur(18px); transform: translateY(14px) scale(0.985); } to { opacity: 1; filter: none; transform: none; } }
 .podium { display: grid; gap: 20px; }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .repreneur-net { background: var(--carte); border-radius: 28px; padding: 32px; display: grid; gap: 14px; align-content: start; animation: net 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -609,7 +609,7 @@ small { line-height: 1.45; }
 .indice-net.attente { color: transparent; background: linear-gradient(90deg, var(--gris) 0%, var(--gris) 38%, var(--encre) 50%, var(--gris) 62%, var(--gris) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: avance-reflet 2.2s linear infinite; }
 .indice-net.alerte { color: var(--ambre); }
 .pied-net { margin: 6px 0 0; padding-top: 16px; border-top: 1px solid var(--trait); display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--gris); }
-.pied-net .masque { color: var(--encre); font-weight: 500; filter: blur(0); }
+.pied-net .masque { color: var(--encre); font-weight: 500; filter: none; }
 
 /* L'appel : une phrase, un bouton */
 .appel { display: grid; gap: 16px; justify-items: start; padding-top: 12px; }

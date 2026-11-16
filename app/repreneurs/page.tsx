@@ -200,7 +200,7 @@ function Repreneurs() {
           )}
           {!erreur && (compte.vues > 0 || metier !== null) && (
             <p className="bilan" aria-live="polite">
-              {compte.vues > 0 ? <><b><Compteur valeur={compte.vues} duree={500} format={nombre} /></b> sociétés examinées, <b><Compteur valeur={compte.oui} duree={500} format={nombre} /></b> compatibles</> : "Recherche en cours"}
+              {compte.vues > 0 ? <><b><Compteur valeur={compte.vues} duree={500} format={nombre} /></b> société{compte.vues > 1 ? "s" : ""} examinée{compte.vues > 1 ? "s" : ""}, <b><Compteur valeur={compte.oui} duree={500} format={nombre} /></b> compatible{compte.oui > 1 ? "s" : ""}</> : "Recherche en cours"}
               {metier !== null && <>, parmi <Compteur valeur={metier} duree={1100} format={nombre} /> {metiers ? "dans vos activités" : "de votre métier"} en France</>}.
               {!cherche && n > 0 && !aDesNoms ? " Les noms s'affichent après la signature du mandat." : ""}
             </p>
