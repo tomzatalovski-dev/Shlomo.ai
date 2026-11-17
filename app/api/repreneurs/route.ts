@@ -68,6 +68,10 @@ export async function GET(requete: Request) {
         dire({ type: "encours", texte: metiers.length > 1 ? "Recherche des sociétés de ces activités, plus grandes que vous" : "Recherche des sociétés du même métier, plus grandes que vous" });
         const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) => {
           dire({ type: "passage", profil: p.profil, libelle: p.libelle, candidats: p.candidats, echec: p.echec });
+          if (p.rachats) {
+            dire({ type: "journal", texte: `${p.trouvees} rachat${p.trouvees > 1 ? "s" : ""} de fonds de votre métier publié${p.trouvees > 1 ? "s" : ""} au bulletin officiel dans votre région depuis trois ans`, etat: "ok" });
+            return;
+          }
           dire(p.echec ? { type: "journal", texte: `Le registre n'a pas répondu ${PASSAGE[p.profil]} : je continue sans`, etat: "alerte" } : {
             type: "journal",
             texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}${p.metier?.lien === "voisin" ? `, activité voisine${p.metier.libelle ? ` (${p.metier.libelle})` : ""}` : ""}`,

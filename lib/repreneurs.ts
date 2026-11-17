@@ -1,4 +1,5 @@
-import { chercherParActivite, compterMetier } from "./registre";
+import { chercherParActivite, chercherSociete, compterMetier } from "./registre";
+import { chercherRachats, direRachat, type Rachat } from "./acheteurs";
 import type { CandidatMasque, Metier, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
 
 /**
@@ -148,7 +149,7 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
   );
 }
 
-export type Passage = { profil: ProfilRepreneur; libelle: string; metier?: Metier; trouvees: number; echec?: boolean; candidats: CandidatMasque[] };
+export type Passage = { profil: ProfilRepreneur; libelle: string; metier?: Metier; trouvees: number; echec?: boolean; candidats: CandidatMasque[]; rachats?: boolean };
 
 /** Dit, sans la nommer, ce qu'on a fait d'une société examinée. */
 export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, metier?: Metier): CandidatMasque {
@@ -161,14 +162,19 @@ export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, 
 }
 
 /** Classe les candidats de plusieurs passages, sans doublon, du meilleur au moins bon. */
-export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10): Repreneur[] {
+/** Une société qui a déjà racheté un fonds du métier a montré qu'elle achète : c'est sa première raison, et elle gagne des points. */
+export function avecRachat(r: Repreneur, rachat?: Rachat): Repreneur {
+  return rachat ? { ...r, score: Math.min(97, r.score + 12), raisons: [direRachat(rachat), ...r.raisons] } : r;
+}
+
+export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10, rachats: Map<string, Rachat> = new Map()): Repreneur[] {
   const vus = new Set<string>();
   const retenus: Repreneur[] = [];
   for (const lot of lots) {
     for (const s of lot.societes) {
       if (vus.has(s.siren) || !retenable(vendeur, s)) continue;
       vus.add(s.siren);
-      retenus.push(noter(vendeur, s, lot.profil, lot.metier));
+      retenus.push(avecRachat(noter(vendeur, s, lot.profil, lot.metier), rachats.get(s.siren)));
     }
   }
   // À note égale : le plus gros chiffre d'affaires publié, puis le plus grand effectif.
@@ -205,6 +211,9 @@ export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
     reserves: r.reserves,
   }));
 }
+
+/** Nombre de fiches d'acheteurs, trouvés au bulletin officiel, qu'une recherche s'autorise à lire au registre. */
+const ACHETEURS_MAX = 8;
 
 /** Nombre d'appels au registre qu'une recherche s'autorise. */
 const APPELS_MAX = 9;
@@ -266,5 +275,29 @@ export async function trouverRepreneurs(
 
   if (tentes > 0 && lots.length === 0) throw derniereErreur;
 
-  return { repreneurs: classer(vendeur, lots), examinees };
+  // Ceux qui achètent déjà : rachats de fonds du métier publiés au bulletin officiel, dans la région du vendeur.
+  const rachats = await chercherRachats(metiers, vendeur.region);
+  if (rachats.size > 0) {
+    const inconnus = [...rachats.keys()].filter((s) => !dejaVues.has(s)).slice(0, ACHETEURS_MAX);
+    const fiches = (await Promise.all(inconnus.map((s) => chercherSociete(s).catch(() => null)))).filter((s): s is Societe => Boolean(s));
+    const assezGrande = (s: Societe) => !vendeur.trancheEffectif || TRANCHES.indexOf(s.trancheEffectif ?? "NN") >= Math.max(TRANCHES.indexOf(vendeur.trancheEffectif), TRANCHES.indexOf("01"));
+    const anciennes = fiches.filter((s) => assezGrande(s) && s.anneeCreation !== undefined && new Date().getFullYear() - s.anneeCreation >= 3);
+    examinees += fiches.length;
+    const proche = (s: Societe): ProfilRepreneur => (vendeur.departement && s.departement === vendeur.departement ? "departement" : "region");
+    for (const profil of ["departement", "region"] as const) {
+      const societes = anciennes.filter((s) => proche(s) === profil);
+      if (societes.length) lots.push({ profil, metier: metiers[0], societes });
+    }
+    for (const s of fiches) dejaVues.add(s.siren);
+    suivre({
+      profil: "region",
+      libelle: "A déjà racheté un fonds de votre métier",
+      metier: metiers[0],
+      trouvees: rachats.size,
+      rachats: true,
+      candidats: fiches.map((s) => (anciennes.includes(s) ? examiner(vendeur, s, proche(s), metiers[0]) : { effectif: s.effectif, anneeCreation: s.anneeCreation, retenu: false, motif: "Trop petite ou trop récente pour vous reprendre" })),
+    });
+  }
+
+  return { repreneurs: classer(vendeur, lots, 10, rachats), examinees };
 }
