@@ -725,3 +725,4 @@ small { line-height: 1.45; }
 .repreneur-net .profil-net { min-width: 0; }
 .repreneur-net .score-net { flex: none; }
 .repreneur-net h2 { font-weight: 600; }
+.repreneur-net .rang-net { white-space: nowrap; flex: none; }
