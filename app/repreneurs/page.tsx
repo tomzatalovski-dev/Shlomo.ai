@@ -195,7 +195,8 @@ function Repreneurs() {
               {c.niveau === null ? <small>non publiés</small> : <i aria-label={`${c.niveau} sur 3`}>{[1, 2, 3].map((n) => <b key={n} className={n <= (c.niveau ?? 0) ? "plein" : undefined} />)}</i>}
             </li>
           ))}
-          {correction(r.rang) !== 0 && <li><span>{correction(r.rang) < 0 ? "Signal de difficulté" : "Rachat annoncé"}</span><small>{correction(r.rang) > 0 ? "+" : "−"}{Math.abs(correction(r.rang))} points</small></li>}
+          {veille === "faite" && indices[r.rang]?.includes("rachat") && <li><span>Rachat annoncé</span><small>+6 points</small></li>}
+          {veille === "faite" && indices[r.rang]?.includes("alerte") && <li><span>Signal de difficulté</span><small>−10 points</small></li>}
         </ul>
       )}
       <p className="pied-net"><span className="masque">Nom masqué</span>{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
