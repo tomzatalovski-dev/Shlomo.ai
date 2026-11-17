@@ -108,31 +108,38 @@ export async function GET(requete: Request) {
           const siteSaisi = analyserSaisie(parametres.get("site") ?? "");
           const lecture = siteSaisi.type === "site" ? await lireSite(siteSaisi.domaine).catch(() => null) : null;
           const contexte = { metiers: metiers.filter((m) => m.lien === "meme" && m.libelle).map((m) => m.libelle), site: lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined };
-          await Promise.all(
-            premiers.map(async (r, i) => {
-              const veille = await veiller({ nom: r.societe.nom, siren: r.societe.siren, ville: r.societe.ville });
-              if (veille) {
-                pagesLues += veille.pages.length;
+          // Pour chaque repreneur : ce qu'il a annoncé, puis une phrase d'analyse sans rien qui le nomme (rien si elle n'est pas
+          // propre aux deux sociétés). Pour dire ce qu'il y gagnerait, il faut savoir ce qu'il fait : on lit son site quand la veille l'a trouvé.
+          const etudier = async (r: (typeof repreneurs)[number], rang: number, avecIndices: boolean) => {
+            const veille = await veiller({ nom: r.societe.nom, siren: r.societe.siren, ville: r.societe.ville });
+            if (veille) {
+              pagesLues += veille.pages.length;
+              // Seul le podium voit ses indices peser sur la note : au-delà, on n'écrit que la phrase.
+              if (avecIndices) {
                 const genres = [...new Set(veille.signaux.map((x) => x.genre).filter((g): g is "rachat" | "croissance" | "alerte" => Boolean(g)))];
-                dire({ type: "indices", rang: i + 1, genres, pages: veille.pages.length });
+                dire({ type: "indices", rang, genres, pages: veille.pages.length });
               }
-              // Une phrase d'analyse, sans rien qui nomme le repreneur ; rien si elle n'est pas propre à ces deux sociétés.
-              // Pour dire ce qu'il y gagnerait, il faut savoir ce qu'il fait : on lit son site quand la veille l'a trouvé.
-              const sonSite = veille?.site ? await lireSite(veille.site).catch(() => null) : null;
-              const interet = await ecrireInteret(contexte, {
-                site: sonSite ? [sonSite.titre, sonSite.description, sonSite.texte].filter(Boolean).join(" ") : undefined,
-                nom: r.societe.nom,
-                ville: r.societe.ville,
-                activite: r.metier?.libelle || undefined,
-                lien: libelleProfil(r.profil, r.metier),
-                effectif: r.societe.effectif,
-                raisons: r.raisons,
-                annonces: (veille?.signaux ?? []).filter((x) => x.genre !== "alerte").map((x) => x.texte),
-              });
-              if (interet) dire({ type: "interet", rang: i + 1, texte: interet });
-            }),
-          );
-          if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${premiers.length > 1 ? `${premiers.length} premiers repreneurs` : "premier repreneur"}`, etat: "ok" });
+            }
+            const sonSite = veille?.site ? await lireSite(veille.site).catch(() => null) : null;
+            const interet = await ecrireInteret(contexte, {
+              site: sonSite ? [sonSite.titre, sonSite.description, sonSite.texte].filter(Boolean).join(" ") : undefined,
+              nom: r.societe.nom,
+              ville: r.societe.ville,
+              activite: r.metier?.libelle || undefined,
+              lien: libelleProfil(r.profil, r.metier),
+              effectif: r.societe.effectif,
+              raisons: r.raisons,
+              annonces: (veille?.signaux ?? []).filter((x) => x.genre !== "alerte").map((x) => x.texte),
+            });
+            if (interet) dire({ type: "interet", rang, texte: interet });
+          };
+          await Promise.all(premiers.map((r, i) => etudier(r, i + 1, true)));
+          dire({ type: "veille_faite" });
+          // Les suivants, par quatre, pour ne pas saturer le modèle.
+          const suivants = repreneurs.slice(3);
+          if (suivants.length) dire({ type: "encours", texte: "Ce que chacun des suivants gagnerait à vous racheter" });
+          for (let d = 0; d < suivants.length; d += 4) await Promise.all(suivants.slice(d, d + 4).map((r, i) => etudier(r, 4 + d + i, false)));
+          if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${repreneurs.length > 1 ? `${repreneurs.length} repreneurs` : "repreneur"}`, etat: "ok" });
         }
         // Lecture du dernier bilan des trois premiers : a-t-il de quoi payer ? Montants arrondis, rien qui nomme la société.
         if (bilanActif() && repreneurs.length > 0) {

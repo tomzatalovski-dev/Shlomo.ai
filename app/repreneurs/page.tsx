@@ -82,6 +82,8 @@ function Repreneurs() {
     } else if (e.type === "journal") {
       setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
       await attendre(450 * rythme);
+    } else if (e.type === "veille_faite") {
+      setVeille("faite");
     } else if (e.type === "interet") {
       setInterets((x) => ({ ...x, [e.rang]: e.texte }));
       await attendre(500 * rythme);
@@ -275,7 +277,8 @@ function Repreneurs() {
             <div className="flux">
               {suivants.map((r) => (
                 <div key={r.rang} className="flux-ligne">
-                  <span className="quoi"><b>{r.raison}</b>{r.details.length + (r.reserves?.length ?? 0) > 0 && <small>{[...r.details, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].join(" · ")}</small>}{r.criteres && r.criteres.length > 0 && (
+                  <span className="quoi"><b>{r.raison}</b>{r.details.length + (r.reserves?.length ?? 0) > 0 && <small>{[...r.details, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].join(" · ")}</small>}{interets[r.rang] && <small className="interet-fin">Ce qu'elle y gagnerait, selon Shlomo : {interets[r.rang]}</small>}
+                  {r.criteres && r.criteres.length > 0 && (
                     <span className="criteres-net fins" aria-label="Ce qui fait la note">
                       {r.criteres.map((c) => (
                         <span key={c.nom} className="critere">

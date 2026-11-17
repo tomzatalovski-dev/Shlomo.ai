@@ -108,6 +108,7 @@ export type EvenementRepreneurs =
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
   | { type: "indices"; rang: number; genres: ("rachat" | "croissance" | "alerte")[]; pages: number }
   | { type: "interet"; rang: number; texte: string }
+  | { type: "veille_faite" }
   | { type: "bilan"; rang: number; annee: number; titre?: string; lignes: string[]; reserves: string[] }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }

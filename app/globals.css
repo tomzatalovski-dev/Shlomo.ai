@@ -733,3 +733,4 @@ small { line-height: 1.45; }
 .criteres-net.fins i b { width: 9px; height: 5px; }
 .criteres-net.fins small { font-size: 12px; }
 .flux-ligne .quoi small.alerte { color: var(--ambre); }
+.flux-ligne .quoi small.interet-fin { color: var(--encre); margin-top: 8px; }
