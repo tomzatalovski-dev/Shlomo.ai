@@ -114,7 +114,10 @@ export async function GET(requete: Request) {
                 dire({ type: "indices", rang: i + 1, genres, pages: veille.pages.length });
               }
               // Une phrase d'analyse, sans rien qui nomme le repreneur ; rien si elle n'est pas propre à ces deux sociétés.
+              // Pour dire ce qu'il y gagnerait, il faut savoir ce qu'il fait : on lit son site quand la veille l'a trouvé.
+              const sonSite = veille?.site ? await lireSite(veille.site).catch(() => null) : null;
               const interet = await ecrireInteret(contexte, {
+                site: sonSite ? [sonSite.titre, sonSite.description, sonSite.texte].filter(Boolean).join(" ") : undefined,
                 nom: r.societe.nom,
                 ville: r.societe.ville,
                 activite: r.metier?.libelle || undefined,
