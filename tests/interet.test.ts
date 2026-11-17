@@ -19,6 +19,13 @@ describe("intérêt du repreneur", () => {
     expect(interetAcceptable("Avec 8,3 % de marge, elle a de quoi financer la reprise de votre équipe.", r, elements)).toBe(true);
   });
 
+  it("refuse un nom propre qui vient du repreneur, accepte celui qui vient du vendeur", () => {
+    const vendeur = "Studio VFX et animation, références Hermès et Cartier";
+    expect(interetAcceptable("Votre savoir-faire en VFX renforcerait ses cinématiques de jeux narratifs comme Detroit.", r, elements, vendeur)).toBe(false);
+    expect(interetAcceptable("Votre savoir-faire en VFX renforcerait ses cinématiques de jeux narratifs.", r, elements, vendeur)).toBe(true);
+    expect(interetAcceptable("Elle ajouterait à son offre vos références dans le luxe, comme Hermès.", r, elements, vendeur)).toBe(true);
+  });
+
   it("refuse le vide, RIEN et les débordements", () => {
     expect(interetAcceptable("RIEN", r, elements)).toBe(false);
     expect(interetAcceptable("Rien de précis ne ressort des éléments fournis ici.", r, elements)).toBe(false);
