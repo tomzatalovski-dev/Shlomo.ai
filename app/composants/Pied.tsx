@@ -2,6 +2,7 @@
 export function Pied() {
   return (
     <nav className="liens-pied" aria-label="Informations légales">
+      <a href="/a-propos">Qui sommes-nous</a>
       <a href="/mentions-legales">Mentions légales</a>
       <a href="/confidentialite">Données personnelles</a>
       <a href="/conditions">Conditions d'utilisation</a>
