@@ -726,3 +726,9 @@ small { line-height: 1.45; }
 .repreneur-net .score-net { flex: none; }
 .repreneur-net h2 { font-weight: 600; }
 .repreneur-net .rang-net { white-space: nowrap; flex: none; }
+
+/* Les critères de la note, en version fine, sous chacun des sept repreneurs suivants. */
+.criteres-net.fins { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 12px; }
+.criteres-net.fins .critere { display: inline-flex; align-items: center; gap: 6px; color: var(--gris); }
+.criteres-net.fins i b { width: 9px; height: 5px; }
+.criteres-net.fins small { font-size: 12px; }

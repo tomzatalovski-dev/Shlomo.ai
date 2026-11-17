@@ -360,6 +360,23 @@ export async function contactVendeur(cle: string, jetonAccord: string): Promise<
   return appeler("contact_vendeur", { p_cle: cle, p_jeton_accord: jetonAccord });
 }
 
+/** Ce qu'une étape a consommé d'IA. Ne lève jamais d'erreur ; sans clé de serveur, rien n'est noté. */
+export async function noterConsommation(etape: "fiche" | "repreneurs" | "atelier", cle: string, r: { appels: number; entree: number; sortie: number; recherches: number; duree_ms: number }): Promise<void> {
+  const serveur = process.env.CLE_SERVEUR;
+  if (!serveur || r.appels === 0) return;
+  try {
+    await appeler<boolean>("enregistrer_consommation", { p_cle_serveur: serveur, p_etape: etape, p_cle: cle, p_appels: r.appels, p_entree: r.entree, p_sortie: r.sortie, p_recherches: r.recherches, p_duree_ms: r.duree_ms });
+  } catch {}
+}
+
+export type Consommation = { passages: number; appels: number; entree: number; sortie: number; recherches: number; duree_s: number; duree_max_s: number };
+
+/** Moyennes par étape sur la période. Null si le code de pilotage est faux. */
+export async function lireConsommations(code: string, jours = 30): Promise<Record<string, Consommation> | null> {
+  if (!jetonValide(code)) return null;
+  return appeler<Record<string, Consommation> | null>("lire_consommations", { p_code: code, p_jours: jours });
+}
+
 /** Dit si la clé posée sur le serveur est bien celle de la base, sans jamais la rendre. */
 export async function cleServeurValide(cle: string): Promise<boolean> {
   return (await appeler<boolean | null>("cle_serveur_valide", { p_cle: cle })) === true;

@@ -1,12 +1,23 @@
 import { nettoyerMetiers } from "./metiers";
 import type { ResumeIA, Societe } from "./types";
 import { lireTaille } from "./taille";
+import { compter } from "./compteur";
 
 /**
  * Seul endroit du projet qui appelle un modèle d'IA.
  * Sans clé ANTHROPIC_API_KEY, les fonctions renvoient null et le parcours continue sans IA.
  */
 const MODELE = process.env.ANTHROPIC_MODEL ?? "claude-haiku-5-5";
+
+/** Appelle le modèle et inscrit ce que la réponse a consommé dans le relevé en cours. */
+async function interroger(init: RequestInit): Promise<Response> {
+  const rep = await fetch("https://api.anthropic.com/v1/messages", init);
+  if (rep.ok) {
+    const lu = (await rep.clone().json().catch(() => null)) as { usage?: Parameters<typeof compter>[0] } | null;
+    compter(lu?.usage);
+  }
+  return rep;
+}
 
 /** Le modèle a répondu, mais pas sous la forme attendue. Le détail sert au diagnostic. */
 export class ReponseIllisible extends Error {}
@@ -32,7 +43,7 @@ export async function resumer(societe: Societe, texteSite: string, origine: "sit
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
 
-  const rep = await fetch("https://api.anthropic.com/v1/messages", {
+  const rep = await interroger({
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
     signal: AbortSignal.timeout(30_000),
@@ -77,7 +88,7 @@ export async function resumer(societe: Societe, texteSite: string, origine: "sit
 export async function ecrire(consigne: string, contenu: string, maximum = 600): Promise<string | null> {
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
-  const rep = await fetch("https://api.anthropic.com/v1/messages", {
+  const rep = await interroger({
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
     signal: AbortSignal.timeout(25_000),
@@ -122,7 +133,7 @@ export type TraceRecherche = { texte: string | null; requetes: string[]; pages: 
 export async function rechercher(consigne: string, contenu: string, recherches = 2): Promise<TraceRecherche | null> {
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
-  const rep = await fetch("https://api.anthropic.com/v1/messages", {
+  const rep = await interroger({
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
     signal: AbortSignal.timeout(55_000),

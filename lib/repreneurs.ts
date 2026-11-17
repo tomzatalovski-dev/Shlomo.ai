@@ -169,7 +169,7 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
   );
 }
 
-export type Passage = { profil: ProfilRepreneur; libelle: string; metier?: Metier; trouvees: number; echec?: boolean; candidats: CandidatMasque[]; rachats?: boolean };
+export type Passage = { profil: ProfilRepreneur; libelle: string; metier?: Metier; trouvees: number; echec?: boolean; candidats: CandidatMasque[]; rachats?: boolean; ventes?: number };
 
 /** Dit, sans la nommer, ce qu'on a fait d'une société examinée. */
 export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, metier?: Metier): CandidatMasque {
@@ -234,7 +234,7 @@ export function reveler(repreneurs: Repreneur[]): RepreneurRevele[] {
 }
 
 /** Nombre de fiches d'acheteurs, trouvés au bulletin officiel, qu'une recherche s'autorise à lire au registre. */
-const ACHETEURS_MAX = 8;
+const ACHETEURS_MAX = 12;
 
 /** Nombre d'appels au registre qu'une recherche s'autorise. */
 const APPELS_MAX = 9;
@@ -297,8 +297,8 @@ export async function trouverRepreneurs(
   if (tentes > 0 && lots.length === 0) throw derniereErreur;
 
   // Ceux qui achètent déjà : rachats de fonds du métier publiés au bulletin officiel, dans la région du vendeur.
-  const rachats = await chercherRachats(metiers, vendeur.region);
-  if (rachats.size > 0) {
+  const { parAcheteur: rachats, ventes } = await chercherRachats(metiers, vendeur.region);
+  if (ventes > 0) {
     const inconnus = [...rachats.keys()].filter((s) => !dejaVues.has(s)).slice(0, ACHETEURS_MAX);
     const fiches = (await Promise.all(inconnus.map((s) => chercherSociete(s).catch(() => null)))).filter((s): s is Societe => Boolean(s));
     const assezGrande = (s: Societe) => !vendeur.trancheEffectif || TRANCHES.indexOf(s.trancheEffectif ?? "NN") >= Math.max(TRANCHES.indexOf(vendeur.trancheEffectif), TRANCHES.indexOf("01"));
@@ -315,6 +315,7 @@ export async function trouverRepreneurs(
       libelle: "A déjà racheté un fonds de votre métier",
       metier: metiers[0],
       trouvees: rachats.size,
+      ventes,
       rachats: true,
       candidats: fiches.map((s) => (anciennes.includes(s) ? examiner(vendeur, s, proche(s), metiers[0]) : { effectif: s.effectif, anneeCreation: s.anneeCreation, retenu: false, motif: "Trop petite ou trop récente pour vous reprendre" })),
     });

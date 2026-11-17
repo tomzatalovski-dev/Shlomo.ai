@@ -1,4 +1,6 @@
 import { analyserSaisie } from "@/lib/saisie";
+import { clore, ouvrir } from "@/lib/compteur";
+import { noterConsommation } from "@/lib/base";
 import { relireFaits } from "@/lib/relecture";
 import { sansDateContraire } from "@/lib/taille";
 import { chercherParNom, chercherSociete, compterMetier, RegistreIndisponible } from "@/lib/registre";
@@ -35,6 +37,7 @@ export async function GET(requete: Request) {
 
   const flux = new ReadableStream<Uint8Array>({
     async start(controleur) {
+      const releve = ouvrir();
       const dire = (e: Evenement) => controleur.enqueue(encodeur.encode(`data: ${JSON.stringify(e)}\n\n`));
       try {
         if (tropDappels(ip)) {
@@ -259,6 +262,7 @@ export async function GET(requete: Request) {
               : "Un imprévu a interrompu la recherche. Réessayez.",
         });
       } finally {
+        await noterConsommation("fiche", String(q).replace(/\s/g, "").slice(0, 40), clore(releve));
         controleur.close();
       }
     },

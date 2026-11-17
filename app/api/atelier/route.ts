@@ -1,4 +1,6 @@
 import { chercherSociete } from "@/lib/registre";
+import { clore, ouvrir } from "@/lib/compteur";
+import { noterConsommation } from "@/lib/base";
 import { BaseIndisponible, enregistrerApproche, enregistrerPresentation, jetonValide, lireSuivi, mesurer, type Presentation } from "@/lib/base";
 import { presenter } from "@/lib/fiche";
 import { lireSite } from "@/lib/site";
@@ -33,6 +35,7 @@ export async function GET(requete: Request) {
 
   const flux = new ReadableStream<Uint8Array>({
     async start(controleur) {
+      const releve = ouvrir();
       let ouvert = true;
       const dire = (e: EvenementAtelier) => {
         if (ouvert) controleur.enqueue(encodeur.encode(`data: ${JSON.stringify(e)}\n\n`));
@@ -122,6 +125,7 @@ export async function GET(requete: Request) {
       } catch (e) {
         dire({ type: "erreur", message: e instanceof BaseIndisponible ? "Le dossier est momentanément indisponible. Rechargez la page dans quelques minutes." : "Un imprévu a interrompu la préparation. Rechargez la page." });
       } finally {
+        await noterConsommation("atelier", String("atelier").replace(/\s/g, "").slice(0, 40), clore(releve));
         ouvert = false;
         controleur.close();
       }

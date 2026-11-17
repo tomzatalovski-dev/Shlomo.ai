@@ -20,6 +20,9 @@ describe("acheteurs", () => {
   it("écarte la société créée pour l'occasion, le locataire-gérant et la personne physique", () => {
     expect(lireRachat(annonce({}, "Achat d'un établissement principal par une personne morale lors de l'immatriculation"))).toBeNull();
     expect(lireRachat(annonce({}, "Achat d'un fonds par le locataire-gérant personne morale"))).toBeNull();
+    expect(lireRachat(annonce({}, "Mise en activité d'une société suite à achat"))).toBeNull();
+    expect(lireRachat(annonce({}, "Apport d'un établissement principal (immatriculation d'une personne morale, uniquement)"))).toBeNull();
+    expect(lireRachat(annonce({}, "Achat d'un établissement secondaire ou complémentaire par une personne morale"))).not.toBeNull();
     expect(lireRachat(annonce({ listepersonnes: JSON.stringify({ personne: { typePersonne: "pp", nom: "DUPONT" } }) }))).toBeNull();
     expect(lireRachat(annonce({ listepersonnes: "pas du json" }))).toBeNull();
   });
@@ -28,6 +31,7 @@ describe("acheteurs", () => {
     expect(motsDuMetier([{ code: "43.32A", libelle: "Travaux de menuiserie bois et PVC", lien: "meme" }])).toEqual(["menuiserie"]);
     expect(motsDuMetier([{ code: "56.10C", libelle: "Restauration de type rapide", lien: "meme" }])).toEqual(["restauration"]);
     expect(motsDuMetier([{ code: "43.32A", libelle: "", lien: "meme" }])).toEqual([]);
+    expect(motsDuMetier([{ code: "43.32A", libelle: "Travaux de menuiserie bois et PVC", lien: "meme" }, { code: "25.11Z", libelle: "Fabrication de structures métalliques", lien: "voisin" }])).toEqual(["menuiserie"]);
   });
 
   it("met le rachat en première raison et relève la note", () => {

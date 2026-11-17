@@ -1,4 +1,6 @@
 import { analyserSaisie } from "@/lib/saisie";
+import { clore, ouvrir } from "@/lib/compteur";
+import { noterConsommation } from "@/lib/base";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { libelleProfil, masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { ecrireInteret } from "@/lib/interet";
@@ -30,6 +32,7 @@ export async function GET(requete: Request) {
 
   const flux = new ReadableStream<Uint8Array>({
     async start(controleur) {
+      const releve = ouvrir();
       const dire = (e: EvenementRepreneurs) => controleur.enqueue(encodeur.encode(`data: ${JSON.stringify(e)}\n\n`));
       try {
         if (tropDappels(`repreneurs:${adresseDe(requete)}`, 6)) {
@@ -76,7 +79,7 @@ export async function GET(requete: Request) {
         const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) => {
           dire({ type: "passage", profil: p.profil, libelle: p.libelle, candidats: p.candidats, echec: p.echec });
           if (p.rachats) {
-            dire({ type: "journal", texte: `${p.trouvees} rachat${p.trouvees > 1 ? "s" : ""} de fonds de votre métier publié${p.trouvees > 1 ? "s" : ""} au bulletin officiel dans votre région depuis trois ans`, etat: "ok" });
+            dire({ type: "journal", texte: `${p.ventes} vente${(p.ventes ?? 0) > 1 ? "s" : ""} de fonds de votre métier publiée${(p.ventes ?? 0) > 1 ? "s" : ""} dans votre région depuis trois ans, dont ${p.trouvees} par une société déjà installée`, etat: "ok" });
             return;
           }
           dire(p.echec ? { type: "journal", texte: `Le registre n'a pas répondu ${PASSAGE[p.profil]} : je continue sans`, etat: "alerte" } : {
@@ -156,6 +159,7 @@ export async function GET(requete: Request) {
               : "Un imprévu a interrompu la recherche. Réessayez.",
         });
       } finally {
+        await noterConsommation("repreneurs", String(parametres.get("siren") ?? "").replace(/\s/g, "").slice(0, 40), clore(releve));
         controleur.close();
       }
     },

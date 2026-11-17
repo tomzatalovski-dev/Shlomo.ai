@@ -275,7 +275,16 @@ function Repreneurs() {
             <div className="flux">
               {suivants.map((r) => (
                 <div key={r.rang} className="flux-ligne">
-                  <span className="quoi"><b>{r.raison}</b>{r.details.length + (r.reserves?.length ?? 0) > 0 && <small>{[...r.details, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].join(" · ")}</small>}</span>
+                  <span className="quoi"><b>{r.raison}</b>{r.details.length + (r.reserves?.length ?? 0) > 0 && <small>{[...r.details, ...(r.reserves ?? []).map((x) => `À vérifier : ${x.charAt(0).toLowerCase() + x.slice(1)}`)].join(" · ")}</small>}{r.criteres && r.criteres.length > 0 && (
+                    <span className="criteres-net fins" aria-label="Ce qui fait la note">
+                      {r.criteres.map((c) => (
+                        <span key={c.nom} className="critere">
+                          {c.nom}
+                          {c.niveau === null ? <small>non publiés</small> : <i aria-label={`${c.niveau} sur 3`}>{[1, 2, 3].map((n) => <b key={n} className={n <= (c.niveau ?? 0) ? "plein" : undefined} />)}</i>}
+                        </span>
+                      ))}
+                    </span>
+                  )}</span>
                   <span className="ou">{[r.profil, r.effectif].filter(Boolean).join(" · ")}</span>
                   <span className="note">{r.score}</span>
                 </div>

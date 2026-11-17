@@ -40,7 +40,9 @@ export function lireRachat(r: Brut): Rachat | null {
   const siren = String(personne.numeroImmatriculation?.numeroIdentification ?? "").replace(/\s/g, "");
   if (!/^\d{9}$/.test(siren)) return null;
   const categorie = propre(objet(r.acte)?.vente?.categorieVente, 200).toLowerCase();
-  if (/immatriculation|locataire/.test(categorie)) return null;
+  // Seuls comptent les achats faits par une société qui existait déjà. Sont écartés : la société créée pour l'occasion
+  // (« lors de l'immatriculation », « mise en activité suite à achat », apport) et le locataire-gérant.
+  if (!/^achat d'un (fonds|établissement)/.test(categorie) || /immatriculation|locataire/.test(categorie)) return null;
   const etablissement = objet(r.listeetablissements)?.etablissement;
   const activite = propre((Array.isArray(etablissement) ? etablissement[0] : etablissement)?.activite, 140);
   return { siren, date, ...(activite ? { activite } : {}), url: `https://www.bodacc.fr/pages/annonces-commerciales-detail/?q.id=id:${id}` };
@@ -52,7 +54,9 @@ const VAGUES = new Set(["travaux", "activites", "autres", "autre", "commerce", "
 /** Les deux mots les plus parlants des libellés de métier : « Travaux de menuiserie bois et PVC » donne « menuiserie ». */
 export function motsDuMetier(metiers: Metier[]): string[] {
   const mots: string[] = [];
-  for (const m of metiers) {
+  // Le métier du vendeur d'abord : les mots d'un métier voisin ramènent des ventes sans rapport.
+  const propres = metiers.filter((m) => m.lien === "meme");
+  for (const m of propres.length ? propres : metiers) {
     for (const brut of (m.libelle ?? "").toLowerCase().split(/[^a-zà-ÿ]+/)) {
       const sans = brut.normalize("NFD").replace(/[̀-ͯ]/g, "");
       if (brut.length >= 6 && !VAGUES.has(sans) && !mots.includes(brut)) mots.push(brut);
@@ -62,11 +66,14 @@ export function motsDuMetier(metiers: Metier[]): string[] {
 }
 
 /**
- * Rachats de fonds publiés depuis trois ans dans la région du vendeur, pour son métier. Le plus récent par acheteur.
- * Rend une table vide si le bulletin ne répond pas ou si le métier n'a pas de mot reconnaissable : la recherche continue sans.
+ * Rachats de fonds publiés depuis trois ans dans la région du vendeur, pour son métier. Le plus récent par acheteur,
+ * et le nombre total de ventes publiées : il dit si le métier se vend dans la région. Rend une table vide si le bulletin ne répond pas ou si le métier n'a pas de mot reconnaissable : la recherche continue sans.
  */
-export async function chercherRachats(metiers: Metier[], region: string | undefined, aujourdhui = new Date()): Promise<Map<string, Rachat>> {
-  const trouves = new Map<string, Rachat>();
+export type Rachats = { parAcheteur: Map<string, Rachat>; ventes: number };
+
+export async function chercherRachats(metiers: Metier[], region: string | undefined, aujourdhui = new Date()): Promise<Rachats> {
+  const parAcheteur = new Map<string, Rachat>();
+  const trouves = { parAcheteur, ventes: 0 };
   const mots = motsDuMetier(metiers);
   if (mots.length === 0 || !region || !/^\d+$/.test(region)) return trouves;
   const depuis = new Date(aujourdhui);
@@ -77,9 +84,11 @@ export async function chercherRachats(metiers: Metier[], region: string | undefi
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(8_000) });
     if (!r.ok) return trouves;
-    for (const brut of ((await r.json()) as { results?: Brut[] }).results ?? []) {
+    const lu = (await r.json()) as { total_count?: number; results?: Brut[] };
+    trouves.ventes = typeof lu.total_count === "number" ? lu.total_count : (lu.results?.length ?? 0);
+    for (const brut of lu.results ?? []) {
       const rachat = lireRachat(brut);
-      if (rachat && !trouves.has(rachat.siren)) trouves.set(rachat.siren, rachat);
+      if (rachat && !parAcheteur.has(rachat.siren)) parAcheteur.set(rachat.siren, rachat);
     }
   } catch {
     // Le bulletin ne répond pas : on continue sans les rachats.
