@@ -165,6 +165,8 @@ export function retenable(vendeur: Societe, candidat: Societe): boolean {
     candidat.siren !== vendeur.siren &&
     candidat.active &&
     !candidat.entrepreneurIndividuel &&
+    // Une association, une fondation ou un organisme public ne rachète pas une société comme le ferait un concurrent.
+    !candidat.horsParcours &&
     !candidat.refuseProspection
   );
 }
