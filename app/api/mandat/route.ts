@@ -1,5 +1,7 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { avecTaille, lireTaille } from "@/lib/taille";
+import { lireConcurrents } from "@/lib/base";
+import { relireConcurrents } from "@/lib/concurrents";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { reveler, trouverRepreneurs } from "@/lib/repreneurs";
 import { BaseIndisponible, fixerCourriel, mesurer, signerMandat } from "@/lib/base";
@@ -41,7 +43,9 @@ export async function POST(requete: Request) {
     const vendeur = avecTaille(fiche, lireTaille(corps?.taille));
 
     const metiers = lireMetiers(typeof corps?.metiers === "string" ? corps.metiers : null, vendeur.codeActivite);
-    const { repreneurs } = await trouverRepreneurs(vendeur, undefined, undefined, metiers);
+    // Les concurrents directs trouvés pendant la recherche montrée au vendeur : la liste signée est la même.
+    const directs = lireConcurrents(vendeur.siren).then((liste) => relireConcurrents(liste, vendeur));
+    const { repreneurs } = await trouverRepreneurs(vendeur, undefined, undefined, metiers, directs);
     if (repreneurs.length === 0) return refus("Aucun repreneur à présenter pour l'instant : le mandat ne peut pas être signé.", 409);
 
     const jeton = await signerMandat({

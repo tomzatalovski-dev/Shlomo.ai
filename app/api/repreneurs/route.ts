@@ -1,6 +1,7 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { clore, ouvrir } from "@/lib/compteur";
-import { noterConsommation } from "@/lib/base";
+import { garderConcurrents, lireConcurrents, noterConsommation } from "@/lib/base";
+import { chercherConcurrents, relireConcurrents } from "@/lib/concurrents";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { libelleProfil, masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { ecrireInteret } from "@/lib/interet";
@@ -76,6 +77,22 @@ export async function GET(requete: Request) {
         }
 
         dire({ type: "encours", texte: metiers.length > 1 ? "Recherche des sociétés de ces activités, plus grandes que vous" : "Recherche des sociétés du même métier, plus grandes que vous" });
+        // Le site du vendeur, lu une fois : il sert à trouver ses concurrents directs, puis à écrire ce que chacun y gagnerait.
+        const siteSaisi = analyserSaisie(parametres.get("site") ?? "");
+        const lecture = siteSaisi.type === "site" ? await lireSite(siteSaisi.domaine).catch(() => null) : null;
+        const texteSite = lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined;
+        // Les concurrents directs, cherchés sur le web pendant que le registre est parcouru. Gardés trente jours :
+        // un rechargement ne relance pas la recherche, et la liste signée au mandat est celle que le vendeur a vue.
+        const directs = (async () => {
+          const gardes = await lireConcurrents(vendeur.siren);
+          if (gardes.length) return relireConcurrents(gardes, vendeur);
+          if (!iaActive()) return [];
+          const trouves = await chercherConcurrents(vendeur, texteSite, metiers.map((m) => m.libelle).filter(Boolean));
+          if (!trouves) return [];
+          await garderConcurrents(vendeur.siren, trouves.concurrents);
+          dire({ type: "journal", texte: trouves.nommes ? `${trouves.nommes} concurrent${trouves.nommes > 1 ? "s" : ""} direct${trouves.nommes > 1 ? "s" : ""} repéré${trouves.nommes > 1 ? "s" : ""} sur le web, ${trouves.societes.length} retrouvé${trouves.societes.length > 1 ? "s" : ""} au registre et en mesure de vous racheter` : "Aucun concurrent direct repéré sur le web", etat: trouves.societes.length ? "ok" : "alerte" });
+          return trouves.societes;
+        })();
         const { repreneurs, examinees } = await trouverRepreneurs(vendeur, (p) => {
           dire({ type: "passage", profil: p.profil, libelle: p.libelle, candidats: p.candidats, echec: p.echec });
           if (p.rachats) {
@@ -87,7 +104,7 @@ export async function GET(requete: Request) {
             texte: `${p.trouvees} société${p.trouvees > 1 ? "s" : ""} examinée${p.trouvees > 1 ? "s" : ""} ${PASSAGE[p.profil]}${p.metier?.lien === "voisin" ? `, activité voisine${p.metier.libelle ? ` (${p.metier.libelle})` : ""}` : ""}`,
             etat: p.trouvees ? "ok" : "alerte",
           });
-        }, (total) => dire({ type: "metier", total }), metiers);
+        }, (total) => dire({ type: "metier", total }), metiers, directs);
 
         // Seule la version masquée quitte le serveur ici : ni nom, ni SIREN, ni ville.
         // Les noms ne sont remis que par la page de suivi, après un mandat enregistré.
@@ -105,9 +122,7 @@ export async function GET(requete: Request) {
           const premiers = repreneurs.slice(0, 3);
           let pagesLues = 0;
           // Ce que le vendeur fait, pour écrire ce que chaque repreneur y gagnerait : ses métiers, et son site s'il en a donné un.
-          const siteSaisi = analyserSaisie(parametres.get("site") ?? "");
-          const lecture = siteSaisi.type === "site" ? await lireSite(siteSaisi.domaine).catch(() => null) : null;
-          const contexte = { metiers: metiers.filter((m) => m.lien === "meme" && m.libelle).map((m) => m.libelle), site: lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined };
+          const contexte = { metiers: metiers.filter((m) => m.lien === "meme" && m.libelle).map((m) => m.libelle), site: texteSite };
           // Pour chaque repreneur : ce qu'il a annoncé, puis une phrase d'analyse sans rien qui le nomme (rien si elle n'est pas
           // propre aux deux sociétés). Pour dire ce qu'il y gagnerait, il faut savoir ce qu'il fait : on lit son site quand la veille l'a trouvé.
           const etudier = async (r: (typeof repreneurs)[number], rang: number, avecIndices: boolean) => {

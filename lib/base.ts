@@ -377,6 +377,25 @@ export async function lireConsommations(code: string, jours = 30): Promise<Recor
   return appeler<Record<string, Consommation> | null>("lire_consommations", { p_code: code, p_jours: jours });
 }
 
+/** Concurrents directs trouvés pour un vendeur : gardés trente jours, pour que la liste signée soit celle qu'il a vue. */
+export async function garderConcurrents(vendeur: string, liste: { siren: string; source: string }[]): Promise<void> {
+  const serveur = process.env.CLE_SERVEUR;
+  if (!serveur || liste.length === 0) return;
+  try {
+    await appeler<number>("garder_concurrents", { p_cle_serveur: serveur, p_vendeur: vendeur, p_liste: liste });
+  } catch {}
+}
+
+export async function lireConcurrents(vendeur: string): Promise<{ siren: string; source: string }[]> {
+  const serveur = process.env.CLE_SERVEUR;
+  if (!serveur) return [];
+  try {
+    return (await appeler<{ siren: string; source: string }[] | null>("lire_concurrents", { p_cle_serveur: serveur, p_vendeur: vendeur })) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 /** Dit si la clé posée sur le serveur est bien celle de la base, sans jamais la rendre. */
 export async function cleServeurValide(cle: string): Promise<boolean> {
   return (await appeler<boolean | null>("cle_serveur_valide", { p_cle: cle })) === true;

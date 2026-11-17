@@ -189,14 +189,19 @@ export function avecRachat(r: Repreneur, rachat?: Rachat): Repreneur {
   return rachat ? { ...r, score: Math.min(97, r.score + 12), raisons: [direRachat(rachat), ...r.raisons], criteres: [...r.criteres, { nom: "A déjà racheté", niveau: 3 }] } : r;
 }
 
-export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10, rachats: Map<string, Rachat> = new Map()): Repreneur[] {
+/** Un concurrent direct, trouvé sur le web, est l'acheteur le plus naturel : c'est sa première raison, et il gagne des points. */
+export function avecConcurrent(r: Repreneur, concurrent: boolean): Repreneur {
+  return concurrent ? { ...r, score: Math.min(97, r.score + 15), raisons: ["Concurrent direct : fait le même métier que vous, d'après le web", ...r.raisons], criteres: [...r.criteres, { nom: "Concurrent direct", niveau: 3 }] } : r;
+}
+
+export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10, rachats: Map<string, Rachat> = new Map(), concurrents: Set<string> = new Set()): Repreneur[] {
   const vus = new Set<string>();
   const retenus: Repreneur[] = [];
   for (const lot of lots) {
     for (const s of lot.societes) {
       if (vus.has(s.siren) || !retenable(vendeur, s)) continue;
       vus.add(s.siren);
-      retenus.push(avecRachat(noter(vendeur, s, lot.profil, lot.metier), rachats.get(s.siren)));
+      retenus.push(avecConcurrent(avecRachat(noter(vendeur, s, lot.profil, lot.metier), rachats.get(s.siren)), concurrents.has(s.siren)));
     }
   }
   // À note égale : le plus gros chiffre d'affaires publié, puis le plus grand effectif.
@@ -250,6 +255,8 @@ export async function trouverRepreneurs(
   suivre: (p: Passage) => void = () => {},
   metier: (total: number) => void = () => {},
   metiers: Metier[] = vendeur.codeActivite ? [{ code: vendeur.codeActivite, libelle: "", lien: "meme" }] : [],
+  /** Concurrents directs déjà trouvés ailleurs (recherche web), attendus avant le classement. */
+  directs: Promise<Societe[]> = Promise.resolve([]),
 ): Promise<{ repreneurs: Repreneur[]; examinees: number }> {
   if (metiers.length === 0) return { repreneurs: [], examinees: 0 };
 
@@ -323,5 +330,17 @@ export async function trouverRepreneurs(
     });
   }
 
-  return { repreneurs: classer(vendeur, lots, 10, rachats), examinees };
+  // Les concurrents directs : placés en tête des lots, pour qu'un doublon trouvé aussi par son code garde cette qualité.
+  const concurrents = (await directs.catch(() => [])).filter((s) => retenable(vendeur, s));
+  if (concurrents.length) {
+    const proche = (s: Societe): ProfilRepreneur => (vendeur.departement && s.departement === vendeur.departement ? "departement" : vendeur.region && s.region === vendeur.region ? "region" : "national");
+    const meme: Metier = { ...(metiers.find((m) => m.lien === "meme") ?? metiers[0]), lien: "meme" };
+    for (const profil of ["departement", "region", "national"] as const) {
+      const societes = concurrents.filter((s) => proche(s) === profil);
+      if (societes.length) lots.unshift({ profil, metier: meme, societes });
+    }
+    examinees += concurrents.filter((s) => !dejaVues.has(s.siren)).length;
+  }
+
+  return { repreneurs: classer(vendeur, lots, 10, rachats, new Set(concurrents.map((s) => s.siren))), examinees };
 }
