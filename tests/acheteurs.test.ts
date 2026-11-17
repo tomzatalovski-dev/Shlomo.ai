@@ -31,6 +31,8 @@ describe("acheteurs", () => {
     expect(motsDuMetier([{ code: "43.32A", libelle: "Travaux de menuiserie bois et PVC", lien: "meme" }])).toEqual(["menuiserie"]);
     expect(motsDuMetier([{ code: "56.10C", libelle: "Restauration de type rapide", lien: "meme" }])).toEqual(["restauration"]);
     expect(motsDuMetier([{ code: "43.32A", libelle: "", lien: "meme" }])).toEqual([]);
+    // Un libellé sans mot propre au métier ne donne rien : mieux vaut pas de chiffre qu'un chiffre gonflé par « agences ».
+    expect(motsDuMetier([{ code: "78.10Z", libelle: "Activités des agences de placement de main-d'œuvre", lien: "meme" }])).toEqual([]);
     expect(motsDuMetier([{ code: "43.32A", libelle: "Travaux de menuiserie bois et PVC", lien: "meme" }, { code: "25.11Z", libelle: "Fabrication de structures métalliques", lien: "voisin" }])).toEqual(["menuiserie"]);
   });
 

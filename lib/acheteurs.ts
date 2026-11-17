@@ -49,7 +49,7 @@ export function lireRachat(r: Brut): Rachat | null {
 }
 
 /** Mots trop généraux pour reconnaître un métier dans le texte d'une annonce. */
-const VAGUES = new Set(["travaux", "activites", "autres", "autre", "commerce", "detail", "services", "service", "fabrication", "production", "entreprises", "specialise", "specialises", "magasin", "magasins", "generale", "general", "divers", "diverses", "installation", "location", "conseil", "gestion", "soutien", "vente", "ventes", "produits", "articles", "materiel", "equipements", "exclusion", "compris", "nature", "traditionnelle", "rapide"]);
+const VAGUES = new Set(["travaux", "activites", "autres", "autre", "commerce", "detail", "services", "service", "fabrication", "production", "entreprises", "specialise", "specialises", "magasin", "magasins", "generale", "general", "divers", "diverses", "installation", "location", "conseil", "gestion", "soutien", "vente", "ventes", "produits", "articles", "materiel", "equipements", "exclusion", "compris", "nature", "traditionnelle", "rapide", "agence", "agences", "placement", "temporaire", "affaires", "conseils", "entreprise", "professionnels", "professionnelles", "activite", "programmes"]);
 
 /** Les deux mots les plus parlants des libellés de métier : « Travaux de menuiserie bois et PVC » donne « menuiserie ». */
 export function motsDuMetier(metiers: Metier[]): string[] {
