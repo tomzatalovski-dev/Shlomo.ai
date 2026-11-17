@@ -27,6 +27,7 @@ function Mandat() {
   const siren = parametres.get("siren") ?? "";
   const metiers = parametres.get("m") ?? "";
   const site = parametres.get("site") ?? "";
+  const taille = /^\d{1,6}$/.test(parametres.get("e") ?? "") ? (parametres.get("e") as string) : "";
   const [societe, setSociete] = useState<Societe | null>(null);
   const [raison, setRaison] = useState("");
   const [nom, setNom] = useState("");
@@ -54,7 +55,7 @@ function Mandat() {
     const rep = await fetch("/api/mandat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siren, signataire, courriel: courriel.trim(), autorisation, metiers, site, raison }),
+      body: JSON.stringify({ siren, signataire, courriel: courriel.trim(), autorisation, metiers, site, raison, taille }),
     }).catch(() => null);
     const json = rep ? ((await rep.json().catch(() => null)) as { jeton?: string; erreur?: string } | null) : null;
     if (rep?.ok && json?.jeton) {
@@ -67,7 +68,7 @@ function Mandat() {
     }
   }
 
-  const retour = `/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}`;
+  const retour = `/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}${taille ? `&e=${taille}` : ""}`;
 
   return (
     <div className="page epure">
@@ -80,7 +81,7 @@ function Mandat() {
         <main className="resultat">
           <div>
             <h1>Votre mandat.</h1>
-            <p className="sous">Une page, cinq articles. Vous signez en bas ; les agents se mettent au travail dans la seconde.</p>
+            <p className="sous">Une page, cinq articles. Vous signez en bas. Nous vérifions que vous êtes bien le dirigeant, sous 24 heures, puis les agents se mettent au travail.</p>
           </div>
 
           <ul className="cles">
@@ -123,7 +124,7 @@ function Mandat() {
             <div className="options">
               <label className="case">
                 <input type="checkbox" checked={autorisation} onChange={(e) => setAutorisation(e.target.checked)} />
-                <span><b>Approche déléguée.</b> J'autorise Shlomo à approcher les repreneurs pour mon compte, sans me nommer. Je n'aurai rien à valider ensuite.</span>
+                <span><b>Approche déléguée.</b> J'autorise Shlomo à approcher les repreneurs pour mon compte, sans me nommer et sans me soumettre chaque message. Je reste seul à décider de révéler mon nom et d'accepter une offre.</span>
               </label>
               <div className="champ">
                 <label htmlFor="raison">Pourquoi vendez-vous ? Facultatif : les repreneurs répondent mieux quand ils le savent.</label>

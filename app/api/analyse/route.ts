@@ -1,4 +1,5 @@
 import { analyserSaisie } from "@/lib/saisie";
+import { sansDateContraire } from "@/lib/taille";
 import { chercherParNom, chercherSociete, compterMetier, RegistreIndisponible } from "@/lib/registre";
 import { lireSite } from "@/lib/site";
 import { iaActive, lireNom, resumer } from "@/lib/ia";
@@ -169,7 +170,7 @@ export async function GET(requete: Request) {
           enqueteDite = true;
           if (!e) return;
           dire({ type: "journal", texte: `${e.requetes.length} recherche${e.requetes.length > 1 ? "s" : ""} sur le web, ${e.pages.length} page${e.pages.length > 1 ? "s" : ""} lue${e.pages.length > 1 ? "s" : ""}`, etat: "ok" });
-          if (e.faits.length) dire({ type: "faits", faits: e.faits, requetes: e.requetes, pages: e.pages });
+          if (e.faits.length) dire({ type: "faits", faits: sansDateContraire(e.faits, societe.anneeCreation), requetes: e.requetes, pages: e.pages });
           dire(
             e.faits.length
               ? { type: "journal", texte: `${e.faits.length} fait${e.faits.length > 1 ? "s" : ""} public${e.faits.length > 1 ? "s" : ""} retenu${e.faits.length > 1 ? "s" : ""}, chacun avec sa source${e.ecartes ? ` ; ${e.ecartes} écarté${e.ecartes > 1 ? "s" : ""} faute de source vérifiable` : ""}`, etat: "ok" }

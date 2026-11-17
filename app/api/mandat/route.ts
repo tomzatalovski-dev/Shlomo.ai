@@ -1,4 +1,5 @@
 import { analyserSaisie } from "@/lib/saisie";
+import { avecTaille, lireTaille } from "@/lib/taille";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
 import { reveler, trouverRepreneurs } from "@/lib/repreneurs";
 import { BaseIndisponible, fixerCourriel, mesurer, signerMandat } from "@/lib/base";
@@ -21,7 +22,7 @@ const refus = (message: string, statut = 400) => Response.json({ erreur: message
 export async function POST(requete: Request) {
   if (tropDappels(`mandat:${adresseDe(requete)}`, 4)) return refus("Trop de signatures en peu de temps. Réessayez dans une minute.", 429);
 
-  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; courriel?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown; site?: unknown; raison?: unknown } | null;
+  const corps = (await requete.json().catch(() => null)) as { siren?: unknown; courriel?: unknown; signataire?: unknown; autorisation?: unknown; metiers?: unknown; site?: unknown; raison?: unknown; taille?: unknown } | null;
   const saisie = analyserSaisie(typeof corps?.siren === "string" ? corps.siren : "");
   const signataire = typeof corps?.signataire === "string" ? corps.signataire.trim().slice(0, 120) : "";
   if (saisie.type !== "siren") return refus("Numéro SIREN manquant ou invalide.");
@@ -34,8 +35,10 @@ export async function POST(requete: Request) {
   if (!COURRIEL.test(courriel)) return refus("Indiquez une adresse électronique : nous vous y envoyons votre lien de suivi.");
 
   try {
-    const vendeur = await chercherSociete(saisie.siren);
-    if (!vendeur) return refus("Le registre ne connaît pas cette société.", 404);
+    const fiche = await chercherSociete(saisie.siren);
+    if (!fiche) return refus("Le registre ne connaît pas cette société.", 404);
+    // Même taille que celle de la recherche montrée au vendeur : la liste signée est celle qu'il a vue.
+    const vendeur = avecTaille(fiche, lireTaille(corps?.taille));
 
     const metiers = lireMetiers(typeof corps?.metiers === "string" ? corps.metiers : null, vendeur.codeActivite);
     const { repreneurs } = await trouverRepreneurs(vendeur, undefined, undefined, metiers);

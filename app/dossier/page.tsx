@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Evenement, Metier, Proposition, ResumeIA, Societe } from "@/lib/types";
+import { ecartNet } from "@/lib/taille";
 import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/scene";
 import { MULTIPLE_BAS, MULTIPLE_HAUT, estimer, fourchette } from "@/lib/estimation";
 
@@ -30,6 +31,7 @@ function Dossier() {
   const [description, setDescription] = useState("");
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
   const [hors, setHors] = useState<string | null>(null);
+  const [auRegistre, setAuRegistre] = useState(false);
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [metier, setMetier] = useState<{ libelle?: string; liste: (Metier & { total?: number })[] } | null>(null);
   const [activites, setActivites] = useState(0);
@@ -153,6 +155,10 @@ function Dossier() {
   const saisi = Number(resultatSaisi.replace(/[^\d]/g, ""));
   const aLaMain = saisi > 0 ? fourchette(saisi) : null;
 
+  // Quand le site annonce une équipe nettement plus grande que le registre, un seul chiffre sert à chercher : on dit lequel.
+  const annonce = societe && resume?.effectifAnnonce && ecartNet(societe, resume.effectifAnnonce) ? resume.effectifAnnonce : undefined;
+  const taille = annonce && !auRegistre ? annonce : undefined;
+
   const titre = erreur
     ? "La recherche s'est arrêtée."
     : hors
@@ -267,10 +273,21 @@ function Dossier() {
 
               <div className="chiffres">
                 {tuile(1, "Création", societe.anneeCreation ? <Compteur valeur={societe.anneeCreation} duree={600} /> : "Non publié")}
-                {tuile(2, `${/salari/.test(societe.effectif ?? "") ? "Salariés" : "Effectif"}${societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}`, (societe.effectif ?? "Non publié").replace(/\s*salariés?$/, ""))}
+                {taille
+                  ? tuile(2, "Équipe, d'après votre site", `Environ ${taille}`)
+                  : tuile(2, `${/salari/.test(societe.effectif ?? "") ? "Salariés" : "Effectif"}${societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}`, (societe.effectif ?? "Non publié").replace(/\s*salariés?$/, ""))}
                 {tuile(3, `CA${dernier ? ` ${dernier.annee}` : ""}`, dernier?.chiffreAffaires !== undefined ? <Compteur valeur={dernier.chiffreAffaires} format={euros} /> : sansChiffre)}
                 {tuile(4, `Résultat${dernier ? ` ${dernier.annee}` : ""}`, dernier?.resultat !== undefined ? <Compteur valeur={dernier.resultat} format={euros} /> : sansChiffre)}
               </div>
+
+              {annonce && (
+                <p className="note-taille">
+                  {auRegistre
+                    ? <>Le registre compte {(societe.effectif ?? "").replace(/\s*salariés?$/, "")} salariés{societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""} ; votre site parle de {annonce} personnes. Je cherche à partir du chiffre du registre. </>
+                    : <>Votre site parle de {annonce} personnes ; le registre compte {(societe.effectif ?? "").replace(/\s*salariés?$/, "") || "moins de"} salariés{societe.anneeEffectif ? ` (${societe.anneeEffectif})` : ""}, sans les indépendants. Je cherche des repreneurs plus grands que {annonce} personnes. </>}
+                  <button type="button" className="lien" onClick={() => setAuRegistre((v) => !v)}>{auRegistre ? "Prendre le chiffre de mon site" : "Prendre le chiffre du registre"}</button>
+                </p>
+              )}
 
               {evolution && dernier && avant && dernier.chiffreAffaires && avant.chiffreAffaires && (
                 <div className="evolution apparait">
@@ -395,7 +412,7 @@ function Dossier() {
                       setValide(true);
                       const m = metier?.liste.map(({ code, libelle, lien }) => ({ code, libelle, lien }));
                       const domaine = site?.domaine ?? "";
-                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}${domaine ? `&site=${encodeURIComponent(domaine)}` : ""}`);
+                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}${domaine ? `&site=${encodeURIComponent(domaine)}` : ""}${taille ? `&e=${taille}` : ""}`);
                     }}
                   >
                     Tout est juste, je valide

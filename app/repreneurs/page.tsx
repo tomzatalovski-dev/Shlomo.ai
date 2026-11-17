@@ -43,7 +43,8 @@ function Repreneurs() {
   const siren = parametres.get("siren") ?? "";
   const metiers = parametres.get("m") ?? "";
   const site = parametres.get("site") ?? "";
-  const suite = metiers ? `&m=${encodeURIComponent(metiers)}` : "";
+  const taille = /^\d{1,6}$/.test(parametres.get("e") ?? "") ? `&e=${parametres.get("e")}` : "";
+  const suite = `${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${taille}`;
   const versMandat = `${suite}${site ? `&site=${encodeURIComponent(site)}` : ""}`;
   const signe = parametres.get("signe") === "1";
   const par = parametres.get("par") ?? "";

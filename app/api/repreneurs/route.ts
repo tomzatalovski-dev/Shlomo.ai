@@ -4,6 +4,7 @@ import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
 import { mesurer } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { veiller } from "@/lib/veille";
+import { avecTaille, lireTaille } from "@/lib/taille";
 import { bilanActif, direBilan, lireBilan } from "@/lib/bilan";
 import { lireMetiers } from "@/lib/metiers";
 import { adresseDe, messagePlafond, plafondAtteint, tropDappels } from "@/lib/limite";
@@ -44,7 +45,10 @@ export async function GET(requete: Request) {
         }
 
         dire({ type: "encours", texte: "Relecture de votre fiche au registre" });
-        const vendeur = await chercherSociete(saisie.siren);
+        const fiche = await chercherSociete(saisie.siren);
+        // La taille que le vendeur a retenue sur sa fiche (celle de son site quand elle dépasse nettement le registre).
+        const taille = lireTaille(parametres.get("e"));
+        const vendeur = fiche && avecTaille(fiche, taille);
         if (!vendeur) {
           dire({ type: "erreur", message: `Le registre ne connaît pas de société au SIREN ${saisie.siren}.` });
           return;
@@ -61,6 +65,7 @@ export async function GET(requete: Request) {
           return;
         }
         dire({ type: "metiers", liste: metiers });
+        if (taille && fiche) dire({ type: "journal", texte: `Taille retenue : environ ${taille} personnes, d'après votre site${fiche.effectif ? ` (le registre en compte ${fiche.effectif.replace(/ salariés?$/, "")})` : ""}`, etat: "ok" });
         for (const m of metiers) {
           dire({ type: "journal", texte: `${m.lien === "meme" ? "Votre activité" : "Activité voisine"} : ${m.libelle ? `${m.libelle} (${m.code})` : `code ${m.code}`}`, etat: "ok" });
         }

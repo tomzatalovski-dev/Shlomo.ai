@@ -1,5 +1,6 @@
 import { nettoyerMetiers } from "./metiers";
 import type { ResumeIA, Societe } from "./types";
+import { lireTaille } from "./taille";
 
 /**
  * Seul endroit du projet qui appelle un modèle d'IA.
@@ -21,7 +22,10 @@ Réponds uniquement par un objet JSON :
 {"description": "deux ou trois phrases simples sur l'activité",
  "pointsForts": ["quatre éléments au plus, quelques mots chacun, qui intéresseraient un repreneur"],
  "metier": "le métier réel en six mots au plus, d'après le site",
+ "effectifAnnonce": 70,
  "codes": [{"code": "code NAF rév. 2 au format 62.01Z", "libelle": "intitulé court de ce code", "lien": "meme ou voisin"}]}
+Pour "effectifAnnonce" : le nombre de personnes que la société dit compter dans son équipe, seulement si le texte le donne en chiffres ; sinon null. Ne le déduis jamais.
+Si le texte donne une année de création différente de celle du registre, garde celle du registre et ne cite pas l'autre.
 Pour "codes" : quatre au plus. "meme" pour le ou les codes qui décrivent le métier réel (garde celui du registre s'il est juste, écarte-le s'il est seulement administratif, comme le siège social ou les services de bureau). "voisin" pour des activités dont les sociétés auraient une raison de racheter celle-ci : même clientèle, métier complémentaire, amont ou aval. Ne donne que des codes dont tu es sûr ; une liste vide vaut mieux qu'un code inventé.`;
 
 export async function resumer(societe: Societe, texteSite: string, origine: "site" | "web" = "site"): Promise<ResumeIA | null> {
@@ -61,6 +65,7 @@ export async function resumer(societe: Societe, texteSite: string, origine: "sit
       pointsForts: points.map((p) => p.slice(0, 80)),
       metier: typeof lu.metier === "string" ? lu.metier.trim().slice(0, 80) || undefined : undefined,
       codes: nettoyerMetiers(lu.codes),
+      effectifAnnonce: lireTaille((lu as { effectifAnnonce?: unknown }).effectifAnnonce),
     };
   } catch (e) {
     if (e instanceof ReponseIllisible) throw e;

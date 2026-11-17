@@ -123,6 +123,8 @@ export type ResumeIA = {
   metier?: string;
   /** Codes d'activité proposés par l'IA. À vérifier au registre avant tout usage. */
   codes?: Metier[];
+  /** Taille de l'équipe telle que le site la donne en chiffres. Peut différer du registre. */
+  effectifAnnonce?: number;
 };
 
 /** Événements envoyés au navigateur pendant l'analyse. */

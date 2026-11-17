@@ -703,3 +703,7 @@ small { line-height: 1.45; }
 .invite button:hover { background: rgba(19, 28, 51, 0.06); }
 .partage > div:last-child { background: transparent; color: var(--encre); border-color: var(--encre); }
 .partage > div:last-child span { color: var(--gris); }
+
+/* Fiche : quand le site et le registre ne donnent pas la même taille, une phrase dit lequel sert. */
+.note-taille { margin: 0; font-size: 14px; line-height: 1.55; color: var(--gris); }
+.note-taille button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 14px; }
