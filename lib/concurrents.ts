@@ -39,13 +39,14 @@ export function nettoyerConcurrents(brut: unknown, pages: { url: string }[]): { 
   return { metier: metier || undefined, noms };
 }
 
-/** Le registre connaît-il une société qui porte exactement ce nom ? Le nom ou le sigle entre parenthèses doit correspondre. */
+/** Le registre connaît-il une société de ce nom ? Le nom, son début ou le sigle entre parenthèses doit correspondre. */
 export function memeNom(cherche: string, societe: Societe): boolean {
   const voulu = normaliser(cherche);
   if (voulu.length < 3) return false;
   const principal = normaliser(societe.nom.replace(/\([^)]*\)/g, " "));
   const sigles = [...societe.nom.matchAll(/\(([^)]*)\)/g)].map((m) => normaliser(m[1]));
-  return principal === voulu || sigles.includes(voulu);
+  // Le registre ajoute souvent un mot au nom d'usage (« Mac Guff » y est « MAC GUFF LIGNE ») : on l'admet quand le nom cherché est assez long pour ne pas être un hasard.
+  return principal === voulu || sigles.includes(voulu) || (voulu.length >= 6 && principal.startsWith(voulu));
 }
 
 /** Parmi les sociétés du registre qui portent ce nom, la plus grande qui puisse racheter le vendeur. */

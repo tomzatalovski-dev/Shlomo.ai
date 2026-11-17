@@ -20,10 +20,13 @@ describe("concurrents directs", () => {
     expect(nettoyerConcurrents(null, pages).noms).toEqual([]);
   });
 
-  it("reconnaît le nom exact ou le sigle, pas un nom qui le contient", () => {
+  it("reconnaît le nom exact, le sigle, ou un nom d'usage assez long que le registre complète", () => {
+    expect(memeNom("Mac Guff", soc("1", "MAC GUFF LIGNE"))).toBe(true);
+    expect(memeNom("Guff", soc("1", "MAC GUFF LIGNE"))).toBe(false);
     expect(memeNom("Alpha Santé", soc("1", "ALPHA SANTE SAS"))).toBe(true);
     expect(memeNom("ASF", soc("1", "ALPHA SANTE FRANCE (ASF)"))).toBe(true);
     expect(memeNom("Alpha", soc("1", "ALPHA SANTE"))).toBe(false);
+    expect(memeNom("Sante", soc("1", "ALPHA SANTE"))).toBe(false);
     expect(memeNom("AB", soc("1", "AB"))).toBe(false);
   });
 
