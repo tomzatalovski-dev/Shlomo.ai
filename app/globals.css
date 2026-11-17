@@ -707,3 +707,14 @@ small { line-height: 1.45; }
 /* Fiche : quand le site et le registre ne donnent pas la même taille, une phrase dit lequel sert. */
 .note-taille { margin: 0; font-size: 14px; line-height: 1.55; color: var(--gris); }
 .note-taille button.lien { background: none; border: 0; padding: 0; cursor: pointer; font-size: 14px; }
+
+/* Carte repreneur : l'analyse de Shlomo, puis ce qui fait la note, critère par critère. */
+.interet-net { margin: 4px 0 0; padding: 16px 0 0; border-top: 1px solid var(--trait); font-size: 16px; line-height: 1.5; color: var(--encre); }
+.interet-net span { display: block; font-size: 13px; color: var(--gris); margin-bottom: 4px; }
+.repreneur-net.grand .interet-net { font-size: 18px; }
+.criteres-net { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13px; color: var(--gris); }
+.criteres-net li { display: flex; align-items: center; gap: 8px; }
+.criteres-net i { display: inline-flex; gap: 2px; }
+.criteres-net i b { width: 12px; height: 6px; border-radius: 2px; background: rgba(19, 28, 51, 0.1); }
+.criteres-net i b.plein { background: #6b7280; }
+.criteres-net small { font-size: 13px; color: var(--encre); }

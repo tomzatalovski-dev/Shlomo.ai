@@ -1,4 +1,5 @@
 import { analyserSaisie } from "@/lib/saisie";
+import { relireFaits } from "@/lib/relecture";
 import { sansDateContraire } from "@/lib/taille";
 import { chercherParNom, chercherSociete, compterMetier, RegistreIndisponible } from "@/lib/registre";
 import { lireSite } from "@/lib/site";
@@ -164,13 +165,22 @@ export async function GET(requete: Request) {
         // sans site, elle passe d'abord, car c'est elle qui peut le retrouver.
         let texteFiche = site?.texte;
         let origine = "du site";
-        const enquete = iaActive() ? enqueter(societe) : Promise.resolve(null);
+        // Chaque fait est relu sur la page qu'il cite avant d'être montré : un détail ajouté par l'IA le fait retirer.
+        const enquete = iaActive()
+          ? enqueter(societe).then(async (e) => {
+              if (!e) return e;
+              const dates = sansDateContraire(e.faits, societe.anneeCreation);
+              const relu = await relireFaits(dates).catch(() => ({ gardes: dates, retires: 0, nonRelus: dates.length }));
+              return { ...e, faits: relu.gardes, ecartes: e.ecartes + (e.faits.length - dates.length) + relu.retires, relus: relu.gardes.length - relu.nonRelus };
+            })
+          : Promise.resolve(null);
         let enqueteDite = false;
         const direEnquete = (e: Awaited<typeof enquete>) => {
           enqueteDite = true;
           if (!e) return;
           dire({ type: "journal", texte: `${e.requetes.length} recherche${e.requetes.length > 1 ? "s" : ""} sur le web, ${e.pages.length} page${e.pages.length > 1 ? "s" : ""} lue${e.pages.length > 1 ? "s" : ""}`, etat: "ok" });
-          if (e.faits.length) dire({ type: "faits", faits: sansDateContraire(e.faits, societe.anneeCreation), requetes: e.requetes, pages: e.pages });
+          if (e.relus) dire({ type: "journal", texte: `${e.relus} fait${e.relus > 1 ? "s" : ""} relu${e.relus > 1 ? "s" : ""} mot à mot sur ${e.relus > 1 ? "leur" : "sa"} page d'origine`, etat: "ok" });
+          if (e.faits.length) dire({ type: "faits", faits: e.faits, requetes: e.requetes, pages: e.pages });
           dire(
             e.faits.length
               ? { type: "journal", texte: `${e.faits.length} fait${e.faits.length > 1 ? "s" : ""} public${e.faits.length > 1 ? "s" : ""} retenu${e.faits.length > 1 ? "s" : ""}, chacun avec sa source${e.ecartes ? ` ; ${e.ecartes} écarté${e.ecartes > 1 ? "s" : ""} faute de source vérifiable` : ""}`, etat: "ok" }

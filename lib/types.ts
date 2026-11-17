@@ -54,7 +54,12 @@ export type Repreneur = {
   raisons: string[];
   /** Ce qui joue contre lui dans ses comptes publiés. Jamais repris dans un message d'approche. */
   reserves: string[];
+  /** Ce qui fait la note, critère par critère. */
+  criteres: Critere[];
 };
+
+/** Un critère de la note : 0 faible, 3 fort ; null quand la donnée n'est pas publiée. */
+export type Critere = { nom: string; niveau: 0 | 1 | 2 | 3 | null };
 
 /** Ce que le navigateur reçoit avant la signature du mandat : ni nom, ni SIREN, ni ville. */
 export type RepreneurMasque = {
@@ -66,6 +71,7 @@ export type RepreneurMasque = {
   raison: string;
   details: string[];
   reserves?: string[];
+  criteres?: Critere[];
 };
 
 /** Ce que le vendeur reçoit une fois le mandat signé. */
@@ -101,6 +107,7 @@ export type EvenementRepreneurs =
   | { type: "passage"; profil: ProfilRepreneur; libelle: string; candidats: CandidatMasque[]; echec?: boolean }
   | { type: "repreneurs"; liste: RepreneurMasque[]; examinees: number }
   | { type: "indices"; rang: number; genres: ("rachat" | "croissance" | "alerte")[]; pages: number }
+  | { type: "interet"; rang: number; texte: string }
   | { type: "bilan"; rang: number; annee: number; titre?: string; lignes: string[]; reserves: string[] }
   | { type: "reveles"; liste: RepreneurRevele[]; examinees: number }
   | { type: "erreur"; message: string }

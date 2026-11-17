@@ -1,6 +1,6 @@
 import { chercherParActivite, chercherSociete, compterMetier } from "./registre";
 import { chercherRachats, direRachat, type Rachat } from "./acheteurs";
-import type { CandidatMasque, Metier, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
+import type { Critere, CandidatMasque, Metier, ProfilRepreneur, Repreneur, RepreneurMasque, RepreneurRevele, Societe } from "./types";
 
 /**
  * Recherche sans IA : les sociétés des activités retenues, plus grandes que le vendeur,
@@ -60,6 +60,10 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
   const atouts: { texte: string; force: number }[] = [];
   const reserves: string[] = [];
   const dire = (force: number, texte: string) => atouts.push({ texte, force });
+  // Pour expliquer la note : ce que chaque critère a pesé.
+  let taille: Critere["niveau"] = 1;
+  let comptesPts = 0;
+  let implantation = 0;
 
   const rapport = rapportDeTaille(vendeur, candidat);
   if (rapport !== undefined) {
@@ -70,6 +74,7 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     else if (rapport > 10 && rapport <= 30) score += 9;
     else if (rapport > 30 && rapport <= 100) score += 5;
     else score += 3;
+    taille = rapport >= 3 && rapport <= 10 ? 3 : (rapport >= 2 && rapport < 3) || (rapport > 10 && rapport <= 30) ? 2 : 1;
     dire(rapport >= 2 && rapport <= 10 ? 3 : 2, fois >= 2 ? `Environ ${fois} fois votre taille` : "Un peu plus grande que vous");
   } else {
     dire(1, "Plus grande que vous");
@@ -81,12 +86,15 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     const marge = dernier.chiffreAffaires && dernier.chiffreAffaires > 0 ? dernier.resultat / dernier.chiffreAffaires : undefined;
     if (dernier.resultat <= 0) {
       score -= 14;
+      comptesPts -= 14;
       reserves.push(`Résultat négatif publié en ${dernier.annee}`);
     } else if (marge !== undefined) {
       score += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
+      comptesPts += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
       dire(marge >= 0.08 ? 5 : 4, `Rentable : ${pourcent(marge * 100)} % de marge nette en ${dernier.annee}`);
     } else {
       score += 6;
+      comptesPts += 6;
       dire(4, `Rentable : résultat positif publié en ${dernier.annee}`);
     }
   }
@@ -94,6 +102,7 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
   const caVendeur = vendeur.finances.at(-1)?.chiffreAffaires;
   if (dernier?.chiffreAffaires && caVendeur && dernier.chiffreAffaires >= 3 * caVendeur) {
     score += 6;
+    comptesPts += 6;
     dire(2, "Chiffre d'affaires au moins trois fois supérieur au vôtre");
   }
 
@@ -103,21 +112,25 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     const evolution = ventes.at(-1)!.chiffreAffaires! / ventes[0].chiffreAffaires! - 1;
     if (evolution >= 0.1) {
       score += 5;
+      comptesPts += 5;
       dire(6, `En croissance : chiffre d'affaires en hausse de ${Math.round(evolution * 100)} % depuis ${ventes[0].annee}`);
     } else if (evolution <= -0.1) {
       score -= 5;
+      comptesPts -= 5;
       reserves.push(`Chiffre d'affaires en baisse de ${Math.round(-evolution * 100)} % depuis ${ventes[0].annee}`);
     }
   }
 
   if (candidat.etablissements && candidat.etablissements >= 2) {
     score += candidat.etablissements >= 5 ? 5 : 3;
+    implantation += candidat.etablissements >= 5 ? 5 : 3;
     dire(candidat.etablissements >= 5 ? 5 : 3, `Déjà ${candidat.etablissements} établissements : elle sait en intégrer un de plus`);
   }
 
   const age = candidat.anneeCreation ? annee - candidat.anneeCreation : 0;
   if (age >= 10) {
     score += Math.min(5, 2 + Math.floor(age / 10));
+    implantation += Math.min(5, 2 + Math.floor(age / 10));
     dire(1, age >= 25 ? `Installée depuis ${age} ans` : "Installée depuis plus de dix ans");
   }
 
@@ -125,7 +138,14 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
 
   // Tri stable : à force égale, l'ordre d'écriture est gardé.
   const raisons = atouts.map((a, i) => ({ ...a, i })).sort((x, y) => y.force - x.force || x.i - y.i).map((a) => a.texte);
-  return { societe: candidat, profil, metier, score: Math.max(1, Math.min(score, 97)), raisons, reserves };
+  const criteres: Critere[] = [
+    { nom: "Métier", niveau: voisin ? 2 : 3 },
+    { nom: "Proximité", niveau: profil === "departement" ? 3 : profil === "region" ? 2 : 1 },
+    { nom: "Taille", niveau: taille },
+    { nom: "Comptes", niveau: !dernier ? null : comptesPts >= 12 ? 3 : comptesPts >= 6 ? 2 : comptesPts > 0 ? 1 : 0 },
+    { nom: "Implantation", niveau: implantation >= 8 ? 3 : implantation >= 5 ? 2 : implantation >= 2 ? 1 : 0 },
+  ];
+  return { societe: candidat, profil, metier, score: Math.max(1, Math.min(score, 97)), raisons, reserves, criteres };
 }
 
 /** Deux repreneurs ne portent pas le même titre : le suivant met en avant sa raison suivante, s'il en a une autre. */
@@ -164,7 +184,7 @@ export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, 
 /** Classe les candidats de plusieurs passages, sans doublon, du meilleur au moins bon. */
 /** Une société qui a déjà racheté un fonds du métier a montré qu'elle achète : c'est sa première raison, et elle gagne des points. */
 export function avecRachat(r: Repreneur, rachat?: Rachat): Repreneur {
-  return rachat ? { ...r, score: Math.min(97, r.score + 12), raisons: [direRachat(rachat), ...r.raisons] } : r;
+  return rachat ? { ...r, score: Math.min(97, r.score + 12), raisons: [direRachat(rachat), ...r.raisons], criteres: [...r.criteres, { nom: "A déjà racheté", niveau: 3 }] } : r;
 }
 
 export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metier?: Metier; societes: Societe[] }[], maximum = 10, rachats: Map<string, Rachat> = new Map()): Repreneur[] {
@@ -194,6 +214,7 @@ export function masquer(repreneurs: Repreneur[]): RepreneurMasque[] {
     raison: r.raisons[0],
     details: r.raisons.slice(1),
     reserves: r.reserves,
+    criteres: r.criteres,
   }));
 }
 

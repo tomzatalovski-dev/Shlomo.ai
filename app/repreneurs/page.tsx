@@ -63,6 +63,7 @@ function Repreneurs() {
   const [reveles, setReveles] = useState<RepreneurRevele[] | null>(null);
   const [examinees, setExaminees] = useState(0);
   const [indices, setIndices] = useState<Record<number, ("rachat" | "croissance" | "alerte")[]>>({});
+  const [interets, setInterets] = useState<Record<number, string>>({});
   const [bilans, setBilans] = useState<Record<number, Extract<EvenementRepreneurs, { type: "bilan" }>>>({});
   const [veille, setVeille] = useState<"non" | "encours" | "faite">("non");
   const [erreur, setErreur] = useState<string | null>(null);
@@ -81,6 +82,9 @@ function Repreneurs() {
     } else if (e.type === "journal") {
       setLignes((l) => [...l, { texte: e.texte, etat: e.etat }]);
       await attendre(450 * rythme);
+    } else if (e.type === "interet") {
+      setInterets((x) => ({ ...x, [e.rang]: e.texte }));
+      await attendre(500 * rythme);
     } else if (e.type === "bilan") {
       setBilans((b) => ({ ...b, [e.rang]: e }));
       await attendre(700 * rythme);
@@ -120,7 +124,7 @@ function Repreneurs() {
   });
 
   useEffect(() => {
-    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${suite}${signe ? "&mandat=test" : ""}`);
+    const flux = new EventSource(`/api/repreneurs?siren=${encodeURIComponent(siren)}${suite}${site ? `&site=${encodeURIComponent(site)}` : ""}${signe ? "&mandat=test" : ""}`);
     let termine = false;
     flux.onmessage = (m) => {
       const e = JSON.parse(m.data) as EvenementRepreneurs;
@@ -135,11 +139,13 @@ function Repreneurs() {
       if (!termine) jouer({ type: "erreur", message: "La connexion s'est interrompue. Rechargez la page pour relancer la recherche." });
     };
     return () => flux.close();
-  }, [siren, suite, signe, jouer]);
+  }, [siren, suite, site, signe, jouer]);
 
-  // Une fois la veille lue, un repreneur en difficulté passe derrière les deux autres ; un acheteur déjà actif passe devant.
-  const poids = (rang: number) => (veille !== "faite" ? 1 : indices[rang]?.includes("alerte") ? 2 : indices[rang]?.includes("rachat") ? 0 : 1);
-  const premiers = (liste?.slice(0, 3) ?? []).slice().sort((a, b) => poids(a.rang) - poids(b.rang) || a.rang - b.rang);
+  // La note affichée tient compte de ce que le web a montré, et l'ordre suit la note : un signal de difficulté coûte dix points,
+  // un rachat déjà annoncé en rapporte six. Chaque correction est écrite sur la carte.
+  const correction = (rang: number) => (veille !== "faite" ? 0 : (indices[rang]?.includes("alerte") ? -10 : 0) + (indices[rang]?.includes("rachat") ? 6 : 0));
+  const noteDe = (r: { rang: number; score: number }) => Math.max(1, Math.min(97, r.score + correction(r.rang)));
+  const premiers = (liste?.slice(0, 3) ?? []).slice().sort((x, y) => noteDe(y) - noteDe(x) || x.rang - y.rang);
   const suivants = liste?.slice(3) ?? [];
   const n = liste?.length ?? 0;
   const aDesNoms = Boolean(reveles && reveles.length > 0);
@@ -168,7 +174,7 @@ function Repreneurs() {
       <div className="tete">
         <span className="rang-net">{place}</span>
         <span className="profil-net">{r.profil}</span>
-        <span className="score-net"><b><Compteur valeur={r.score} duree={1200} format={(v) => String(Math.round(v))} /></b> sur 100</span>
+        <span className="score-net"><b><Compteur valeur={noteDe(r)} duree={1200} format={(v) => String(Math.round(v))} /></b> sur 100</span>
       </div>
       <h2>{bilans[r.rang]?.titre ?? r.raison}.</h2>
       {(bilans[r.rang]?.titre ? [r.raison, ...r.details] : r.details).length > 0 && <p className="details-net">{(bilans[r.rang]?.titre ? [r.raison, ...r.details] : r.details).join(" · ")}</p>}
@@ -180,6 +186,18 @@ function Repreneurs() {
       {indices[r.rang]?.map((g) => <p key={g} className={`indice-net ${g}`}>{INDICE[g]}</p>)}
       {veille === "faite" && indices[r.rang]?.length === 0 && <p className="indice-net">Rien de notable annoncé publiquement.</p>}
       {r.reserves?.map((x) => <p key={x} className="indice-net alerte">À vérifier : {x.charAt(0).toLowerCase() + x.slice(1)}</p>)}
+      {interets[r.rang] && <p className="interet-net"><span>Ce qu'elle y gagnerait, selon Shlomo</span>{interets[r.rang]}</p>}
+      {r.criteres && r.criteres.length > 0 && (
+        <ul className="criteres-net" aria-label="Ce qui fait la note">
+          {r.criteres.map((c) => (
+            <li key={c.nom}>
+              <span>{c.nom}</span>
+              {c.niveau === null ? <small>non publiés</small> : <i aria-label={`${c.niveau} sur 3`}>{[1, 2, 3].map((n) => <b key={n} className={n <= (c.niveau ?? 0) ? "plein" : undefined} />)}</i>}
+            </li>
+          ))}
+          {correction(r.rang) !== 0 && <li><span>{correction(r.rang) < 0 ? "Signal de difficulté" : "Rachat annoncé"}</span><small>{correction(r.rang) > 0 ? "+" : "−"}{Math.abs(correction(r.rang))} points</small></li>}
+        </ul>
+      )}
       <p className="pied-net"><span className="masque">Nom masqué</span>{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>
     </article>
   );

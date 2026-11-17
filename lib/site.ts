@@ -102,6 +102,16 @@ function balise(html: string, motif: RegExp): string | undefined {
   return v ? v.slice(0, 300) : undefined;
 }
 
+/** Texte d'une page publique, pour relire un fait à sa source. Mêmes garde-fous que la lecture d'un site. Null si illisible. */
+export async function lireTextePage(adresse: string): Promise<string | null> {
+  try {
+    const page = await lirePage(adresse);
+    return page ? texteBrut(page) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Lit la page d'accueil et les mentions légales d'un site. Renvoie null si rien n'est lisible. */
 export async function lireSite(domaine: string): Promise<LectureSite | null> {
   const racine = `https://${domaine}/`;

@@ -1,6 +1,8 @@
 import { analyserSaisie } from "@/lib/saisie";
 import { chercherSociete, RegistreIndisponible } from "@/lib/registre";
-import { masquer, trouverRepreneurs } from "@/lib/repreneurs";
+import { libelleProfil, masquer, trouverRepreneurs } from "@/lib/repreneurs";
+import { ecrireInteret } from "@/lib/interet";
+import { lireSite } from "@/lib/site";
 import { mesurer } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { veiller } from "@/lib/veille";
@@ -99,13 +101,29 @@ export async function GET(requete: Request) {
           dire({ type: "encours", texte: "Lecture de ce que vos premiers repreneurs ont annoncé publiquement" });
           const premiers = repreneurs.slice(0, 3);
           let pagesLues = 0;
+          // Ce que le vendeur fait, pour écrire ce que chaque repreneur y gagnerait : ses métiers, et son site s'il en a donné un.
+          const siteSaisi = analyserSaisie(parametres.get("site") ?? "");
+          const lecture = siteSaisi.type === "site" ? await lireSite(siteSaisi.domaine).catch(() => null) : null;
+          const contexte = { metiers: metiers.filter((m) => m.lien === "meme" && m.libelle).map((m) => m.libelle), site: lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined };
           await Promise.all(
             premiers.map(async (r, i) => {
               const veille = await veiller({ nom: r.societe.nom, siren: r.societe.siren, ville: r.societe.ville });
-              if (!veille) return;
-              pagesLues += veille.pages.length;
-              const genres = [...new Set(veille.signaux.map((x) => x.genre).filter((g): g is "rachat" | "croissance" | "alerte" => Boolean(g)))];
-              dire({ type: "indices", rang: i + 1, genres, pages: veille.pages.length });
+              if (veille) {
+                pagesLues += veille.pages.length;
+                const genres = [...new Set(veille.signaux.map((x) => x.genre).filter((g): g is "rachat" | "croissance" | "alerte" => Boolean(g)))];
+                dire({ type: "indices", rang: i + 1, genres, pages: veille.pages.length });
+              }
+              // Une phrase d'analyse, sans rien qui nomme le repreneur ; rien si elle n'est pas propre à ces deux sociétés.
+              const interet = await ecrireInteret(contexte, {
+                nom: r.societe.nom,
+                ville: r.societe.ville,
+                activite: r.metier?.libelle || undefined,
+                lien: libelleProfil(r.profil, r.metier),
+                effectif: r.societe.effectif,
+                raisons: r.raisons,
+                annonces: (veille?.signaux ?? []).filter((x) => x.genre !== "alerte").map((x) => x.texte),
+              });
+              if (interet) dire({ type: "interet", rang: i + 1, texte: interet });
             }),
           );
           if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${premiers.length > 1 ? `${premiers.length} premiers repreneurs` : "premier repreneur"}`, etat: "ok" });
