@@ -732,3 +732,4 @@ small { line-height: 1.45; }
 .criteres-net.fins .critere { display: inline-flex; align-items: center; gap: 6px; color: var(--gris); }
 .criteres-net.fins i b { width: 9px; height: 5px; }
 .criteres-net.fins small { font-size: 12px; }
+.flux-ligne .quoi small.alerte { color: var(--ambre); }
