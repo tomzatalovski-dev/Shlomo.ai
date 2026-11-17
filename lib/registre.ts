@@ -155,8 +155,8 @@ export type FiltreActivite = {
 };
 
 /** Liste les sociétés actives d'un même code d'activité, dans une zone et des tranches d'effectif données. */
-/** Formes juridiques des sociétés qui peuvent en racheter une autre (nomenclature INSEE). */
-const SOCIETES_ACHETEUSES = "5202,5306,5308,5485,5499,5585,5599,5685,5699,5710,5785,5800";
+/** Formes juridiques des sociétés commerciales et d'exercice libéral (nomenclature INSEE). */
+export const SOCIETES_ACHETEUSES = "5202,5306,5308,5485,5499,5585,5599,5685,5699,5710,5785,5800";
 
 export async function chercherParActivite(filtre: FiltreActivite): Promise<Societe[]> {
   const parametres: Record<string, string> = {
@@ -187,4 +187,18 @@ export async function chercherParNom(nom: string, codePostal?: string): Promise<
   if (codePostal) parametres.code_postal = codePostal;
   const reponse = await appeler(parametres);
   return (reponse?.resultats ?? []).map(mapperSociete);
+}
+
+/** Résultats bruts du registre pour une requête donnée, deux pages au plus. Sert aux lectures qui ont besoin de champs que la fiche ne garde pas. */
+export async function interrogerRegistre(parametres: Record<string, string>, pages = 1): Promise<{ resultats: Record<string, unknown>[]; total: number }> {
+  const resultats: Record<string, unknown>[] = [];
+  let total = 0;
+  for (let page = 1; page <= Math.min(pages, 4); page++) {
+    const reponse = await appeler({ ...parametres, page: String(page) });
+    if (!reponse) break;
+    total = reponse.total;
+    resultats.push(...(reponse.resultats as Record<string, unknown>[]));
+    if (resultats.length >= total) break;
+  }
+  return { resultats, total };
 }

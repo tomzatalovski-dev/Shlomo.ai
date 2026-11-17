@@ -734,3 +734,9 @@ small { line-height: 1.45; }
 .criteres-net.fins small { font-size: 12px; }
 .flux-ligne .quoi small.alerte { color: var(--ambre); }
 .flux-ligne .quoi small.interet-fin { color: var(--encre); margin-top: 8px; }
+
+/* Liste de travail des fondateurs : filtres sur une ligne, sobres. */
+.filtres { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; }
+.filtres label { display: grid; gap: 6px; font-size: 13px; color: var(--gris); }
+.filtres input, .filtres select { font: inherit; font-size: 15px; color: var(--encre); background: var(--carte, #fff); border: 1px solid var(--contour); border-radius: 12px; padding: 10px 12px; min-width: 150px; }
+.flux-ligne .note.mot { font-size: 14px; font-weight: 500; }
