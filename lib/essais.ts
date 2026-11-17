@@ -27,7 +27,8 @@ export const CAS: Cas[] = [
   { siren: "793842634", quoi: "Studio d'effets visuels, 70 personnes d'après son site", attendu: "cessible", taille: 70, minimum: 5 },
   { siren: "443855085", quoi: "Boulangerie, 10 à 19 salariés, Lyon", attendu: "cessible", minimum: 5 },
   { siren: "794791319", quoi: "Plomberie, 6 à 9 salariés, Gironde", attendu: "cessible", minimum: 5 },
-  { siren: "383485356", quoi: "Cabinet d'expertise comptable, 20 à 49 salariés", attendu: "cessible", minimum: 3 },
+  // Presque tous les cabinets ont demandé au registre à ne pas être démarchés : on les respecte, la liste est donc courte.
+  { siren: "383485356", quoi: "Cabinet d'expertise comptable (métier où presque tous refusent le démarchage)", attendu: "cessible", minimum: 1 },
   { siren: "878358886", quoi: "Restauration rapide, 100 à 199 salariés", attendu: "cessible", minimum: 3 },
   { siren: "399228055", quoi: "Société civile immobilière", attendu: "cessible" },
 ];
