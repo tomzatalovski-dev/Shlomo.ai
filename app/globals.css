@@ -718,3 +718,10 @@ small { line-height: 1.45; }
 .criteres-net i b { width: 12px; height: 6px; border-radius: 2px; background: rgba(19, 28, 51, 0.1); }
 .criteres-net i b.plein { background: #6b7280; }
 .criteres-net small { font-size: 13px; color: var(--encre); }
+
+/* La grande carte héritait d'un ancien style « .grand » (gras, serré) : elle reprend la graisse et l'approche normales, seuls son titre et sa note restent forts. */
+.repreneur-net.grand { font-size: 16px; font-weight: 400; letter-spacing: normal; line-height: 1.5; }
+.repreneur-net .tete { flex-wrap: nowrap; }
+.repreneur-net .profil-net { min-width: 0; }
+.repreneur-net .score-net { flex: none; }
+.repreneur-net h2 { font-weight: 600; }
