@@ -7,9 +7,9 @@
 const FORMES: Record<string, string> = {
   "1000": "Entrepreneur individuel",
   "5202": "SNC", "5306": "Société en commandite simple", "5308": "Société en commandite par actions",
-  "5410": "SARL", "5498": "EURL", "5499": "SARL",
+  "5410": "SARL", "5485": "SELARL", "5499": "SARL",
   "5505": "SA", "5510": "SA", "5515": "SA", "5599": "SA", "5699": "SA à directoire",
-  "5710": "SAS", "5720": "SASU", "5800": "Société européenne",
+  "5710": "SAS", "5785": "SELAS", "5800": "Société européenne",
   "6540": "SCI", "6599": "Société civile",
   "6220": "Groupement d'intérêt économique",
   "9210": "Association", "9220": "Association loi 1901", "9221": "Association d'insertion", "9222": "Association intermédiaire",

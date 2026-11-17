@@ -155,11 +155,17 @@ export type FiltreActivite = {
 };
 
 /** Liste les sociétés actives d'un même code d'activité, dans une zone et des tranches d'effectif données. */
+/** Formes juridiques des sociétés qui peuvent en racheter une autre (nomenclature INSEE). */
+const SOCIETES_ACHETEUSES = "5202,5306,5308,5485,5499,5585,5599,5685,5699,5710,5785,5800";
+
 export async function chercherParActivite(filtre: FiltreActivite): Promise<Societe[]> {
   const parametres: Record<string, string> = {
     activite_principale: filtre.codeActivite,
     tranche_effectif_salarie: filtre.tranches.join(","),
     etat_administratif: "A",
+    // Seules des sociétés commerciales (et d'exercice libéral) peuvent racheter : sans ce filtre, associations et
+    // organismes occupent les premières places de certains métiers et il ne reste presque personne après tri.
+    nature_juridique: SOCIETES_ACHETEUSES,
     per_page: "25",
   };
   if (filtre.departement) parametres.departement = filtre.departement;

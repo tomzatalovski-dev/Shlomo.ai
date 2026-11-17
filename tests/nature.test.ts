@@ -4,7 +4,7 @@ import { mapperSociete } from "@/lib/registre";
 
 describe("nature juridique", () => {
   it("laisse passer les sociétés commerciales et civiles", () => {
-    for (const c of ["5710", "5499", "5599", "6540", "5720"]) expect(natureDe(c).horsParcours).toBeUndefined();
+    for (const c of ["5710", "5499", "5599", "6540", "5785"]) expect(natureDe(c).horsParcours).toBeUndefined();
     expect(natureDe("5710").libelle).toBe("SAS");
   });
 
@@ -19,7 +19,7 @@ describe("nature juridique", () => {
   });
 
   it("ne montre jamais un code brut", () => {
-    for (const c of ["5485", "6316", "9900", "2110"]) expect(natureDe(c).libelle).not.toMatch(/\d/);
+    for (const c of ["5458", "6316", "9900", "2110"]) expect(natureDe(c).libelle).not.toMatch(/\d/);
     expect(mapperSociete({ siren: "779982453", nature_juridique: "9260" }).formeJuridique).toBe("Association de droit local (Alsace-Moselle)");
     expect(mapperSociete({ siren: "779982453", nature_juridique: "9260" }).horsParcours).toBeTruthy();
   });
