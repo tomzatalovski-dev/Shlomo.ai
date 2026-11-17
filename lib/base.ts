@@ -360,6 +360,11 @@ export async function contactVendeur(cle: string, jetonAccord: string): Promise<
   return appeler("contact_vendeur", { p_cle: cle, p_jeton_accord: jetonAccord });
 }
 
+/** Dit si la clé posée sur le serveur est bien celle de la base, sans jamais la rendre. */
+export async function cleServeurValide(cle: string): Promise<boolean> {
+  return (await appeler<boolean | null>("cle_serveur_valide", { p_cle: cle })) === true;
+}
+
 /** Lecture réservée au serveur : les dossiers rattachés à une adresse, pour renvoyer un lien perdu. */
 export async function liensParCourriel(cle: string, courriel: string): Promise<{ nom: string; jeton: string }[] | null> {
   return appeler("liens_par_courriel", { p_cle: cle, p_courriel: courriel });
