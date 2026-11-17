@@ -36,7 +36,8 @@ export function interetAcceptable(phrase: string, r: ContexteRepreneur, elements
 }
 
 export async function ecrireInteret(vendeur: ContexteVendeur, repreneur: ContexteRepreneur): Promise<string | null> {
-  if (vendeur.metiers.length === 0 && !vendeur.site) return null;
+  // Sans le site du vendeur, on ne sait de lui que son code d'activité : toute précision viendrait d'ailleurs, donc pas de phrase.
+  if (!vendeur.site || vendeur.site.trim().length < 200) return null;
   const elements = JSON.stringify({
     societe_a_vendre: { metiers: vendeur.metiers, ce_que_dit_son_site: vendeur.site?.slice(0, 1800) },
     repreneur_possible: { activite: repreneur.activite, lien_avec_le_metier: repreneur.lien, effectif: repreneur.effectif, constats: repreneur.raisons, ce_qu_il_a_annonce_publiquement: repreneur.annonces, ce_que_dit_son_site: repreneur.site?.slice(0, 1500) },

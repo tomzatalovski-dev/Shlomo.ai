@@ -136,10 +136,11 @@ export async function GET(requete: Request) {
           await Promise.all(premiers.map((r, i) => etudier(r, i + 1, true)));
           dire({ type: "veille_faite" });
           // Les suivants, par quatre, pour ne pas saturer le modèle.
-          const suivants = repreneurs.slice(3);
+          // Les suivants ne sont étudiés que si le site du vendeur est connu : sans lui, aucune phrase ne peut être écrite.
+          const suivants = contexte.site && contexte.site.trim().length >= 200 ? repreneurs.slice(3) : [];
           if (suivants.length) dire({ type: "encours", texte: "Ce que chacun des suivants gagnerait à vous racheter" });
           for (let d = 0; d < suivants.length; d += 4) await Promise.all(suivants.slice(d, d + 4).map((r, i) => etudier(r, 4 + d + i, false)));
-          if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${repreneurs.length > 1 ? `${repreneurs.length} repreneurs` : "repreneur"}`, etat: "ok" });
+          if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${3 + suivants.length} repreneurs les mieux classés`, etat: "ok" });
         }
         // Lecture du dernier bilan des trois premiers : a-t-il de quoi payer ? Montants arrondis, rien qui nomme la société.
         if (bilanActif() && repreneurs.length > 0) {
