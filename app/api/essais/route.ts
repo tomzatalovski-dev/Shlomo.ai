@@ -3,6 +3,8 @@ import { CAS, controlerFiche, controlerRepreneurs } from "@/lib/essais";
 import { chercherSociete } from "@/lib/registre";
 import { trouverRepreneurs } from "@/lib/repreneurs";
 import { avecTaille } from "@/lib/taille";
+import { chercherConcurrents } from "@/lib/concurrents";
+import { lireSite } from "@/lib/site";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +14,16 @@ export const maxDuration = 60;
 export async function GET(requete: Request) {
   const parametres = new URL(requete.url).searchParams;
   if ((await lirePoste(parametres.get("c") ?? "")) === null) return Response.json({ erreur: "Accès réservé." }, { status: 403 });
+  // Diagnostic des concurrents directs d'un vendeur : ce que le web a nommé, ce que le registre en dit. Trois recherches web.
+  const diagnostic = parametres.get("concurrents");
+  if (diagnostic && /^\d{9}$/.test(diagnostic)) {
+    const vendeur = await chercherSociete(diagnostic);
+    if (!vendeur) return Response.json({ erreur: "Société inconnue." }, { status: 404 });
+    const domaine = parametres.get("site") ?? "";
+    const lecture = /^[a-z0-9.-]+\.[a-z]{2,}$/.test(domaine) ? await lireSite(domaine).catch(() => null) : null;
+    const trouves = await chercherConcurrents(vendeur, lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined, []);
+    return Response.json({ vendeur: `${vendeur.nom} · ${vendeur.effectif}`, metier: trouves?.metier, detail: trouves?.detail ?? null });
+  }
   const i = Number(parametres.get("i"));
   const cas = CAS[i];
   if (!Number.isInteger(i) || !cas) return Response.json({ cas: CAS.length });

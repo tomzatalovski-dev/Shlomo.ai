@@ -62,24 +62,27 @@ export function choisir(cherche: string, candidates: Societe[], vendeur: Societe
  * Cherche les concurrents directs sur le web et les retrouve au registre. Null sans clé d'IA ou si la recherche échoue.
  * Rend aussi ce que la recherche a fait, pour le dire au vendeur.
  */
-export async function chercherConcurrents(vendeur: Societe, texteSite: string | undefined, metiers: string[]): Promise<{ concurrents: Concurrent[]; societes: Societe[]; nommes: number; metier?: string } | null> {
+export async function chercherConcurrents(vendeur: Societe, texteSite: string | undefined, metiers: string[]): Promise<{ concurrents: Concurrent[]; societes: Societe[]; nommes: number; metier?: string; detail: { nom: string; source: string; au_registre: string[]; retenu?: string }[] } | null> {
   try {
     const contenu = `<societe>${JSON.stringify({ nom: vendeur.nom, ville: vendeur.ville ?? null, activites_declarees: metiers })}</societe>\n<site>${(texteSite ?? "").slice(0, 3000)}</site>`;
     const trace = await rechercher(CONSIGNE, contenu, 3).catch(() => rechercher(CONSIGNE, contenu, 2));
     const objet = trace?.texte?.match(/\{[\s\S]*\}/);
-    if (!trace || !objet) return trace ? { concurrents: [], societes: [], nommes: 0 } : null;
+    if (!trace || !objet) return trace ? { concurrents: [], societes: [], nommes: 0, detail: [] } : null;
     const propre = nettoyerConcurrents(JSON.parse(objet[0]), trace.pages);
     const concurrents: Concurrent[] = [];
     const societes: Societe[] = [];
     // L'un après l'autre : le registre limite le nombre d'appels par seconde.
+    const detail: { nom: string; source: string; au_registre: string[]; retenu?: string }[] = [];
     for (const { nom, source } of propre.noms) {
-      const trouvee = choisir(nom, await chercherParNom(nom).catch(() => []), vendeur);
+      const candidates = await chercherParNom(nom).catch(() => []);
+      const trouvee = choisir(nom, candidates, vendeur);
+      detail.push({ nom, source, au_registre: candidates.slice(0, 5).map((c) => `${c.nom} · ${c.effectif ?? "effectif inconnu"}${c.active ? "" : " · cessée"}${c.refuseProspection ? " · refuse le démarchage" : ""}`), retenu: trouvee?.nom });
       if (trouvee && !concurrents.some((c) => c.siren === trouvee.siren)) {
         concurrents.push({ siren: trouvee.siren, source });
         societes.push(trouvee);
       }
     }
-    return { concurrents, societes, nommes: propre.noms.length, metier: propre.metier };
+    return { concurrents, societes, nommes: propre.noms.length, metier: propre.metier, detail };
   } catch {
     return null;
   }
