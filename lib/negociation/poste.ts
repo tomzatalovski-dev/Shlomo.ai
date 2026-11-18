@@ -30,6 +30,7 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
   const lui = d.presentations.find((p) => p.siren === siren && !p.exclu);
   if (!lui) return null;
   const autres = d.presentations.filter((p) => !p.exclu && p.siren !== siren);
+  const derniere = derniereOffre(lui);
   return {
     vendeur: { nom: d.nom, ville: d.fiche?.ville ?? "", site: d.fiche?.site ?? undefined },
     activite: d.fiche?.activite ?? "",
@@ -45,6 +46,8 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
     // Seuls les créneaux encore libres sont proposés, et seulement quand le nom est déjà communiqué : avant, il n'y a pas de rencontre avec le cédant.
     creneaux: lui.accord && lui.revelation === "autorisee" ? (d.creneaux ?? []).filter((c) => !d.presentations.some((p) => p.siren !== siren && p.rendez_vous === c)).map(direCreneau) : [],
     offresDuRepreneur: (lui.offres ?? []).map((o) => o.prix),
+    ...(lui.rendez_vous && lui.revelation === "autorisee" ? { rendezVousPris: direCreneau(lui.rendez_vous) } : {}),
+    ...(derniere ? { derniereOffre: derniere } : {}),
   };
 }
 
@@ -54,4 +57,19 @@ export function conversation(p: RepreneurPoste): Tour[] {
   if (p.message) tours.push({ de: "shlomo", texte: p.message });
   for (const e of p.echanges) if (e.etat === "recu" || e.etat === "envoye") tours.push({ de: e.de, texte: e.texte });
   return tours;
+}
+
+const REPONSES: Record<string, string> = { acceptee: "le cédant l'a acceptée", refusee: "le cédant l'a refusée", a_ameliorer: "le cédant demande une meilleure offre" };
+
+/** La dernière offre du repreneur telle que la base la garde, avec la réponse du cédant dite en clair. */
+export function derniereOffre(p: RepreneurPoste): Dossier["derniereOffre"] {
+  const o = [...(p.offres ?? [])].sort((a, b) => a.deposee_le.localeCompare(b.deposee_le)).at(-1);
+  if (!o) return undefined;
+  return {
+    prix: o.prix,
+    ...(o.financement ? { financement: o.financement } : {}),
+    ...(o.calendrier ? { calendrier: o.calendrier } : {}),
+    ...(o.conditions ? { conditions: o.conditions } : {}),
+    ...(o.reponse ? { reponse: REPONSES[o.reponse] } : {}),
+  };
 }

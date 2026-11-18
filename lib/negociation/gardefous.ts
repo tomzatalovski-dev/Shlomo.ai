@@ -22,6 +22,10 @@ export type Dossier = {
   creneaux?: string[];
   /** Montants des offres que ce repreneur a lui-même déposées : il est permis de les citer. */
   offresDuRepreneur?: number[];
+  /** Rendez-vous que ce repreneur a déjà choisi, en clair. Le négociateur ne lui redemande pas de choisir. */
+  rendezVousPris?: string;
+  /** Sa dernière offre, ce qu'il y a écrit, et la réponse du cédant si elle est donnée. Le négociateur ne redemande pas ce qui y figure. */
+  derniereOffre?: { prix: number; financement?: string; calendrier?: string; conditions?: string; reponse?: string };
 };
 
 export type Faute = { regle: "identite" | "prix" | "concurrence" | "echeance" | "civilite" | "promesse" | "longueur"; grave: boolean; detail: string };

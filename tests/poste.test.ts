@@ -56,3 +56,12 @@ describe("conversation réelle", () => {
     expect(tours.map((t) => t.texte)).toEqual(["premier", "m1", "m3", "m4"]);
   });
 });
+
+import { derniereOffre } from "@/lib/negociation/poste";
+describe("ce que le négociateur sait déjà", () => {
+  it("lit la dernière offre et la réponse du cédant", () => {
+    const p = { offres: [{ id: 1, prix: 400000, deposee_le: "2026-11-01" }, { id: 2, prix: 520000, financement: "Fonds propres", deposee_le: "2026-11-18", reponse: "a_ameliorer" }] } as never;
+    expect(derniereOffre(p)).toEqual({ prix: 520000, financement: "Fonds propres", reponse: "le cédant demande une meilleure offre" });
+    expect(derniereOffre({ offres: [] } as never)).toBeUndefined();
+  });
+});

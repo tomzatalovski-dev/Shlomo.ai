@@ -63,6 +63,11 @@ function vue(dossier: Dossier) {
     date_de_remise_des_offres: dossier.echeance,
     disponibilites_du_cedant_pour_une_rencontre: dossier.creneaux?.length ? dossier.creneaux : "aucune indiquée : ne propose aucun horaire précis, demande au repreneur ses disponibilités",
     offres_deposees_par_ce_repreneur: dossier.offresDuRepreneur?.length ? dossier.offresDuRepreneur.map((m) => `${m.toLocaleString("fr-FR")} €`) : [],
+    rendez_vous_deja_choisi_par_ce_repreneur: dossier.rendezVousPris ?? "aucun",
+    sa_derniere_offre: dossier.derniereOffre
+      ? { ...dossier.derniereOffre, prix: `${dossier.derniereOffre.prix.toLocaleString("fr-FR")} €`, reponse_du_cedant: dossier.derniereOffre.reponse ?? "pas encore donnée" }
+      : "aucune",
+    a_ne_pas_redemander: "ce qui figure déjà dans le dossier : un rendez-vous déjà choisi se confirme, il ne se repropose pas ; un financement, un calendrier ou des conditions déjà écrits dans son offre ne se redemandent pas ; une réponse du cédant déjà donnée se dit telle quelle",
   };
 }
 

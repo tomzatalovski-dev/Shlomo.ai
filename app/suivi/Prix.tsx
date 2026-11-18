@@ -38,7 +38,7 @@ export function Prix({ jeton, validee, repere }: { jeton: string; validee: { bas
 
   return (
     <div className="carte">
-      <p className="message"><b>Une seule chose à faire : fixer votre fourchette de prix.</b> Tant qu'elle manque, Shlomo ne donne aucun montant aux repreneurs.</p>
+      <p className="message"><b>Fixez votre fourchette de prix.</b> Tant qu'elle manque, Shlomo ne donne aucun montant aux repreneurs.</p>
       {repere && <p className="source">Repère tiré de vos comptes publiés : {euros(repere.bas)} à {euros(repere.haut)} (résultat net moyen multiplié par 4 à 8). Ce n'est pas une évaluation ; vous restez libre du montant.</p>}
       <div className="deux-champs">
         <div className="champ"><label htmlFor="prix-bas">Prix bas annoncé, en euros</label><input id="prix-bas" inputMode="numeric" value={bas} onChange={(e) => setBas(e.target.value)} placeholder="400000" /></div>
