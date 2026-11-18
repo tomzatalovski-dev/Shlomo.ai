@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Evenement, Metier, Proposition, ResumeIA, Societe } from "@/lib/types";
 import { ecartNet } from "@/lib/taille";
+import { societesQuiDirigent } from "@/lib/filiale";
 import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/scene";
 import { MULTIPLE_BAS, MULTIPLE_HAUT, estimer, fourchette } from "@/lib/estimation";
 
@@ -32,6 +33,7 @@ function Dossier() {
   const [besoinSiren, setBesoinSiren] = useState<string | null>(null);
   const [hors, setHors] = useState<string | null>(null);
   const [auRegistre, setAuRegistre] = useState(false);
+  const [decide, setDecide] = useState<"moi" | "groupe" | null>(null);
   const [propositions, setPropositions] = useState<Proposition[]>([]);
   const [metier, setMetier] = useState<{ libelle?: string; liste: (Metier & { total?: number })[] } | null>(null);
   const [activites, setActivites] = useState(0);
@@ -158,6 +160,9 @@ function Dossier() {
   // Quand le site annonce une équipe nettement plus grande que le registre, un seul chiffre sert à chercher : on dit lequel.
   const annonce = societe && resume?.effectifAnnonce && ecartNet(societe, resume.effectifAnnonce) ? resume.effectifAnnonce : undefined;
   const taille = annonce && !auRegistre ? annonce : undefined;
+
+  // Présidée ou gérée par une autre société : avant d'aller plus loin, on demande qui décide de la vente.
+  const tenuePar = societe ? societesQuiDirigent(societe) : [];
 
   const titre = erreur
     ? "La recherche s'est arrêtée."
@@ -305,7 +310,9 @@ function Dossier() {
               {fini && estimation && (
                 <div className="valeur apparait">
                   <p className="source">Ordre de grandeur de valeur</p>
-                  {estimation.possible ? (
+                  {!estimation.possible && estimation.raison === "trop_grande" ? (
+                    <p className="message">Je ne donne pas de fourchette pour une société de cette taille : un multiple du résultat net serait trompeur. Sa valeur dépend de son résultat d'exploitation, de sa trésorerie, de ses dettes et de ses contrats, et relève d'une évaluation professionnelle.</p>
+                  ) : estimation.possible ? (
                     <>
                       <p className="fourchette"><Compteur valeur={estimation.bas} format={euros} /> à <Compteur valeur={estimation.haut} format={euros} /></p>
                       <p className="message">
@@ -357,7 +364,7 @@ function Dossier() {
 
               {annonces && annonces.liste.length > 0 && (
                 <div className="apparait">
-                  <p className="source" style={{ marginBottom: 10 }}>Annonces légales · bulletin officiel (BODACC){annonces.total > annonces.liste.length ? ` · ${annonces.liste.length} sur ${annonces.total}` : ""}</p>
+                  <p className="source" style={{ marginBottom: 10 }}>Annonces légales qui comptent pour une cession · bulletin officiel{annonces.total > annonces.liste.length ? ` · ${annonces.liste.length} sur ${annonces.total}` : ""}</p>
                   <ul className="points">
                     {annonces.liste.map((a) => (
                       <li key={a.url}>
@@ -403,7 +410,25 @@ function Dossier() {
                 </p>
               )}
 
-              {fini && !valide && (
+              {fini && !valide && tenuePar.length > 0 && decide !== "moi" && (
+                <div className="apparait">
+                  <p className="message">
+                    <b>Votre société est {/g[ée]rant/i.test(societe.dirigeants.find((d) => d.societe)?.qualite ?? "") ? "gérée" : "présidée"} par {tenuePar.join(" et ")}.</b>{" "}
+                    {decide === "groupe"
+                      ? "La vente se décide donc au niveau de ce groupe. Shlomo s'adresse à la personne qui décide : revenez avec son accord, ou lancez la recherche depuis la société qui détient celle-ci."
+                      : "Qui décide de la vendre ?"}
+                  </p>
+                  {decide === null && (
+                    <div className="actions">
+                      <button className="bouton petit" type="button" onClick={() => setDecide("moi")}>C'est ma holding, je décide</button>
+                      <button className="bouton petit" type="button" onClick={() => setDecide("groupe")}>C'est un groupe qui décide</button>
+                    </div>
+                  )}
+                  {decide === "groupe" && <div className="actions"><a className="bouton petit" href="/">Chercher une autre société</a><button className="lien" type="button" onClick={() => setDecide(null)}>Revenir</button></div>}
+                </div>
+              )}
+
+              {fini && !valide && (tenuePar.length === 0 || decide === "moi") && (
                 <div className="actions apparait">
                   <button
                     className="bouton"
@@ -412,7 +437,7 @@ function Dossier() {
                       setValide(true);
                       const m = metier?.liste.map(({ code, libelle, lien }) => ({ code, libelle, lien }));
                       const domaine = site?.domaine ?? "";
-                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}${domaine ? `&site=${encodeURIComponent(domaine)}` : ""}${taille ? `&e=${taille}` : ""}`);
+                      window.location.assign(`/repreneurs?siren=${societe.siren}${m?.length ? `&m=${encodeURIComponent(JSON.stringify(m))}` : ""}${domaine ? `&site=${encodeURIComponent(domaine)}` : ""}${taille ? `&e=${taille}` : ""}${!domaine && description.trim().length >= 80 ? `&d=${encodeURIComponent(description.trim().slice(0, 500))}` : ""}`);
                     }}
                   >
                     Tout est juste, je valide
@@ -421,7 +446,7 @@ function Dossier() {
                 </div>
               )}
 
-              {fini && <p className="source">Source : {societe.source}. Les chiffres sont ceux que la société a publiés.</p>}
+              {fini && <p className="source">Source : registre national des entreprises (annuaire-entreprises.data.gouv.fr). Les chiffres sont ceux que la société a publiés.</p>}
             </div>
           )}
         </main>

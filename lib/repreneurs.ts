@@ -91,11 +91,13 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
     } else if (marge !== undefined) {
       score += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
       comptesPts += marge >= 0.08 ? 12 : marge >= 0.03 ? 9 : 6;
-      dire(marge >= 0.08 ? 5 : 4, `Rentable : ${pourcent(marge * 100)} % de marge nette en ${dernier.annee}`);
+      // « Rentable » se mérite : sous 2 % de marge, on écrit seulement que le résultat est positif.
+      if (marge >= 0.02) dire(marge >= 0.08 ? 5 : 4, `Rentable : ${pourcent(marge * 100)} % de marge nette en ${dernier.annee}`);
+      else dire(2, `Résultat positif en ${dernier.annee}`);
     } else {
       score += 6;
       comptesPts += 6;
-      dire(4, `Rentable : résultat positif publié en ${dernier.annee}`);
+      dire(3, `Résultat positif en ${dernier.annee}`);
     }
   }
 
@@ -124,7 +126,8 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
   if (candidat.etablissements && candidat.etablissements >= 2) {
     score += candidat.etablissements >= 5 ? 5 : 3;
     implantation += candidat.etablissements >= 5 ? 5 : 3;
-    dire(candidat.etablissements >= 5 ? 5 : 3, `Déjà ${candidat.etablissements} établissements : elle sait en intégrer un de plus`);
+    // Le fait, sans la conclusion : avoir plusieurs sites ne prouve pas qu'on sait en racheter un.
+    dire(candidat.etablissements >= 5 ? 5 : 3, `Présente sur ${candidat.etablissements} sites`);
   }
 
   const age = candidat.anneeCreation ? annee - candidat.anneeCreation : 0;
@@ -161,6 +164,9 @@ export function distinguer(repreneurs: Repreneur[]): Repreneur[] {
   });
 }
 
+/** Au-delà, un repreneur est trop gros pour qu'une société de cette taille l'intéresse, sauf s'il est concurrent direct ou a déjà racheté un fonds du métier. */
+export const RAPPORT_MAXIMAL = 30;
+
 /** Écarte ce qui ne peut pas être un repreneur, ou qu'on n'a pas le droit de solliciter. */
 export function retenable(vendeur: Societe, candidat: Societe): boolean {
   return (
@@ -181,6 +187,8 @@ export function examiner(vendeur: Societe, s: Societe, profil: ProfilRepreneur, 
   if (!s.active) return { ...fiche, retenu: false, motif: "Société cessée" };
   if (s.entrepreneurIndividuel) return { ...fiche, retenu: false, motif: "Entrepreneur individuel, pas une société" };
   if (s.refuseProspection) return { ...fiche, retenu: false, motif: "Elle a demandé à ne pas être sollicitée" };
+  const rapport = rapportDeTaille(vendeur, s);
+  if (rapport !== undefined && rapport > RAPPORT_MAXIMAL) return { ...fiche, retenu: false, motif: "Trop grande pour s'intéresser à une société de votre taille" };
   const note = noter(vendeur, s, profil, metier);
   return { ...fiche, retenu: true, score: note.score, raison: note.raisons[0], details: note.raisons.slice(1) };
 }
@@ -202,6 +210,8 @@ export function classer(vendeur: Societe, lots: { profil: ProfilRepreneur; metie
   for (const lot of lots) {
     for (const s of lot.societes) {
       if (vus.has(s.siren) || !retenable(vendeur, s)) continue;
+      const rapport = rapportDeTaille(vendeur, s);
+      if (rapport !== undefined && rapport > RAPPORT_MAXIMAL && !rachats.has(s.siren) && !concurrents.has(s.siren)) continue;
       vus.add(s.siren);
       retenus.push(avecConcurrent(avecRachat(noter(vendeur, s, lot.profil, lot.metier), rachats.get(s.siren)), concurrents.has(s.siren)));
     }

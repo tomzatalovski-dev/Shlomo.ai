@@ -144,7 +144,8 @@ export async function GET(requete: Request) {
         } else {
           const comptes = etatDesComptes(annonces);
           // Les modifications courantes encombrent : on montre d'abord ce qui compte pour une cession.
-          const utiles = [...annonces.filter((a) => a.genre === "procedure" || a.genre === "vente"), ...annonces.filter((a) => a.genre === "comptes").slice(0, 2), ...annonces.filter((a) => a.genre === "modification" || a.genre === "creation" || a.genre === "radiation").slice(0, 3)]
+          // Seules les annonces qui pèsent sur une cession sont montrées : ventes, procédures, changements de dirigeants.
+          const utiles = annonces.filter((a) => a.genre === "procedure" || a.genre === "vente" || /administration|dirigeant|capital|dissolution|fusion/i.test(a.detail ?? ""))
             .sort((a, b) => b.date.localeCompare(a.date))
             .slice(0, 6);
           dire({ type: "annonces", liste: utiles, total: annonces.length, comptes });

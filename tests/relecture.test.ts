@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extraitPour, lireVerdicts, motsPropres } from "@/lib/relecture";
+import { extraitPour, lireVerdicts, motsPropres, sourceOfficielle } from "@/lib/relecture";
 
 describe("relecture des faits", () => {
   it("repère les mots propres d'un fait", () => {
@@ -21,5 +21,13 @@ describe("relecture des faits", () => {
     expect(lireVerdicts('{"verdicts":[{"n":1,"ecrit":true},{"n":2,"ecrit":false},{"n":9,"ecrit":false}]}', 3)).toEqual([true, false, undefined]);
     expect(lireVerdicts("pas de json", 2)).toEqual([undefined, undefined]);
     expect(lireVerdicts(null, 1)).toEqual([undefined]);
+  });
+
+  it("ne fait confiance sans relecture qu'aux sources officielles", () => {
+    expect(sourceOfficielle("https://annuaire-entreprises.data.gouv.fr/entreprise/123")).toBe(true);
+    expect(sourceOfficielle("https://www.bodacc.fr/pages/annonces")).toBe(true);
+    expect(sourceOfficielle("https://fr.linkedin.com/company/x")).toBe(false);
+    expect(sourceOfficielle("https://faux-gouv.fr.exemple.com/")).toBe(false);
+    expect(sourceOfficielle("pas une adresse")).toBe(false);
   });
 });

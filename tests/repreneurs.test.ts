@@ -35,7 +35,7 @@ describe("repreneurs", () => {
     expect(solide.score).toBeGreaterThan(plate.score);
     expect(plate.score).toBeGreaterThan(fragile.score);
     expect(solide.raisons).toContain("En croissance : chiffre d'affaires en hausse de 50 % depuis 2021");
-    expect(solide.raisons).toContain("Déjà 3 établissements : elle sait en intégrer un de plus");
+    expect(solide.raisons).toContain("Présente sur 3 sites");
   });
 
   it("note une activité voisine un peu moins bien, et nomme son métier sans en faire un titre", () => {

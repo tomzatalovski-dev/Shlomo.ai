@@ -68,7 +68,7 @@ function Mandat() {
     }
   }
 
-  const retour = `/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}${taille ? `&e=${taille}` : ""}`;
+  const retour = `/repreneurs?siren=${encodeURIComponent(siren)}${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${site ? `&site=${encodeURIComponent(site)}` : ""}${taille ? `&e=${taille}` : ""}${parametres.get("d") ? `&d=${encodeURIComponent((parametres.get("d") as string).slice(0, 500))}` : ""}`;
 
   return (
     <div className="page epure">

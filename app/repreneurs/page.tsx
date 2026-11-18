@@ -12,7 +12,7 @@ type Recent = CandidatMasque & { cle: number; libelle: string };
 const INDICE: Record<"rachat" | "croissance" | "alerte", string> = {
   rachat: "A déjà racheté une société",
   croissance: "En croissance : ouverture, investissement ou hausse d'activité annoncée",
-  alerte: "Un signal de difficulté, à vérifier",
+  alerte: "Une information défavorable a été publiée à son sujet : nous la vérifions avec vous après le mandat",
 };
 
 const nombre = (n: number) => (n >= 10_000 ? "plus de 10 000" : n.toLocaleString("fr-FR"));
@@ -44,7 +44,9 @@ function Repreneurs() {
   const metiers = parametres.get("m") ?? "";
   const site = parametres.get("site") ?? "";
   const taille = /^\d{1,6}$/.test(parametres.get("e") ?? "") ? `&e=${parametres.get("e")}` : "";
-  const suite = `${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${taille}`;
+  // Sans site, la description validée sur la fiche dit ce que fait le vendeur : elle suit le parcours.
+  const description = (parametres.get("d") ?? "").slice(0, 500);
+  const suite = `${metiers ? `&m=${encodeURIComponent(metiers)}` : ""}${taille}${description ? `&d=${encodeURIComponent(description)}` : ""}`;
   const versMandat = `${suite}${site ? `&site=${encodeURIComponent(site)}` : ""}`;
   const signe = parametres.get("signe") === "1";
   const par = parametres.get("par") ?? "";
@@ -198,7 +200,7 @@ function Repreneurs() {
             </li>
           ))}
           {veille === "faite" && indices[r.rang]?.includes("rachat") && <li><span>Rachat annoncé</span><small>+6 points</small></li>}
-          {veille === "faite" && indices[r.rang]?.includes("alerte") && <li><span>Signal de difficulté</span><small>−10 points</small></li>}
+          {veille === "faite" && indices[r.rang]?.includes("alerte") && <li><span>Information défavorable publiée</span><small>−10 points</small></li>}
         </ul>
       )}
       <p className="pied-net"><span className="masque">Nom masqué</span>{[r.zone, r.effectif].filter(Boolean).join(" · ")}</p>

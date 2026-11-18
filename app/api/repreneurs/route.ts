@@ -17,7 +17,8 @@ import type { EvenementRepreneurs } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// Les phrases d'intérêt des dix repreneurs arrivent après la liste : la requête peut durer, elle ne doit pas être coupée.
+export const maxDuration = 300;
 
 const PASSAGE = {
   departement: "dans votre département",
@@ -80,7 +81,9 @@ export async function GET(requete: Request) {
         // Le site du vendeur, lu une fois : il sert à trouver ses concurrents directs, puis à écrire ce que chacun y gagnerait.
         const siteSaisi = analyserSaisie(parametres.get("site") ?? "");
         const lecture = siteSaisi.type === "site" ? await lireSite(siteSaisi.domaine).catch(() => null) : null;
-        const texteSite = lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : undefined;
+        // Sans site, la description que le vendeur a validée sur sa fiche tient lieu de présentation.
+        const decrit = (parametres.get("d") ?? "").replace(/[<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+        const texteSite = lecture ? [lecture.titre, lecture.description, lecture.texte].filter(Boolean).join(" ") : decrit.length >= 80 ? decrit : undefined;
         // Les concurrents directs, cherchés sur le web pendant que le registre est parcouru. Gardés trente jours :
         // un rechargement ne relance pas la recherche, et la liste signée au mandat est celle que le vendeur a vue.
         const directs = (async () => {
@@ -152,7 +155,7 @@ export async function GET(requete: Request) {
           dire({ type: "veille_faite" });
           // Les suivants, par quatre, pour ne pas saturer le modèle.
           // Les suivants ne sont étudiés que si le site du vendeur est connu : sans lui, aucune phrase ne peut être écrite.
-          const suivants = contexte.site && contexte.site.trim().length >= 200 ? repreneurs.slice(3) : [];
+          const suivants = contexte.site && contexte.site.trim().length >= 80 ? repreneurs.slice(3) : [];
           if (suivants.length) dire({ type: "encours", texte: "Ce que chacun des suivants gagnerait à vous racheter" });
           for (let d = 0; d < suivants.length; d += 4) await Promise.all(suivants.slice(d, d + 4).map((r, i) => etudier(r, 4 + d + i, false)));
           if (pagesLues) dire({ type: "journal", texte: `${pagesLues} pages web lues sur vos ${3 + suivants.length} repreneurs les mieux classés`, etat: "ok" });

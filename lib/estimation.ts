@@ -10,7 +10,7 @@ export const MULTIPLE_HAUT = 8;
 
 export type Estimation =
   | { possible: true; bas: number; haut: number; resultatMoyen: number; annees: number[] }
-  | { possible: false; raison: "sans_comptes" | "resultat_negatif" };
+  | { possible: false; raison: "sans_comptes" | "resultat_negatif" | "trop_grande" };
 
 /** Arrondit à deux chiffres significatifs : 437 500 devient 440 000. */
 export function arrondir(montant: number): number {
@@ -24,7 +24,11 @@ export function fourchette(resultatMoyen: number): { bas: number; haut: number }
   return { bas: arrondir(resultatMoyen * MULTIPLE_BAS), haut: arrondir(resultatMoyen * MULTIPLE_HAUT) };
 }
 
+/** Au-delà de ce chiffre d'affaires, un multiple du résultat net ne dit plus rien d'utile : il faut une évaluation professionnelle. */
+export const CA_MAXIMAL = 5_000_000;
+
 export function estimer(finances: ExerciceFinancier[]): Estimation {
+  if ((finances.at(-1)?.chiffreAffaires ?? 0) > CA_MAXIMAL) return { possible: false, raison: "trop_grande" };
   const publies = finances.filter((f) => f.resultat !== undefined).slice(-3);
   if (publies.length === 0) return { possible: false, raison: "sans_comptes" };
   const resultatMoyen = publies.reduce((somme, f) => somme + f.resultat!, 0) / publies.length;
