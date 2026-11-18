@@ -23,6 +23,7 @@ describe("société sans site", () => {
     expect(registre).toEqual(["31 ans d'activité, créée en 1995", "Résultat net de 217 k€ en 2025", "Équipe en place : 10 à 19 salariés"]);
     const montres = composerArguments(registre, ["Activité établie depuis 1995 (date du registre)", "Bornes de recharge et domotique"], false);
     expect(montres).toEqual([...registre, "Bornes de recharge et domotique"]);
+    expect(composerArguments(registre, ["Équipe de 10 à 19 salariés"], false)).toEqual(registre);
     expect(composerArguments(registre, ["A", "B", "C", "D"], true)).toEqual(["A", "B", "C", registre[0]]);
   });
   it("n'avoue pas ce qu'elle ignore", () => {

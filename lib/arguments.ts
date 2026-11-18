@@ -25,7 +25,8 @@ export function argumentsDuRegistre(societe: Societe, annee = new Date().getFull
 
 const cle = (t: string) => t.toLowerCase().normalize("NFD").replace(/[^a-z0-9 ]/g, "");
 /** Un argument de l'IA qui redit une ligne du registre (ancienneté, création) n'ajoute rien. */
-const redit = (point: string) => /\b(depuis|cree|creee|creation|etabli|fonde|ans d)\b/.test(cle(point)) && /\b(19|20)\d\d\b|\bans\b/.test(point);
+const redit = (point: string) =>
+  (/\b(depuis|cree|creee|creation|etabli|fonde|ans d)\b/.test(cle(point)) && /\b(19|20)\d\d\b|\bans\b/.test(point)) || /\b\d+ a \d+ salaries\b|\bequipe de \d|\bresultat net\b/.test(cle(point));
 
 /**
  * Les quatre arguments montrés au vendeur. Avec un site, ce qu'il dit passe d'abord ; sans site, le registre passe d'abord.
