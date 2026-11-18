@@ -152,6 +152,8 @@ export function noter(vendeur: Societe, candidat: Societe, profil: ProfilReprene
 export function distinguer(repreneurs: Repreneur[]): Repreneur[] {
   const pris = new Set<string>();
   return repreneurs.map((r) => {
+    // « Concurrent direct » est la raison la plus forte : elle reste en titre même si un autre la porte déjà.
+    if (/^Concurrent direct/.test(r.raisons[0] ?? "")) return r;
     const libre = r.raisons.findIndex((x) => !pris.has(x));
     const raisons = libre > 0 ? [r.raisons[libre], ...r.raisons.filter((_, i) => i !== libre)] : r.raisons;
     if (raisons[0]) pris.add(raisons[0]);

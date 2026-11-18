@@ -47,7 +47,8 @@ export function mapperSociete(r: Brut): Societe {
       ? Object.entries(r.finances as Record<string, Brut>)
           .map(([annee, f]) => ({
             annee: Number(annee),
-            chiffreAffaires: typeof f?.ca === "number" ? f.ca : undefined,
+            // Un chiffre d'affaires de zéro avec des comptes confidentiels veut dire « non communiqué », pas « aucune vente ».
+            chiffreAffaires: typeof f?.ca === "number" && f.ca > 0 ? f.ca : undefined,
             resultat: typeof f?.resultat_net === "number" ? f.resultat_net : undefined,
           }))
           .filter((f) => Number.isFinite(f.annee))
