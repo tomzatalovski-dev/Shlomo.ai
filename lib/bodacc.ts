@@ -42,6 +42,33 @@ function genreDe(famille: string): Annonce["genre"] {
   return "autre";
 }
 
+const ROLES: [RegExp, string, string][] = [
+  [/pr[ée]sident/i, "président", "du"],
+  [/directeur g[ée]n[ée]ral/i, "directeur général", "d'un"],
+  [/g[ée]rant/i, "gérant", "de"],
+  [/administrateur/i, "administrateur", "d'un"],
+];
+
+/**
+ * Dit en clair ce qu'une annonce « modification survenue sur l'administration » change : qui arrive, qui part, à quel poste.
+ * Aucun nom de personne. Renvoie une chaîne vide quand seuls des commissaires aux comptes sont concernés.
+ */
+export function direAdministration(brut: string): string {
+  const lignes: string[] = [];
+  for (const morceau of brut.split(/;/)) {
+    if (/commissaire/i.test(morceau)) continue;
+    for (const [motif, role, article] of ROLES) {
+      if (!motif.test(morceau)) continue;
+      if (/directeur g[ée]n[ée]ral/i.test(morceau) && role === "président") continue;
+      const arrive = /nomination/i.test(morceau);
+      const part = /partant|d[ée]mission|r[ée]vocation|fin de mandat/i.test(morceau) || /modification d[ue]/i.test(morceau);
+      lignes.push(arrive && part ? `Changement de ${role}` : arrive ? `Nomination ${article} ${role}` : part ? `Départ ${article} ${role}` : `Changement de ${role}`);
+      break;
+    }
+  }
+  return [...new Set(lignes)].slice(0, 2).join(", ").replace(/, (\w)/, (_, l: string) => `, ${l.toLowerCase()}`);
+}
+
 /** Transforme un enregistrement de l'API en annonce affichable. Renvoie null s'il ne concerne pas ce SIREN ou s'il est mal formé. */
 export function lireAnnonce(r: Brut, siren: string): Annonce | null {
   // Le champ « registre » liste les numéros de la société, avec ou sans espaces : on vérifie que c'est bien elle.
@@ -66,6 +93,12 @@ export function lireAnnonce(r: Brut, siren: string): Annonce | null {
     detail = texte(jugement.nature, 160);
   } else if (modifications) {
     detail = texte(modifications.descriptif, 160);
+    // « modification survenue sur l'administration » ne dit rien : le détail est dans la fiche de la personne.
+    if (/administration/i.test(detail)) {
+      const personne = objet(objet(r.listepersonnes)?.personne);
+      const clair = direAdministration(texte(personne?.administration, 600));
+      detail = clair || (personne?.administration ? "Changement de commissaire aux comptes" : detail);
+    }
   } else if (acte) {
     detail = texte(acte.descriptif, 160) || texte(acte.categorieVente, 160);
   }

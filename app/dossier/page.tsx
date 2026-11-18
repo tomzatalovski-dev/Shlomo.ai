@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { Evenement, Metier, Proposition, ResumeIA, Societe } from "@/lib/types";
 import { ecartNet } from "@/lib/taille";
 import { societesQuiDirigent } from "@/lib/filiale";
+import { direVille } from "@/lib/lieu";
 import { Avance, Compteur, attendre, euros, useFile } from "@/app/composants/scene";
 import { MULTIPLE_BAS, MULTIPLE_HAUT, estimer, fourchette } from "@/lib/estimation";
 
@@ -270,7 +271,7 @@ function Dossier() {
                 <div>
                   <div className="nom">{societe.nom}</div>
                   <div className="lieu">
-                    {[societe.formeJuridique, societe.ville, societe.codeActivite && `Code d'activité ${societe.codeActivite}`].filter(Boolean).join(" · ")}
+                    {[societe.formeJuridique, direVille(societe.ville, societe.departement, societe.codePostal), societe.codeActivite && `Code d'activité ${societe.codeActivite}`].filter(Boolean).join(" · ")}
                   </div>
                 </div>
                 <span className="statut">{societe.active ? "Trouvée au registre" : "Société cessée selon le registre"}</span>

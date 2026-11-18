@@ -136,9 +136,15 @@ async function appeler(parametres: Record<string, string>): Promise<{ resultats:
 }
 
 /** Cherche une société par SIREN. Renvoie null si le registre ne la connaît pas. */
-/** Le registre répète parfois le nom entre parenthèses : « CIRCUS (CIRCUS) » devient « CIRCUS ». Un vrai sigle est gardé. */
+/**
+ * Le registre répète parfois le nom entre parenthèses : « CIRCUS (CIRCUS) » devient « CIRCUS ». Un vrai sigle est gardé.
+ * Quand une longue raison sociale se termine par son propre nom d'usage, lui aussi répété entre parenthèses,
+ * on garde ce nom d'usage : « SOCIETE GENERALE DE TRAVAUX ELECTRIQUES SALMON S.G.T.E. SALMON (S.G.T.E. SALMON) » devient « S.G.T.E. SALMON ».
+ */
 export function sansDoublon(nom: string): string {
   const plat = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+  const fin = nom.match(/^(.*\S)\s*\(([^)]{4,})\)\s*$/);
+  if (fin && nom.length > 45 && plat(fin[1]).endsWith(plat(fin[2])) && plat(fin[1]) !== plat(fin[2])) return fin[2].trim();
   return nom.replace(/\s*\(([^)]*)\)/g, (tout, dedans: string, position: number) => (plat(dedans) === plat(nom.slice(0, position)) ? "" : tout)).trim();
 }
 

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { direVille } from "@/lib/lieu";
 
 type Societe = { nom: string; formeJuridique: string | null; ville: string | null; siren: string };
 
@@ -103,7 +104,7 @@ function Mandat() {
               <div>
                 <span>Le mandant</span>
                 <b>{societe?.nom ?? "Votre société"}</b>
-                <small>{[societe?.formeJuridique, societe?.ville, `SIREN ${siren}`].filter(Boolean).join(" · ")}</small>
+                <small>{[societe?.formeJuridique, direVille(societe?.ville ?? undefined), `SIREN ${siren}`].filter(Boolean).join(" · ")}</small>
               </div>
               <div>
                 <span>Le mandataire</span>

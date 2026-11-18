@@ -5,6 +5,7 @@ import { relireFaits } from "@/lib/relecture";
 import { sansDateContraire } from "@/lib/taille";
 import { chercherParNom, chercherSociete, compterMetier, RegistreIndisponible } from "@/lib/registre";
 import { lireSite } from "@/lib/site";
+import { argumentsDuRegistre, composerArguments } from "@/lib/arguments";
 import { iaActive, lireNom, resumer } from "@/lib/ia";
 import { choisirSociete, nomsCandidats } from "@/lib/identite";
 import { composerMetiers } from "@/lib/metiers";
@@ -145,7 +146,7 @@ export async function GET(requete: Request) {
           const comptes = etatDesComptes(annonces);
           // Les modifications courantes encombrent : on montre d'abord ce qui compte pour une cession.
           // Seules les annonces qui pèsent sur une cession sont montrées : ventes, procédures, changements de dirigeants.
-          const utiles = annonces.filter((a) => a.genre === "procedure" || a.genre === "vente" || /administration|dirigeant|capital|dissolution|fusion/i.test(a.detail ?? ""))
+          const utiles = annonces.filter((a) => a.genre === "procedure" || a.genre === "vente" || /président|directeur|gérant|administrateur|sur l'administration|dirigeant|capital|dissolution|fusion/i.test(a.detail ?? ""))
             .sort((a, b) => b.date.localeCompare(a.date))
             .slice(0, 6);
           dire({ type: "annonces", liste: utiles, total: annonces.length, comptes });
@@ -222,6 +223,8 @@ export async function GET(requete: Request) {
           try {
             const resume = await resumer(societe, texteFiche, origine === "du site" ? "site" : "web");
             if (resume) {
+              // Les arguments certains viennent du registre ; ceux de l'IA les complètent. Sans site, le registre passe d'abord.
+              resume.pointsForts = composerArguments(argumentsDuRegistre(societe), resume.pointsForts, origine === "du site");
               dire({ type: "resume", resume });
               dire({ type: "journal", texte: `Fiche rédigée à partir ${origine}`, etat: "ok" });
 
