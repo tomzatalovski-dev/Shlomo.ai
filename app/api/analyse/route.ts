@@ -215,7 +215,12 @@ export async function GET(requete: Request) {
             texteFiche = [e.activite, ...e.faits.map((f) => f.texte)].join("\n");
             origine = "de sources publiques";
           }
-          if (!texteFiche) dire({ type: "journal", texte: "Pas de site ni de description publique : décrivez votre activité en deux phrases, je ferai le reste", etat: "alerte" });
+          if (!texteFiche) {
+            // Rien de public : la fiche part du registre seul, et le vendeur complète la description en une phrase.
+            texteFiche = "Aucune page publique ne décrit cette société. Rédige la description à partir du registre seul : ce que désigne son code d'activité, son ancienneté, la taille de son équipe, sa ville. N'ajoute aucune précision qui n'y figure pas. Pour \"pointsForts\", renvoie une liste vide.";
+            origine = "du registre";
+            dire({ type: "journal", texte: "Pas de site ni de page publique fiable : fiche rédigée depuis le registre, à compléter d'une phrase", etat: "alerte" });
+          }
         }
 
         if (texteFiche && iaActive()) {
