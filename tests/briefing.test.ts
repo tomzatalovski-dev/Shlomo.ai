@@ -30,6 +30,13 @@ describe("briefings", () => {
     expect(chiffresConnus("Marge de 12 %", "Équipe de 10 à 19 salariés")).toBe(false);
     expect(briefingRepreneurSur({ accroche: "Un atelier à Vaulx", pourquoiVous: [], societe: [], rapprochement: [] }, vendeur)).toBe(false);
   });
+  it("ne prend pas le mot du métier pour le nom du cédant", () => {
+    const boulangerie = { ...vendeur, nom: "BOULANGERIE DE CHAMPVERT", ville: "LYON", site: null, metier: "Boulangerie et boulangerie-pâtisserie" };
+    expect(interditsDe(boulangerie)).toEqual(["champvert", "lyon", "812781797"]);
+    expect(societeAnonyme(boulangerie, 2026).some((l) => nomme(l, interditsDe(boulangerie)))).toBe(false);
+    expect(nomme("Cette boulangerie de Champvert", interditsDe(boulangerie))).toBe(true);
+    expect(briefingRepreneurSur({ accroche: "Cette boulangerie compléterait vos points de vente", pourquoiVous: [], societe: societeAnonyme(boulangerie, 2026), rapprochement: [] }, boulangerie)).toBe(true);
+  });
   it("lit les prix de vente du bulletin officiel", () => {
     const annonce = (origine: string) => ({ listeetablissements: JSON.stringify({ etablissement: { origineFonds: origine } }) });
     expect(lirePrix(annonce("établissement principal acquis par achat au prix stipulé de 195000.00 euros"))).toBe(195000);

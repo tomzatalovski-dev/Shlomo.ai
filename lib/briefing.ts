@@ -65,10 +65,14 @@ export function quiIlEst(r: RepreneurBriefing, annee = new Date().getFullYear())
 const BANALS = new Set(["societe", "groupe", "holding", "france", "sarl", "sasu", "eurl", "pour", "avec", "dans", "saint", "sainte", "sous", "entreprise", "entreprises", "services", "service", "generale", "travaux", "etablissements"]);
 const mots = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
 
-/** Les mots qui feraient reconnaître le cédant : son nom, sa ville, son site, son SIREN. */
+/**
+ * Les mots qui feraient reconnaître le cédant : son nom, sa ville, son site, son SIREN.
+ * Un mot de son nom qui est aussi le mot de son métier (« BOULANGERIE DE CHAMPVERT ») ne le désigne pas : il reste permis.
+ */
 export function interditsDe(v: VendeurBriefing): string[] {
   const domaine = (v.site ?? "").replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/.]/)[0];
-  return [...mots(v.nom), ...mots(v.ville ?? ""), ...mots(domaine), v.siren].filter((m) => m.length >= 4 && !BANALS.has(m));
+  const duMetier = new Set(mots(v.metier ?? ""));
+  return [...mots(v.nom), ...mots(v.ville ?? ""), ...mots(domaine), v.siren].filter((m) => m.length >= 4 && !BANALS.has(m) && !duMetier.has(m) && !duMetier.has(`${m}s`) && !duMetier.has(m.replace(/s$/, "")));
 }
 
 export const nomme = (texte: string, interdits: string[]) => {

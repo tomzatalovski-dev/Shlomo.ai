@@ -77,8 +77,10 @@ export async function GET(requete: Request) {
           if (!iaActive()) return;
           dire({ type: "etape", agent, siren: p.siren, etape: "briefing" });
           const b = await ecrireBriefings(cedant, { societe: fiche, nom: p.nom, raisons: p.raisons ?? [], signaux, profil: p.profil }, comparables);
-          // Dernier contrôle : la partie lue par le repreneur avant l'accord ne nomme pas le cédant. Dans le doute, elle n'est pas enregistrée.
-          if (briefingRepreneurSur(b.repreneur, cedant)) await enregistrerBriefings(jeton, p.siren, b).catch(() => false);
+          // Dernier contrôle : la partie lue par le repreneur avant l'accord ne nomme pas le cédant. Dans le doute, elle est vidée.
+          // Le briefing du cédant, lui, est gardé : seule la partie du repreneur est vidée.
+          if (!briefingRepreneurSur(b.repreneur, cedant)) b.repreneur = { accroche: "", pourquoiVous: [], societe: [], rapprochement: [] };
+          await enregistrerBriefings(jeton, p.siren, b).catch(() => false);
         };
         // Dossiers préparés avant l'arrivée des briefings : on les complète, sans refaire l'approche.
         const dejaEcrits = await lireTravail(jeton).catch(() => ({}) as Awaited<ReturnType<typeof lireTravail>>);
