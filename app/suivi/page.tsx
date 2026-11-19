@@ -92,140 +92,199 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
     if (estimation?.possible) repere = { bas: estimation.bas, haut: estimation.haut };
   }
 
+  const [phrase, ...suitePhrase] = (autorise ? phraseEtat(suivi) : "Votre mandat est signé.").split(/(?<=\.)\s+/);
+  const actif = autorise && suivi.qualite === "validee";
+  const heure = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).replace(",", "");
+  // Ce que les agents ont réellement produit pour ce dossier : chaque nombre se recompte dans la liste plus bas.
+  const produit = [
+    { n: enCourse.length, quoi: enCourse.length > 1 ? "repreneurs suivis" : "repreneur suivi" },
+    { n: enCourse.filter((p) => p.decideur).length, quoi: "décideurs identifiés" },
+    { n: enCourse.reduce((t, p) => t + (p.signaux?.length ?? 0), 0), quoi: "faits sourcés sur le web" },
+    { n: enCourse.filter((p) => p.message).length, quoi: "messages rédigés et relus" },
+    { n: enCourse.filter((p) => travail[p.siren]?.briefing).length, quoi: "briefings écrits" },
+  ].filter((x) => x.n > 0);
+  const rdvPris = actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }));
+
   return (
-    <Cadre>
-      <div className="corps">
-        <aside className="journal">
-          <div className="qui"><b>{suivi.societe.nom}</b><span>SIREN {suivi.societe.siren}</span></div>
-          <h2>Ce qui s'est passé</h2>
-          <ul className="lignes fil">
-            {suivi.evenements.map((e, i) => (
-              <li key={i}><span>{e.texte}<small>{date(e.cree_le)}</small></span></li>
-            ))}
-          </ul>
-          <p className="promesse">Gardez l'adresse de cette page : c'est votre accès au suivi.</p>
-        </aside>
+    <div className="page epure">
+      <header className="haut">
+        <a className="logo" href="/">Shlomo.ai</a>
+        <span className={actif ? "voyant actif" : "voyant"}><i aria-hidden />{actif ? "Dossier actif" : autorise ? (suivi.qualite === "refusee" ? "Dossier arrêté" : "Vérification en cours") : "Approche non autorisée"}</span>
+      </header>
 
-        <main className="resultat">
-          <div>
-            <h1>{autorise ? phraseEtat(suivi) : "Votre mandat est signé."}</h1>
-            <p className="sous">
-              {suivi.mandat ? `Mandat de test${suivi.mandat.numero ? ` n° ${String(suivi.mandat.numero).padStart(4, "0")}` : ""} signé par ${suivi.mandat.signataire} le ${date(suivi.mandat.signe_le)}${suivi.mandat.echeance ? `, valable jusqu'au ${new Date(suivi.mandat.echeance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })}` : ""}, sans valeur juridique. ` : ""}
-              {autorise ? (suivi.qualite === "validee" ? "" : suivi.qualite === "refusee" ? "Nous n'avons pas pu confirmer votre qualité de dirigeant : aucun message ne part. Écrivez-nous. " : "Nous confirmons votre qualité de dirigeant sous 24 heures ; aucun message ne part avant. ") + "Shlomo s'occupe de tout ; vos seules décisions s'affichent en haut de cette page." : "Vous n'avez pas autorisé l'approche : aucun repreneur ne sera contacté."}
-            </p>
-          </div>
+      <main className="console">
+        <section className="tete">
+          <p className="fil-tete">{nomLisible(suivi.societe.nom)}{suivi.mandat?.numero ? ` · mandat ${String(suivi.mandat.numero).padStart(4, "0")}` : ""}</p>
+          <h1>{phrase}{suitePhrase.length > 0 && <span> {suitePhrase.join(" ")}</span>}</h1>
+          {autorise && <Direct faits={suivi.evenements.slice(0, 5).map((e) => ({ texte: e.texte, quand: heure(e.cree_le) }))} suite={prochaineEtape(suivi)} />}
+        </section>
 
-          {autorise && <Direct faits={suivi.evenements.slice(0, 4).map((e) => ({ texte: e.texte, quand: date(e.cree_le) }))} suite={prochaineEtape(suivi)} />}
+        {(aDecider.length > 0 || offres.length > 0) && (
+          <section className="a-vous">
+            <h2>À vous</h2>
+            {aDecider.length > 0 && (
+              <div className="carte decider">
+                <p className="message"><b>{aDecider.length > 1 ? "Ils ont signé l'accord de confidentialité." : "Il a signé l'accord de confidentialité."}</b> Votre nom n'est communiqué que si vous le décidez.</p>
+                {aDecider.map((p) => (
+                  <div key={p.siren} className="ligne">
+                    <span className="quoi"><b>{nomLisible(p.nom)}</b><small>Signé par {p.accord!.signataire}{p.accord!.qualite ? `, ${p.accord!.qualite}` : ""}, le {date(p.accord!.signe_le)}</small></span>
+                    <span className="ou"><Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee={false} /></span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {offres.length > 0 && <Offres jeton={jeton} offres={offres} fourchette={suivi.fourchette ?? null} />}
+          </section>
+        )}
 
-          {aDecider.length > 0 && (
-            <div className="carte decider">
-              <p className="message"><b>Une décision vous attend.</b> {aDecider.length > 1 ? "Ces repreneurs ont signé l'accord de confidentialité. Votre nom ne leur est communiqué que si vous le décidez." : "Ce repreneur a signé l'accord de confidentialité. Votre nom ne lui est communiqué que si vous le décidez."}</p>
-              {aDecider.map((p) => (
-                <div key={p.siren} className="ligne">
-                  <span className="quoi"><b>{p.nom}</b><small>Signé par {p.accord!.signataire}{p.accord!.qualite ? `, ${p.accord!.qualite}` : ""}, le {date(p.accord!.signe_le)} · {[p.ville, p.effectif].filter(Boolean).join(" · ")}</small></span>
-                  <span className="ou"><Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee={false} /></span>
-                </div>
-              ))}
+        {autorise && enCourse.length > 0 && (
+          <section className="flux">
+            <h2>Où en est chaque repreneur</h2>
+            <div className="colonnes">
+              {PISTE.map((nom, i) => {
+                const ici = enCourse.filter((p) => etapeDe(p) === i + 1);
+                return (
+                  <div key={nom} className={ici.length ? "colonne pleine" : "colonne"}>
+                    <div className="points">
+                      {ici.map((p, k) => <a key={p.siren} href={`#r-${p.siren}`} title={nomLisible(p.nom)} aria-label={`${nomLisible(p.nom)} : ${nom}`} style={{ animationDelay: `${(i * 3 + k) * 45}ms` }} />)}
+                    </div>
+                    <b>{ici.length || "·"}</b>
+                    <span>{nom}</span>
+                  </div>
+                );
+              })}
             </div>
-          )}
+            {produit.length > 0 && (
+              <dl className="produit">
+                {produit.map((x) => <div key={x.quoi}><dt>{x.n}</dt><dd>{x.quoi}</dd></div>)}
+              </dl>
+            )}
+          </section>
+        )}
 
-          {offres.length > 0 && <Offres jeton={jeton} offres={offres} fourchette={suivi.fourchette ?? null} />}
+        <section className="parcours">
+          <h2>Repreneurs</h2>
+          {enCourse.map((p) => {
+            const etape = etapeDe(p);
+            const t = travail[p.siren];
+            const b = t?.briefing;
+            const attente = p.statut === "identifie" && p.canal === "a_envoyer" && prioriteDe(p.signaux) === "a_verifier";
+            return (
+              <details key={p.siren} id={`r-${p.siren}`} className="repreneur-piste" open={etape >= 3 && enCourse.filter((x) => etapeDe(x) >= 3).length === 1}>
+                <summary>
+                  <span className="rang">{String(p.rang).padStart(2, "0")}</span>
+                  <span className="qui"><b>{nomLisible(p.nom)}</b><small>{[direVille(p.ville ?? undefined), p.effectif].filter(Boolean).join(" · ")}</small></span>
+                  <span className="piste" role="img" aria-label={etape ? `Étape ${etape} sur 6 : ${PISTE[etape - 1]}` : "Approche en préparation"}>
+                    {PISTE.map((nom, i) => <i key={nom} className={i < etape - 1 ? "fait" : i === etape - 1 ? "ici" : ""} />)}
+                  </span>
+                  <span className="ou-piste">{etape ? (etape === 6 ? "Offre remise" : etape === 5 ? "Rendez-vous pris" : PISTE[etape - 1]) : "En préparation"}{attente ? " · à vérifier" : ""}</span>
+                </summary>
+                <div className="dedans">
+                  {(p.accord || p.rendez_vous) && (
+                    <p className="source">
+                      {[p.accord && (p.revelation === "autorisee" ? "Votre nom lui a été communiqué" : p.revelation === "refusee" ? "Vous avez refusé de vous nommer" : "Il a signé l'accord de confidentialité"), p.rendez_vous && `Rendez-vous ${direCreneau(p.rendez_vous)}`].filter(Boolean).join(" · ")}
+                      {p.accord && p.revelation === "refusee" && <> <Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee /></>}
+                    </p>
+                  )}
 
-          {autorise && <Prix jeton={jeton} validee={suivi.fourchette ?? null} repere={repere} />}
-          <section className="parcours">
-            <h2>Vos repreneurs, un par un</h2>
-            {enCourse.map((p) => {
-              const etape = etapeDe(p);
-              const t = travail[p.siren];
-              const b = t?.briefing;
-              const attente = p.statut === "identifie" && p.canal === "a_envoyer" && prioriteDe(p.signaux) === "a_verifier";
-              return (
-                <details key={p.siren} className="repreneur-piste" open={etape >= 3 && enCourse.filter((x) => etapeDe(x) >= 3).length === 1}>
-                  <summary>
-                    <span className="qui"><b>{nomLisible(p.nom)}</b><small>{[direVille(p.ville ?? undefined), p.effectif].filter(Boolean).join(" · ")}</small></span>
-                    <span className="piste" role="img" aria-label={etape ? `Étape ${etape} sur 6 : ${PISTE[etape - 1]}` : "Approche en préparation"}>
-                      {PISTE.map((nom, i) => <i key={nom} className={i < etape - 1 ? "fait" : i === etape - 1 ? "ici" : ""} />)}
-                    </span>
-                    <span className="ou-piste">{etape ? (etape === 6 ? "Offre remise" : etape === 5 ? "Rendez-vous pris" : PISTE[etape - 1]) : "En préparation"}{attente ? " · à vérifier avant envoi" : ""}</span>
-                  </summary>
-                  <div className="dedans">
-                    {(p.accord || p.rendez_vous) && (
-                      <p className="source">
-                        {[p.accord && (p.revelation === "autorisee" ? "Votre nom lui a été communiqué" : p.revelation === "refusee" ? "Vous avez refusé de vous nommer" : "Il a signé l'accord de confidentialité"), p.rendez_vous && `Rendez-vous ${direCreneau(p.rendez_vous)}`].filter(Boolean).join(" · ")}
-                        {p.accord && p.revelation === "refusee" && <> <Revelation jeton={jeton} siren={p.siren} nom={p.nom} refusee /></>}
-                      </p>
-                    )}
+                  {(t?.echanges.length ?? 0) > 0 && (
+                    <div className="echanges">
+                      <h3>La conversation</h3>
+                      {t!.echanges.map((e, i) => (
+                        <div key={i} className={e.de === "repreneur" ? "echange recu" : "echange envoye"}>
+                          <small>{e.de === "repreneur" ? nomLisible(p.nom) : "Shlomo, pour vous"} · {date(e.le)}</small>
+                          <p>{e.texte}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                    {(t?.echanges.length ?? 0) > 0 && (
-                      <div className="echanges">
-                        <h3>La conversation</h3>
-                        {t!.echanges.map((e, i) => (
-                          <div key={i} className={e.de === "repreneur" ? "echange recu" : "echange envoye"}>
-                            <small>{e.de === "repreneur" ? nomLisible(p.nom) : "Shlomo, pour vous"} · {date(e.le)}</small>
-                            <p>{e.texte}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  {b && b.pourquoiVous.length > 0 ? (
+                    <div className="brief"><section><h3>Pourquoi vous l'intéressez</h3><ul>{b.pourquoiVous.map((x) => <li key={x}>{x}</li>)}</ul></section></div>
+                  ) : (
+                    <p className="source">{p.raisons.join(" · ")}</p>
+                  )}
 
-                    {b ? (
+                  {b && (
+                    <details className="pli">
+                      <summary>Briefing complet : qui il est, ses questions, la rencontre</summary>
                       <div className="brief">
-                        {b.pourquoiVous.length > 0 && <section><h3>Pourquoi vous l'intéressez</h3><ul>{b.pourquoiVous.map((x) => <li key={x}>{x}</li>)}</ul></section>}
                         {b.quiIlEst.length > 0 && <section><h3>Qui il est, d'après ses comptes</h3><ul className="serre">{b.quiIlEst.map((x) => <li key={x}>{x}</li>)}</ul></section>}
+                        {(p.signaux?.length ?? 0) > 0 && (
+                          <section><h3>Ce que le web dit de lui</h3>
+                            {p.signaux!.map((x) => <small key={x.source + x.texte} className={x.genre === "alerte" ? "signal alerte" : "signal"}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>)}
+                          </section>
+                        )}
                         {b.questions.length > 0 && <section><h3>Ce qu'il vous demandera</h3><ul>{b.questions.map((x) => <li key={x}>{x}</li>)}</ul></section>}
                         {b.aborder.length > 0 && <section><h3>Comment aborder la rencontre</h3><ul>{b.aborder.map((x) => <li key={x}>{x}</li>)}</ul></section>}
                         {b.comparables && <section><h3>Ce que des fonds comparables se sont vendus</h3><p className="mention">{b.comparables}</p></section>}
                         <p className="mention">Les chiffres viennent des comptes publiés. Les raisons, les questions et les conseils sont une analyse rédigée par une intelligence artificielle : à vérifier avec lui, pas à prendre pour acquis.</p>
                       </div>
-                    ) : (
-                      <p className="source">{[...p.raisons].join(" · ")}</p>
-                    )}
+                    </details>
+                  )}
+                  {p.message && (
+                    <details className="pli">
+                      <summary>Premier message{p.decideur ? `, adressé à ${p.decideur}` : ""}</summary>
+                      <p className="lettre">{p.message}</p>
+                    </details>
+                  )}
+                  <p className="source">
+                    <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
+                    {p.score ? ` · Note ${p.score} sur 100` : ""}
+                    {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
+                  </p>
+                </div>
+              </details>
+            );
+          })}
+          {sortis.length > 0 && (
+            <p className="source sortis">Sortis de la course : {sortis.map((p) => `${nomLisible(p.nom)} (${p.exclu ? "rayé à votre demande" : p.canal === "refus_demarchage" ? "ne veut pas être démarché" : "sans suite"})`).join(", ")}.</p>
+          )}
+        </section>
 
-                    {p.signaux?.map((x) => (
-                      <small key={x.source + x.texte} className={x.genre === "alerte" ? "signal alerte" : "signal"}>{x.genre === "alerte" ? "À vérifier : " : ""}{x.texte} <a href={x.source} target="_blank" rel="noreferrer nofollow">source</a></small>
-                    ))}
-                    {p.message && (
-                      <details className="pli">
-                        <summary>Lire le premier message{p.decideur ? `, adressé à ${p.decideur}` : ""}</summary>
-                        <p className="lettre">{p.message}</p>
-                      </details>
-                    )}
-                    <p className="source">
-                      <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
-                      {p.score ? ` · Note ${p.score} sur 100` : ""}
-                      {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
-                    </p>
-                  </div>
-                </details>
-              );
-            })}
-            {sortis.length > 0 && (
-              <p className="source">
-                Sortis de la course : {sortis.map((p) => `${p.nom} (${p.exclu ? "rayé à votre demande" : p.canal === "refus_demarchage" ? "ne veut pas être démarché" : "sans suite"})`).join(", ")}.
-              </p>
-            )}
+        {autorise && (
+          <section className="reglages">
+            <h2>Votre dossier</h2>
+            <details className="reglage" open={!suivi.fourchette && enCourse.some((p) => etapeDe(p) >= 3)}>
+              <summary><span>Prix annoncé</span><b className={suivi.fourchette ? "" : "manque"}>{suivi.fourchette ? "Fixé" : "À fixer"}</b></summary>
+              <Prix jeton={jeton} validee={suivi.fourchette ?? null} repere={repere} />
+            </details>
+            <details className="reglage">
+              <summary><span>Documents</span><b>{(suivi.documents ?? []).length || "Aucun"}</b></summary>
+              <Documents jeton={jeton} documents={suivi.documents ?? []} />
+            </details>
+            <details className="reglage">
+              <summary><span>Disponibilités</span><b>{(suivi.creneaux ?? []).length ? `${(suivi.creneaux ?? []).length} créneau${(suivi.creneaux ?? []).length > 1 ? "x" : ""}` : "Aucune"}</b></summary>
+              <Creneaux jeton={jeton} creneaux={suivi.creneaux ?? []} pris={rdvPris} />
+            </details>
           </section>
+        )}
 
-          {autorise && <Documents jeton={jeton} documents={suivi.documents ?? []} />}
-          {autorise && <Creneaux jeton={jeton} creneaux={suivi.creneaux ?? []} pris={actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }))} />}
+        <section className="journal-agents">
+          <h2>Journal</h2>
+          <ol>
+            {suivi.evenements.slice(0, 6).map((e, i) => <li key={i}><time>{heure(e.cree_le)}</time><span>{e.texte}</span></li>)}
+          </ol>
+          {suivi.evenements.length > 6 && (
+            <details className="pli">
+              <summary>Les {suivi.evenements.length - 6} lignes précédentes</summary>
+              <ol>{suivi.evenements.slice(6).map((e, i) => <li key={i}><time>{heure(e.cree_le)}</time><span>{e.texte}</span></li>)}</ol>
+            </details>
+          )}
+        </section>
 
-
-          <div className="carte">
-            <p className="message">
-              {autorise
-                ? "Les agents préparent, pour chaque repreneur, le nom du décideur et un message qui ne cite ni votre nom ni votre ville. À ce stade du projet, l'équipe Shlomo relit chaque message et l'envoie elle-même ; chaque étape s'inscrit ici."
-                : "Pour lancer l'approche, il faudra signer un mandat qui l'autorise."}
-            </p>
-            {autorise && (
-              <div className="actions">
-                <a className="lien" href={`/atelier?d=${jeton}`}>Voir les agents au travail</a>
-                {suivi.jeton_fiche && <a className="lien" href={`/fiche?f=${suivi.jeton_fiche}`} target="_blank" rel="noreferrer">Voir la présentation anonyme remise aux repreneurs</a>}
-              </div>
-            )}
-            <p className="source">Vous pouvez rayer un repreneur tant que son approche n'est pas préparée. C'est facultatif.</p>
-          </div>
-        </main>
-      </div>
-    </Cadre>
+        <footer className="pied-console">
+          <p>
+            {suivi.mandat ? `Mandat de test${suivi.mandat.numero ? ` n° ${String(suivi.mandat.numero).padStart(4, "0")}` : ""}, sans valeur juridique, signé par ${suivi.mandat.signataire} le ${date(suivi.mandat.signe_le)}${suivi.mandat.echeance ? `, valable jusqu'au ${new Date(suivi.mandat.echeance).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" })}` : ""}. ` : ""}
+            {autorise ? "Chaque message est relu par l'équipe Shlomo avant envoi. Vous seul décidez de donner votre nom et de répondre à une offre." : "Pour lancer l'approche, il faudra signer un mandat qui l'autorise."}
+          </p>
+          <p>
+            {autorise && <a href={`/atelier?d=${jeton}`}>Voir les agents préparer les approches</a>}
+            {autorise && suivi.jeton_fiche && <> · <a href={`/fiche?f=${suivi.jeton_fiche}`} target="_blank" rel="noreferrer">Présentation anonyme remise aux repreneurs</a></>}
+            {" · "}Gardez l'adresse de cette page : c'est votre accès.
+          </p>
+        </footer>
+      </main>
+    </div>
   );
 }

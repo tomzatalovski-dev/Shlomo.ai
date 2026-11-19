@@ -794,3 +794,79 @@ small { line-height: 1.45; }
   .echange { max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .direct-fait, .direct-fait i { animation: none; } }
+
+/* Console du cédant : ce que font les agents, d'abord en une phrase, puis en une carte des étapes, puis repreneur par repreneur. */
+:root { --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+.voyant { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; color: var(--gris); }
+.voyant i { width: 7px; height: 7px; border-radius: 50%; background: var(--contour); }
+.voyant.actif { color: var(--encre); }
+.voyant.actif i { background: var(--encre); box-shadow: 0 0 0 0 rgba(19, 28, 51, 0.35); animation: voyant 2.6s ease-out infinite; }
+@keyframes voyant { 0% { box-shadow: 0 0 0 0 rgba(19, 28, 51, 0.35); } 70%, 100% { box-shadow: 0 0 0 9px rgba(19, 28, 51, 0); } }
+
+.console { max-width: 900px; margin: 0 auto; padding: clamp(40px, 8vw, 96px) clamp(20px, 5vw, 40px) 140px; display: grid; gap: clamp(64px, 9vw, 104px); }
+.console > section { display: grid; gap: 0; min-width: 0; }
+.console h2 { margin: 0 0 22px; font-size: 13px; font-weight: 500; color: var(--gris); letter-spacing: 0; }
+.console .tete { gap: 30px; }
+.fil-tete { margin: 0; font-size: 13px; color: var(--gris); font-variant-numeric: tabular-nums; }
+.console h1 { margin: 0; font-size: clamp(38px, 6.4vw, 68px); line-height: 1.02; letter-spacing: -0.042em; font-weight: 600; text-wrap: balance; max-width: 15em; }
+.console h1 span { color: var(--contour); font-weight: 500; }
+.console .direct { border: 0; padding: 0; gap: 8px; }
+.console .direct-fait { font-size: 15px; }
+.console .direct-fait small { font-family: var(--mono); font-size: 12px; }
+.console .direct-suite { font-size: 14px; }
+.a-vous .carte + .carte, .a-vous .carte + div { margin-top: 16px; }
+
+/* La carte des étapes : un point par repreneur, posé dans la colonne où il se trouve. */
+.colonnes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.colonne { display: grid; grid-template-rows: 104px auto auto; gap: 4px; padding: 0 14px; border-left: 1px solid var(--trait); }
+.colonne:first-child { border-left: 0; padding-left: 0; }
+.colonne .points { display: flex; flex-wrap: wrap-reverse; align-content: flex-start; gap: 7px; padding-bottom: 14px; }
+.colonne .points a { width: 11px; height: 11px; border-radius: 50%; background: var(--encre); transition: transform 0.2s ease; animation: point-tombe 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.colonne .points a:hover, .colonne .points a:focus-visible { transform: scale(1.55); outline: none; }
+.colonne b { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--contour); }
+.colonne.pleine b { color: var(--encre); }
+.colonne span { font-size: 12.5px; color: var(--gris); line-height: 1.3; }
+.colonne.pleine span { color: var(--encre); }
+@keyframes point-tombe { from { opacity: 0; transform: translateY(-22px) scale(0.4); } to { opacity: 1; transform: none; } }
+.produit { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 40px 0 0; padding-top: 22px; border-top: 1px solid var(--trait); }
+.produit div { display: flex; align-items: baseline; gap: 8px; }
+.produit dt { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--encre); }
+.produit dd { margin: 0; font-size: 13px; color: var(--gris); }
+
+.console .repreneur-piste > summary { grid-template-columns: 30px minmax(0, 1.4fr) minmax(110px, 0.9fr) minmax(0, 0.8fr); gap: 20px; padding: 20px 0; }
+.repreneur-piste .rang { font-family: var(--mono); font-size: 12px; color: var(--contour); }
+.repreneur-piste[open] .rang { color: var(--encre); }
+.console .repreneur-piste .dedans { padding: 2px 0 36px 50px; gap: 20px; }
+.console .repreneur-piste { scroll-margin-top: 24px; }
+.console .repreneur-piste:target > summary .qui b { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+.console .pli > .brief { margin-top: 18px; }
+.console .brief .signal { margin-top: 8px; }
+.sortis { margin-top: 20px; }
+
+.reglage { border-top: 1px solid var(--trait); }
+.reglage:last-of-type { border-bottom: 1px solid var(--trait); }
+.reglage > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 20px 0; font-size: 16px; }
+.reglage > summary::-webkit-details-marker { display: none; }
+.reglage > summary b { font-size: 14px; font-weight: 500; color: var(--gris); }
+.reglage > summary b.manque { color: var(--ambre); }
+.reglage > .carte, .reglage > div { margin: 4px 0 28px; }
+
+.journal-agents ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 11px; }
+.journal-agents li { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 16px; align-items: baseline; }
+.journal-agents time { font-family: var(--mono); font-size: 12px; color: var(--contour); white-space: nowrap; }
+.journal-agents li span { font-size: 14px; color: var(--texte); line-height: 1.45; }
+.journal-agents .pli ol { margin-top: 14px; }
+.pied-console { border-top: 1px solid var(--trait); padding-top: 28px; display: grid; gap: 10px; }
+.pied-console p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--gris); max-width: 52em; }
+.pied-console a { color: var(--encre); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); }
+
+@media (max-width: 720px) {
+  .colonnes { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
+  .colonne { grid-template-rows: 64px auto auto; }
+  .colonne:nth-child(4) { border-left: 0; padding-left: 0; }
+  .console .repreneur-piste > summary { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px 12px; }
+  .console .repreneur-piste .piste { grid-column: 2 / -1; order: 4; }
+  .console .repreneur-piste .dedans { padding-left: 0; }
+  .journal-agents li { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { .colonne .points a, .voyant.actif i { animation: none; } }
