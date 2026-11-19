@@ -24,7 +24,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
   const origine = `${entetes.get("x-forwarded-proto") ?? "https"}://${entetes.get("host") ?? "shlomo-ai.vercel.app"}`;
   const lien = lienCourt(origine, e.code_court);
   // Le même texte que le courriel, sans la ligne de désinscription propre au courriel.
-  const texte = composerPremier(p.message, lien).texte.replace(/\n\nPour ne plus recevoir[^\n]*$/, "");
+  const texte = composerPremier(p.message, lien).texte.replace(/\n\nPour ne plus recevoir[^\n]*$/, "").replace(/ ?Pour ne plus être contacté, répondez STOP[^\n]*/i, "");
   const societe = await chercherSociete(siren).catch(() => null);
   const aujourdhui = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
 

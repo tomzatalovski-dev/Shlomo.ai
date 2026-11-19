@@ -58,11 +58,11 @@ describe("envoi", () => {
     const lien = lienCourt("https://shlomo.ai", "3f9a1c0b77de");
     expect(lien).toBe("https://shlomo.ai/r/3f9a-1c0b-77de");
     expect(codeDe("3F9A-1c0b 77de")).toBe("3f9a1c0b77de");
-    const m = composerPremier("Bonjour Jean Martin,\n\nUne menuiserie est à céder.\n\nPrésentation anonyme : https://shlomo-ai.vercel.app/fiche?f=abc\n\nL'assistant de Shlomo\nMessage rédigé par un assistant d'intelligence artificielle, pour l'équipe Shlomo.", lien);
-    expect(m.texte).not.toContain("/fiche?f=");
-    expect(m.texte).toContain("La page écrite pour vous, sans engagement : https://shlomo.ai/r/3f9a-1c0b-77de");
-    expect(m.texte.match(/L'assistant de Shlomo/g)).toHaveLength(1);
-    expect(m.texte).toContain("répondez simplement « stop »");
+    const m = composerPremier("Bonjour Jean Martin,\n\nUne menuiserie est à céder.\n\nPrésentation anonyme : https://shlomo-ai.vercel.app/fiche?f=abc\n\nL'équipe Shlomo\n\n\nVos coordonnées proviennent du registre public. Pour ne plus être contacté, répondez STOP.", lien);
+    expect(m.texte).toBe("Bonjour Jean Martin,\n\nUne menuiserie est à céder.\n\nLa page écrite pour vous, sans engagement : https://shlomo.ai/r/3f9a-1c0b-77de\n\nL'équipe Shlomo\n\nVos coordonnées proviennent du registre public. Pour ne plus être contacté, répondez STOP.\n\nMessage préparé par une intelligence artificielle et relu par l'équipe Shlomo.");
+    const nu = composerPremier("Bonjour,\n\nUne société est à céder.", lien).texte;
+    expect(nu).toContain("L'équipe Shlomo");
+    expect(nu).toContain("répondez simplement « stop »");
   });
   it("écrit deux relances distinctes et marque l'essai", () => {
     const un = composerRelance(1, { decideur: "Jean Martin", premierLe: "2026-11-16T09:00:00Z", lien: "L" });

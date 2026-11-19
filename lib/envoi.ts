@@ -22,18 +22,23 @@ export function destination(dossierEssai: boolean, courrielRepreneur?: string | 
 export const lienCourt = (origine: string, code: string) => `${origine}/r/${code.replace(/(.{4})(?=.)/g, "$1-")}`;
 export const codeDe = (saisi: string) => saisi.toLowerCase().replace(/[^0-9a-f]/g, "");
 
-const SIGNATURE = "L'assistant de Shlomo\nMessage rédigé par un assistant d'intelligence artificielle, pour l'équipe Shlomo.";
+const SIGNATURE = "L'équipe Shlomo\nMessage envoyé par un assistant d'intelligence artificielle.";
+const RELU = "Message préparé par une intelligence artificielle et relu par l'équipe Shlomo.";
 const STOP = "Pour ne plus recevoir de message de notre part, répondez simplement « stop ».";
 
 /**
- * Le premier message tel qu'il part : celui que les agents ont préparé et relu, avec le lien vers la page écrite pour ce repreneur
- * à la place du lien vers la présentation commune.
+ * Le premier message tel qu'il part : celui que les agents ont préparé et qu'une personne a relu, avec le lien vers la page écrite
+ * pour ce repreneur à la place du lien vers la présentation commune. Sa signature et sa mention légale sont gardées telles quelles ;
+ * on n'ajoute que ce qui manque : dire qu'une IA l'a préparé, et comment ne plus être contacté.
  */
 export function composerPremier(message: string, lien: string): { sujet: string; texte: string } {
-  const sansAncien = message.replace(/\n?[^\n]*https?:\/\/\S+\/fiche\?f=\S+[^\n]*/g, "").trim();
-  const [corps, ...signature] = sansAncien.split(/\n(?=L'assistant de Shlomo)/);
-  const texte = `${corps.trim()}\n\nLa page écrite pour vous, sans engagement : ${lien}\n\n${signature.length ? signature.join("\n").trim() : SIGNATURE}\n\n${STOP}`;
-  return { sujet: "Une société à reprendre dans votre métier", texte };
+  const sans = message.replace(/\n?[^\n]*https?:\/\/\S+\/fiche\?f=\S+[^\n]*/g, "").trim();
+  const page = `La page écrite pour vous, sans engagement : ${lien}`;
+  const signature = sans.match(/\n(?:L'équipe Shlomo|L'assistant de Shlomo)[^\n]*/);
+  let texte = signature?.index !== undefined ? `${sans.slice(0, signature.index).trimEnd()}\n\n${page}\n\n${sans.slice(signature.index).trim()}` : `${sans}\n\n${page}\n\nL'équipe Shlomo`;
+  if (!/intelligence artificielle/i.test(texte)) texte += `\n\n${RELU}`;
+  if (!/\bstop\b/i.test(texte)) texte += `\n\n${STOP}`;
+  return { sujet: "Une société à reprendre dans votre métier", texte: texte.replace(/\n{3,}/g, "\n\n") };
 }
 
 const jour = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", timeZone: "Europe/Paris" });
