@@ -138,14 +138,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
         )}
 
         {autorise && enCourse.length > 0 && (
-          <section className="flux">
+          <section className="carte-etapes">
             <h2>Où en est chaque repreneur</h2>
-            <div className="colonnes">
+            <div className="etapes-carte">
               {PISTE.map((nom, i) => {
                 const ici = enCourse.filter((p) => etapeDe(p) === i + 1);
                 return (
-                  <div key={nom} className={ici.length ? "colonne pleine" : "colonne"}>
-                    <div className="points">
+                  <div key={nom} className={ici.length ? "etape-col pleine" : "etape-col"}>
+                    <div className="pts">
                       {ici.map((p, k) => <a key={p.siren} href={`#r-${p.siren}`} title={nomLisible(p.nom)} aria-label={`${nomLisible(p.nom)} : ${nom}`} style={{ animationDelay: `${(i * 3 + k) * 45}ms` }} />)}
                     </div>
                     <b>{ici.length || "·"}</b>
@@ -155,7 +155,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
               })}
             </div>
             {produit.length > 0 && (
-              <dl className="produit">
+              <dl className="produit-agents">
                 {produit.map((x) => <div key={x.quoi}><dt>{x.n}</dt><dd>{x.quoi}</dd></div>)}
               </dl>
             )}

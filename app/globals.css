@@ -817,21 +817,21 @@ small { line-height: 1.45; }
 .a-vous .carte + .carte, .a-vous .carte + div { margin-top: 16px; }
 
 /* La carte des étapes : un point par repreneur, posé dans la colonne où il se trouve. */
-.colonnes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.colonne { display: grid; grid-template-rows: 104px auto auto; gap: 4px; padding: 0 14px; border-left: 1px solid var(--trait); }
-.colonne:first-child { border-left: 0; padding-left: 0; }
-.colonne .points { display: flex; flex-wrap: wrap-reverse; align-content: flex-start; gap: 7px; padding-bottom: 14px; }
-.colonne .points a { width: 11px; height: 11px; border-radius: 50%; background: var(--encre); transition: transform 0.2s ease; animation: point-tombe 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.colonne .points a:hover, .colonne .points a:focus-visible { transform: scale(1.55); outline: none; }
-.colonne b { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--contour); }
-.colonne.pleine b { color: var(--encre); }
-.colonne span { font-size: 12.5px; color: var(--gris); line-height: 1.3; }
-.colonne.pleine span { color: var(--encre); }
+.etapes-carte { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.etape-col { display: grid; grid-template-rows: 104px auto auto; gap: 4px; padding: 0 14px; border-left: 1px solid var(--trait); }
+.etape-col:first-child { border-left: 0; padding-left: 0; }
+.etape-col .pts { display: flex; flex-wrap: wrap-reverse; align-content: flex-start; gap: 7px; padding-bottom: 14px; }
+.etape-col .pts a { width: 11px; height: 11px; border-radius: 50%; background: var(--encre); transition: transform 0.2s ease; animation: point-tombe 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.etape-col .pts a:hover, .etape-col .pts a:focus-visible { transform: scale(1.55); outline: none; }
+.etape-col b { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--contour); }
+.etape-col.pleine b { color: var(--encre); }
+.etape-col span { font-size: 12.5px; color: var(--gris); line-height: 1.3; }
+.etape-col.pleine span { color: var(--encre); }
 @keyframes point-tombe { from { opacity: 0; transform: translateY(-22px) scale(0.4); } to { opacity: 1; transform: none; } }
-.produit { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 40px 0 0; padding-top: 22px; border-top: 1px solid var(--trait); }
-.produit div { display: flex; align-items: baseline; gap: 8px; }
-.produit dt { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--encre); }
-.produit dd { margin: 0; font-size: 13px; color: var(--gris); }
+.produit-agents { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 40px 0 0; padding-top: 22px; border-top: 1px solid var(--trait); }
+.produit-agents div { display: flex; align-items: baseline; gap: 8px; }
+.produit-agents dt { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--encre); }
+.produit-agents dd { margin: 0; font-size: 13px; color: var(--gris); }
 
 .console .repreneur-piste > summary { grid-template-columns: 30px minmax(0, 1.4fr) minmax(110px, 0.9fr) minmax(0, 0.8fr); gap: 20px; padding: 20px 0; }
 .repreneur-piste .rang { font-family: var(--mono); font-size: 12px; color: var(--contour); }
@@ -861,12 +861,12 @@ small { line-height: 1.45; }
 .pied-console a { color: var(--encre); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); }
 
 @media (max-width: 720px) {
-  .colonnes { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
-  .colonne { grid-template-rows: 64px auto auto; }
-  .colonne:nth-child(4) { border-left: 0; padding-left: 0; }
+  .etapes-carte { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 32px; }
+  .etape-col { grid-template-rows: 64px auto auto; }
+  .etape-col:nth-child(4) { border-left: 0; padding-left: 0; }
   .console .repreneur-piste > summary { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px 12px; }
   .console .repreneur-piste .piste { grid-column: 2 / -1; order: 4; }
   .console .repreneur-piste .dedans { padding-left: 0; }
   .journal-agents li { grid-template-columns: 1fr; gap: 2px; }
 }
-@media (prefers-reduced-motion: reduce) { .colonne .points a, .voyant.actif i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .etape-col .pts a, .voyant.actif i { animation: none; } }
