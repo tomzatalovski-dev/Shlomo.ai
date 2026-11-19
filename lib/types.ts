@@ -23,6 +23,8 @@ export type Societe = {
   anneeEffectif?: number;
   ville?: string;
   codePostal?: string;
+  /** Adresse postale du siège, telle que le registre l'écrit. */
+  adresse?: string;
   departement?: string;
   region?: string;
   /** Code de tranche d'effectif de l'INSEE, par exemple "11" pour 10 à 19 salariés. */

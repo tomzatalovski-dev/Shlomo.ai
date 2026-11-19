@@ -3,7 +3,7 @@ import { contactVendeur } from "./base";
 /**
  * Envoi de courriels au vendeur, par le service Resend. Sans clé (`RESEND_API_KEY`) ni expéditeur (`COURRIEL_EXPEDITEUR`),
  * rien n'est envoyé et la fonction le dit : le site continue de marcher, le vendeur garde son lien à l'écran.
- * Aucun courriel n'est jamais envoyé à un repreneur depuis le site.
+ * Les messages aux repreneurs passent par `lib/envoi.ts`, qui décide s'ils peuvent partir et vers qui.
  */
 export const courrielActif = () => Boolean(process.env.RESEND_API_KEY && process.env.COURRIEL_EXPEDITEUR);
 

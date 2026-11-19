@@ -1,10 +1,12 @@
-import { BaseIndisponible, changerStatut, marquerEssai, opposer, purgerContacts, validerQualite, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
+import { BaseIndisponible, changerStatut, fixerCourrielRepreneur, lireEnvois, lirePoste, noterEnvoi, marquerEssai, opposer, purgerContacts, validerQualite, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { verifier } from "@/lib/negociation/gardefous";
 import { VERSION } from "@/lib/negociation/manuel";
 import { repondre } from "@/lib/negociation/negociateur";
 import { ETAPES, conversation, dossierPour } from "@/lib/negociation/poste";
 import { adresseDe, tropDappels } from "@/lib/limite";
+import { courrielActif, envoyer, prevenirVendeur } from "@/lib/courriel";
+import { composerPremier, composerRelance, destination, habillerEssai, lienCourt } from "@/lib/envoi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +17,8 @@ const texte = (v: unknown, max: number) => (typeof v === "string" ? v.trim().sli
 
 /**
  * Poste de négociation, réservé aux fondateurs (code de pilotage, vérifié par la base à chaque appel).
- * Rien n'est envoyé d'ici : le négociateur propose, une personne envoie puis le note.
+ * Le négociateur propose, une personne décide. Un premier message ou une relance peut partir d'ici, d'un clic :
+ * vers l'équipe pour un dossier d'essai, vers le repreneur seulement si l'envoi réel est ouvert.
  */
 export async function POST(requete: Request) {
   if (tropDappels(`poste:${adresseDe(requete)}`, 30)) return refus("Trop d'appels en peu de temps.", 429);
@@ -55,6 +58,35 @@ export async function POST(requete: Request) {
       return (await changerStatut(code, dossier, siren, statut)) ? Response.json({ fait: true }) : refus("Accès refusé ou repreneur introuvable.", 403);
     }
 
+    if (action === "courriel") {
+      return (await fixerCourrielRepreneur(code, dossier, siren, texte(c?.courriel, 250).toLowerCase())) ? Response.json({ fait: true }) : refus("Adresse refusée, ou accès refusé.", 403);
+    }
+
+    if (action === "envoyer" || action === "relancer") {
+      const [d, envois, liste] = await Promise.all([lirePosteDossier(code, dossier), lireEnvois(code, dossier), lirePoste(code)]);
+      const lui = d?.presentations.find((p) => p.siren === siren && !p.exclu);
+      const e = envois?.[siren];
+      if (!d || !lui || !e) return refus("Accès refusé ou repreneur introuvable.", 403);
+      if (d.qualite !== "validee") return refus("Envoi verrouillé : validez d'abord la qualité du signataire du mandat, en haut du dossier.", 423);
+      if (lui.canal !== "a_envoyer" || !lui.message) return refus("Aucun message n'est prêt pour ce repreneur.", 409);
+      const dest = destination(liste?.find((x) => x.id === d.id)?.essai ?? false, e.courriel);
+      if ("refus" in dest) return refus(dest.refus, 409);
+      if (!courrielActif()) return refus("Le service d'envoi de courriels n'est pas réglé.", 503);
+      const lien = lienCourt(new URL(requete.url).origin, e.code_court);
+      let m: { sujet: string; texte: string };
+      if (action === "envoyer") {
+        if (lui.statut !== "identifie") return refus("Le premier message est déjà noté comme parti.", 409);
+        m = composerPremier(lui.message, lien);
+      } else {
+        if ((lui.statut !== "contacte" && lui.statut !== "relance") || e.relances >= 2) return refus("Pas de relance possible à cette étape.", 409);
+        m = composerRelance(e.relances === 0 ? 1 : 2, { decideur: lui.decideur, premierLe: e.envois[0]?.le, lien });
+      }
+      const part = dest.essai ? habillerEssai(m, lui.nom, e.courriel) : m;
+      if (!(await envoyer(dest.a, part.sujet, part.texte))) return refus("Le service d'envoi a refusé le message. Rien n'est noté.", 502);
+      const note = await noterEnvoi(code, dossier, siren, { genre: action === "envoyer" ? "premier" : "relance", destinataire: dest.a, essai: dest.essai, texte: m.texte });
+      return note ? Response.json({ fait: true, essai: dest.essai }) : refus("Le message est parti, mais n'a pas pu être noté : notez l'étape à la main.", 500);
+    }
+
     if (action === "rattacher") {
       return (await rattacherInteret(code, dossier, Number(c?.interet), siren)) ? Response.json({ fait: true }) : refus("Accès refusé ou demande introuvable.", 403);
     }
@@ -86,6 +118,8 @@ export async function POST(requete: Request) {
       const lui = d?.presentations.find((p) => p.siren === siren);
       const faits = d && dossierPour(d, siren);
       if (!d || !lui || !faits) return refus("Repreneur introuvable.", 404);
+      // Le cédant apprend qu'une réponse est arrivée : c'est un fait réel, il le retrouve sur sa page.
+      if (lui.jeton_accord) await prevenirVendeur(lui.jeton_accord, new URL(requete.url).origin, (n) => `${n} a répondu`, (n) => `${n} a répondu à notre message. Shlomo prépare la suite ; l'échange est sur votre page.`);
       const r = await repondre(faits, conversation(lui));
       const fautes = [...r.fautes.map((f) => ({ ...f, arretee: false })), ...r.arretees.map((f) => ({ ...f, arretee: true }))];
       const id = await proposerReponse(code, dossier, siren, { texte: r.texte, situation: r.situation, lecture: r.lecture, version: VERSION, fautes, repli: r.repli });

@@ -892,3 +892,25 @@ ul.sortis li span { text-decoration: line-through; }
 .personne .joindre a, .interlocuteur .mention a { color: var(--encre); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); }
 .interlocuteur .mention { margin: 0; font-size: 14px; line-height: 1.55; color: var(--gris); max-width: 46em; }
 .interlocuteur .mention b { color: var(--encre); font-weight: 600; }
+
+/* Poste : envois. Lettre : une page A4 qui s'imprime. */
+.ligne-envoi { align-items: flex-start; flex-wrap: wrap; gap: 12px 24px; }
+.envoi { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.envoi label { display: grid; gap: 4px; font-size: 12px; color: var(--gris); }
+.envoi input { font: inherit; font-size: 14px; padding: 8px 12px; border: 1px solid var(--contour); border-radius: 10px; background: var(--carte); min-width: 230px; }
+.envoi .retour { flex-basis: 100%; font-size: 13px; color: var(--gris); }
+.envoi .retour.alerte { color: var(--rouge); }
+.lettre-papier { max-width: 21cm; min-height: 29.7cm; margin: 24px auto; padding: 2.4cm 2.4cm 2cm; background: #fff; color: #111; font-size: 12pt; line-height: 1.55; box-shadow: var(--ombre); display: flex; flex-direction: column; gap: 22px; }
+.lettre-papier header { display: grid; gap: 28px; }
+.lettre-papier p { margin: 0; }
+.lettre-papier .destinataire { margin-left: 55%; }
+.lettre-papier .date { margin-left: 55%; }
+.lettre-papier .objet { font-weight: 600; }
+.lettre-papier .texte { white-space: pre-wrap; }
+.lettre-papier footer { margin-top: auto; font-size: 9pt; color: #555; }
+@media print {
+  body { background: #fff; }
+  .sans-impression { display: none; }
+  .lettre-papier { margin: 0; box-shadow: none; padding: 0; min-height: 0; }
+  @page { size: A4; margin: 2.4cm; }
+}

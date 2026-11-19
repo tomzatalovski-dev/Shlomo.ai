@@ -442,3 +442,39 @@ export async function lireTravail(jeton: string): Promise<Travail> {
   if (!jetonValide(jeton)) return {};
   return (await appeler<Travail | null>("lire_travail", { p_jeton: jeton })) ?? {};
 }
+
+/** Adresse du destinataire chez le repreneur, saisie par les fondateurs. Elle n'est jamais rendue au cédant. */
+export async function fixerCourrielRepreneur(code: string, dossier: string, siren: string, courriel: string): Promise<boolean> {
+  if (!jetonValide(dossier) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("fixer_courriel_repreneur", { p_code: code, p_dossier: dossier, p_siren: siren, p_courriel: courriel });
+}
+
+/** Note un envoi qui vient de partir. `code` est le code de pilotage (poste) ou la clé du serveur (chef d'orchestre). */
+export async function noterEnvoi(code: string, dossier: string, siren: string, e: { genre: "premier" | "relance"; destinataire: string; essai: boolean; texte: string }): Promise<boolean> {
+  if (!jetonValide(dossier) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("noter_envoi", { p_code: code, p_dossier: dossier, p_siren: siren, p_genre: e.genre, p_destinataire: e.destinataire, p_essai: e.essai, p_texte: e.texte.slice(0, 6000) });
+}
+
+export type EnvoisRepreneur = { courriel?: string | null; relances: number; code_court: string; envois: { genre: "premier" | "relance"; essai: boolean; le: string }[] };
+
+export async function lireEnvois(code: string, dossier: string): Promise<Record<string, EnvoisRepreneur> | null> {
+  if (!jetonValide(dossier)) return null;
+  return appeler<Record<string, EnvoisRepreneur> | null>("lire_envois", { p_code: code, p_dossier: dossier });
+}
+
+export type RepreneurOrchestre = {
+  siren: string; nom: string; statut: StatutPresentation; statut_le?: string | null; canal?: string | null; relances: number; a_courriel: boolean; courriel?: string | null;
+  code_court: string; decideur?: string | null; pret: boolean; accord: boolean; revelation?: string | null; a_relire: number; premier_le?: string | null;
+};
+export type DossierOrchestre = { id: string; nom: string; essai: boolean; qualite?: "a_verifier" | "validee" | "refusee"; signe_le: string; presentations: RepreneurOrchestre[] };
+
+/** Tous les dossiers dont l'approche est autorisée, lus avec la clé du serveur. */
+export async function lireOrchestre(cle: string): Promise<DossierOrchestre[] | null> {
+  return appeler<DossierOrchestre[] | null>("lire_orchestre", { p_cle: cle });
+}
+
+/** Le lien court imprimé sur une lettre : rend le jeton de la page du repreneur, ou rien. */
+export async function trouverAccord(codeCourt: string): Promise<string | null> {
+  if (!/^[0-9a-f]{12}$/.test(codeCourt)) return null;
+  return appeler<string | null>("trouver_accord", { p_code_court: codeCourt });
+}

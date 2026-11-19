@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { lireActes, lirePoste, lireProspects, lirePosteDossier, type Acte, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
+import { lireActes, lireEnvois, lireOrchestre, lirePoste, lireProspects, lirePosteDossier, type Acte, type RepreneurPoste, type StatutPresentation } from "@/lib/base";
+import { decider, direAFaire } from "@/lib/orchestre";
+import { envoiReel, equipe } from "@/lib/envoi";
+import Envoi from "./Envoi";
 import { direCreneau, euros } from "@/lib/creneaux";
 import { VERSION } from "@/lib/negociation/manuel";
 import { ETAPES } from "@/lib/negociation/poste";
@@ -69,13 +72,17 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
     const registre = await chercherSociete(d.siren).catch(() => null);
     const indices = indicesDeQualite(d.signataire ?? "", d.courriel, d.fiche?.site, registre?.dirigeants ?? []);
     const qualite = d.qualite ?? "a_verifier";
+    const envois = (await lireEnvois(code, choisi).catch(() => null)) ?? {};
+    // Ce que le chef d'orchestre demande aujourd'hui pour ce dossier.
+    const tous = process.env.CLE_SERVEUR ? await lireOrchestre(process.env.CLE_SERVEUR).catch(() => null) : null;
+    const aFaire = decider((tous ?? []).filter((x) => x.id === d.id));
     return (
       <Cadre>
         <div>
           <p className="source"><a href={`/poste?c=${code}`}>← Tous les dossiers</a></p>
           <h1>{d.nom}</h1>
           <p className="sous">
-            {[d.fiche?.activite, d.fiche?.ville, d.fiche?.effectif].filter(Boolean).join(" · ")}. Le négociateur propose, vous envoyez : rien ne part de cette page.
+            {[d.fiche?.activite, d.fiche?.ville, d.fiche?.effectif].filter(Boolean).join(" · ")}. Le négociateur propose, vous décidez : rien ne part sans votre clic.
             {d.fourchette ? ` Fourchette validée par le vendeur : ${d.fourchette.bas.toLocaleString("fr-FR")} € à ${d.fourchette.haut.toLocaleString("fr-FR")} €.` : " Aucun prix n'est validé par le vendeur, il n'en annoncera donc aucun."}
           </p>
           <div className="actions">
@@ -121,6 +128,37 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           </div>
         )}
 
+        {aFaire.length > 0 && (
+          <div className="carte decider">
+            <p className="message"><b>À faire aujourd'hui.</b></p>
+            <ul className="faits">{aFaire.map((x, i) => <li key={i}>{direAFaire(x)}</li>)}</ul>
+          </div>
+        )}
+
+        <div className="carte">
+          <p className="source">
+            Envois · {essai ? (equipe() ? `dossier d'essai : tout part vers ${equipe()}, jamais vers le repreneur` : "dossier d'essai : aucune adresse d'équipe réglée, rien ne peut partir") : envoiReel() ? "envoi réel ouvert : les messages partent vers les repreneurs" : "envoi réel fermé : envoyez vous-même, puis notez l'étape"}
+          </p>
+          {actifs.filter((p) => p.canal === "a_envoyer" && p.message).map((p) => {
+            const e = envois[p.siren];
+            const peut = qualite !== "validee" ? null : p.statut === "identifie" ? "envoyer" : (p.statut === "contacte" || p.statut === "relance") && (e?.relances ?? 0) < 2 ? "relancer" : null;
+            return (
+              <div key={p.siren} className="ligne ligne-envoi">
+                <span className="quoi">
+                  <b>{p.nom}</b>
+                  <small>
+                    {p.decideur ?? "Destinataire non identifié"}
+                    {e?.envois.length ? ` · ${e.envois.map((x) => `${x.genre === "premier" ? "premier message" : "relance"} le ${jour(x.le)}${x.essai ? " (essai)" : ""}`).join(", ")}` : " · rien n'est parti"}
+                    {" · "}<a href={`/lettre?c=${code}&d=${d.id}&s=${p.siren}`} target="_blank" rel="noreferrer">Lettre papier</a>
+                    {e && <>{" · "}<a href={`/r/${e.code_court}`} target="_blank" rel="noreferrer">Sa page</a></>}
+                  </small>
+                </span>
+                <Envoi code={code} dossier={d.id} siren={p.siren} courriel={e?.courriel ?? ""} peut={peut} essai={essai} />
+              </div>
+            );
+          })}
+        </div>
+
         <div className="carte">
           <p className="source">Conversations · manuel v{VERSION}</p>
           {actifs.map((p, i) => <Fil key={p.siren} code={code} dossier={d.id} repreneur={p} etapes={ETAPES} ouvert={p.echanges.some((e) => e.etat === "propose") || (i === 0 && p.echanges.length > 0)} />)}
@@ -145,6 +183,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
   const dossiers = await lirePoste(code).catch(() => null);
   const prospects = (await lireProspects(code).catch(() => null)) ?? [];
   if (!dossiers) return <Cadre><h1>Accès refusé.</h1><p className="sous">Cette page demande le code de pilotage.</p></Cadre>;
+  const aFaireTous = decider((process.env.CLE_SERVEUR ? await lireOrchestre(process.env.CLE_SERVEUR).catch(() => null) : null) ?? []);
 
   return (
     <Cadre>
@@ -157,6 +196,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
           <Purge code={code} />
         </div>
       </div>
+      {aFaireTous.length > 0 && (
+        <div className="carte decider">
+          <p className="message"><b>À faire aujourd'hui, tous dossiers.</b> Le même tour passe seul chaque matin. <a href={`/api/orchestre?c=${code}`} target="_blank" rel="noreferrer">Le lancer maintenant</a></p>
+          <ul className="faits">{aFaireTous.slice(0, 20).map((x, i) => <li key={i}><b style={{ fontWeight: 500 }}>{x.nomDossier}</b> : {direAFaire(x)}</li>)}</ul>
+          {aFaireTous.length > 20 && <p className="source">Et {aFaireTous.length - 20} autres.</p>}
+        </div>
+      )}
       <div className="carte tableau-carte">
         <table className="tableau">
           <thead><tr><th>Dossier</th><th>Messages prêts</th><th>Contactés</th><th>Réponses</th><th>Intéressés</th><th>À traiter</th></tr></thead>

@@ -70,6 +70,7 @@ export function mapperSociete(r: Brut): Societe {
     anneeEffectif: r.annee_tranche_effectif_salarie ? Number(r.annee_tranche_effectif_salarie) : undefined,
     ville: r.siege?.libelle_commune ?? undefined,
     codePostal: r.siege?.code_postal ?? undefined,
+    adresse: typeof r.siege?.adresse === "string" ? r.siege.adresse : undefined,
     departement: r.siege?.departement ?? undefined,
     region: r.siege?.region ?? undefined,
     trancheEffectif: r.tranche_effectif_salarie ? String(r.tranche_effectif_salarie) : undefined,
