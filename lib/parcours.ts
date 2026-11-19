@@ -3,7 +3,7 @@ import { direCreneau } from "./creneaux";
 import { nomLisible } from "./lieu";
 
 /** Les six étapes d'un repreneur, telles que le cédant les voit avancer. Chacune correspond à un fait enregistré en base. */
-export const PISTE = ["Approche prête", "Contacté", "A répondu", "Accord signé", "Rendez-vous", "Offre"] as const;
+export const PISTE = ["Message prêt", "Contacté", "A répondu", "Accord signé", "Rendez-vous", "Offre"] as const;
 
 const REPONDU = ["a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu"];
 
@@ -36,8 +36,8 @@ export function phraseEtat(suivi: Suivi): string {
   const contactes = actifs.filter((p) => etapeDe(p) === 2).length;
   if (contactes) return `${n(contactes, "repreneur contacté", "repreneurs contactés")}. Shlomo attend ${contactes > 1 ? "leurs réponses" : "sa réponse"}.`;
   const prets = actifs.filter((p) => etapeDe(p) === 1).length;
-  if (prets) return `${prets > 1 ? `${prets} approches sont prêtes` : "Une approche est prête"}. Rien ne part sans relecture.`;
-  return actifs.length ? `Shlomo prépare l'approche de vos ${actifs.length} repreneurs.` : "Aucun repreneur n'est en course pour l'instant.";
+  if (prets) return `${prets > 1 ? `${prets} messages sont prêts` : "Un message est prêt"}. Rien ne part sans relecture.`;
+  return actifs.length ? `Shlomo prépare un message pour chacun de vos ${actifs.length} repreneurs.` : "Aucun repreneur n'est en course pour l'instant.";
 }
 
 /** Ce qui va se passer ensuite, dit sans promesse de date que rien ne garantit. */
@@ -47,9 +47,9 @@ export function prochaineEtape(suivi: Suivi): string {
   if (suivi.qualite === "refusee") return "Votre qualité de dirigeant n'a pas pu être confirmée : écrivez-nous.";
   if (suivi.qualite !== "validee") return "Vérification de votre qualité de dirigeant, sous 24 heures. Aucun message ne part avant.";
   if (!suivi.fourchette && actifs.some((p) => etapeDe(p) >= 3)) return "Fixez votre fourchette de prix : des repreneurs vont la demander.";
-  if (actifs.some((p) => etapeDe(p) === 0)) return "Préparation des approches restantes : décideur, veille, message.";
+  if (actifs.some((p) => etapeDe(p) === 0)) return "Préparation des messages restants : le bon interlocuteur, ce qu'on sait de lui, le message.";
   const prets = actifs.filter((p) => etapeDe(p) === 1).length;
-  if (prets) return `Envoi ${prets > 1 ? `des ${prets} messages prêts` : "du message prêt"}, après relecture par l'équipe Shlomo.`;
+  if (prets) return `Vérifiez la liste ci-dessous et retirez qui vous voulez. ${prets > 1 ? `Les ${prets} messages partent` : "Le message part"} ensuite, après relecture par l'équipe Shlomo.`;
   if (actifs.some((p) => etapeDe(p) === 2)) return "Relance des repreneurs restés sans réponse.";
   if (actifs.some((p) => etapeDe(p) === 3)) return "Réponse aux questions des repreneurs, puis accord de confidentialité.";
   if (actifs.some((p) => etapeDe(p) === 4 && p.revelation === "autorisee" && !p.rendez_vous)) return (suivi.creneaux?.length ?? 0) ? "Choix d'un rendez-vous par le repreneur qui connaît votre nom." : "Indiquez vos disponibilités : un repreneur peut vous rencontrer.";

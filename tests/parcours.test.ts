@@ -16,8 +16,8 @@ describe("parcours d'un repreneur", () => {
     expect(etapeDe(p({ offres: [{ id: 1, prix: 1, deposee_le: "" }] }))).toBe(6);
   });
   it("dit en une phrase ce qui compte maintenant", () => {
-    expect(phraseEtat(suivi([p({}), p({ siren: "2" })]))).toBe("Shlomo prépare l'approche de vos 2 repreneurs.");
-    expect(phraseEtat(suivi([p({ canal: "a_envoyer" })]))).toBe("Un approche est prête. Rien ne part sans relecture.".replace("Un approche", "Une approche"));
+    expect(phraseEtat(suivi([p({}), p({ siren: "2" })]))).toBe("Shlomo prépare un message pour chacun de vos 2 repreneurs.");
+    expect(phraseEtat(suivi([p({ canal: "a_envoyer" })]))).toBe("Un message est prêt. Rien ne part sans relecture.");
     expect(phraseEtat(suivi([p({ statut: "contacte" }), p({ siren: "2", statut: "contacte" })]))).toBe("2 repreneurs contactés. Shlomo attend leurs réponses.");
     expect(phraseEtat(suivi([p({ statut: "interesse" })]))).toBe("Shlomo discute avec un repreneur.");
     expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" } })]))).toBe("Un repreneur a signé l'accord de confidentialité. À vous de décider s'il apprend votre nom.");
@@ -26,7 +26,7 @@ describe("parcours d'un repreneur", () => {
   });
   it("annonce la suite sans promettre de date", () => {
     expect(prochaineEtape(suivi([p({ canal: "a_envoyer" })], { qualite: "a_verifier" }))).toContain("Vérification de votre qualité");
-    expect(prochaineEtape(suivi([p({ canal: "a_envoyer" }), p({ siren: "2", canal: "a_envoyer" })]))).toBe("Envoi des 2 messages prêts, après relecture par l'équipe Shlomo.");
+    expect(prochaineEtape(suivi([p({ canal: "a_envoyer" }), p({ siren: "2", canal: "a_envoyer" })]))).toBe("Vérifiez la liste ci-dessous et retirez qui vous voulez. Les 2 messages partent ensuite, après relecture par l'équipe Shlomo.");
     expect(prochaineEtape(suivi([p({ statut: "contacte" })]))).toBe("Relance des repreneurs restés sans réponse.");
     expect(prochaineEtape(suivi([p({ statut: "interesse" })]))).toBe("Fixez votre fourchette de prix : des repreneurs vont la demander.");
   });

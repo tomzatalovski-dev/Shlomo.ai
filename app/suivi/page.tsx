@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { BaseIndisponible, lireSuivi, lireTravail, type Presentation, type StatutPresentation, type Travail } from "@/lib/base";
 import { PISTE, etapeDe, horsCourse, phraseEtat, prochaineEtape } from "@/lib/parcours";
 import Direct from "./Direct";
@@ -34,6 +35,14 @@ const CONTACTES: StatutPresentation[] = ["contacte", "relance", "a_repondu", "in
 const REPONSES: StatutPresentation[] = ["a_repondu", "interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu", "sans_suite"];
 const INTERESSES: StatutPresentation[] = ["interesse", "confidentialite_signee", "rendez_vous", "offre", "conclu"];
 
+// La personne que le cédant peut joindre. Les coordonnées ne s'affichent que si elles sont réglées : aucune n'est inventée.
+const CONTACT = {
+  nom: process.env.CONTACT_NOM ?? "Tom Zatalovski",
+  role: process.env.CONTACT_ROLE ?? "Dirigeant de Shlomo, il suit votre dossier",
+  telephone: process.env.CONTACT_TELEPHONE ?? "",
+  courriel: process.env.CONTACT_COURRIEL ?? "",
+};
+
 const date = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 const compter = (liste: Presentation[], statuts: StatutPresentation[]) => liste.filter((p) => statuts.includes(p.statut)).length;
 
@@ -51,6 +60,8 @@ function Cadre({ children }: { children: React.ReactNode }) {
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
   const jeton = (await searchParams).d ?? "";
+  const entetes = await headers();
+  const origine = `${entetes.get("x-forwarded-proto") ?? "https"}://${entetes.get("host") ?? "shlomo-ai.vercel.app"}`;
   let suivi = null;
   let panne = false;
   try {
@@ -98,10 +109,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
   // Ce que les agents ont réellement produit pour ce dossier : chaque nombre se recompte dans la liste plus bas.
   const produit = [
     { n: enCourse.length, quoi: enCourse.length > 1 ? "repreneurs suivis" : "repreneur suivi" },
-    { n: enCourse.filter((p) => p.decideur).length, quoi: "décideurs identifiés" },
-    { n: enCourse.reduce((t, p) => t + (p.signaux?.length ?? 0), 0), quoi: "faits sourcés sur le web" },
+    { n: enCourse.filter((p) => p.decideur).length, quoi: "interlocuteurs identifiés" },
+    { n: enCourse.reduce((t, p) => t + (p.signaux?.length ?? 0), 0), quoi: "informations vérifiées sur le web" },
     { n: enCourse.filter((p) => p.message).length, quoi: "messages rédigés et relus" },
-    { n: enCourse.filter((p) => travail[p.siren]?.briefing).length, quoi: "briefings écrits" },
+    { n: enCourse.filter((p) => travail[p.siren]?.briefing).length, quoi: "fiches d'acheteur rédigées" },
   ].filter((x) => x.n > 0);
   const rdvPris = actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }));
 
@@ -164,6 +175,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
 
         <section className="parcours">
           <h2>Repreneurs</h2>
+          {enCourse.some((p) => p.statut === "identifie") && (
+            <p className="choisir"><b>Vous choisissez à qui Shlomo écrit.</b> Un voisin, un concurrent qui vous connaît, un ancien associé : retirez-le d'un clic, il ne recevra rien. Tant qu'un message n'est pas parti, vous pouvez changer d'avis.</p>
+          )}
           {enCourse.map((p) => {
             const etape = etapeDe(p);
             const t = travail[p.siren];
@@ -174,10 +188,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                 <summary>
                   <span className="rang">{String(p.rang).padStart(2, "0")}</span>
                   <span className="qui"><b>{nomLisible(p.nom)}</b><small>{[direVille(p.ville ?? undefined), p.effectif].filter(Boolean).join(" · ")}</small></span>
-                  <span className="piste" role="img" aria-label={etape ? `Étape ${etape} sur 6 : ${PISTE[etape - 1]}` : "Approche en préparation"}>
+                  <span className="piste" role="img" aria-label={etape ? `Étape ${etape} sur 6 : ${PISTE[etape - 1]}` : "Message en préparation"}>
                     {PISTE.map((nom, i) => <i key={nom} className={i < etape - 1 ? "fait" : i === etape - 1 ? "ici" : ""} />)}
                   </span>
-                  <span className="ou-piste">{etape ? (etape === 6 ? "Offre remise" : etape === 5 ? "Rendez-vous pris" : PISTE[etape - 1]) : "En préparation"}{attente ? " · à vérifier" : ""}</span>
+                  <span className="ou-piste">
+                    {etape ? (etape === 6 ? "Offre remise" : etape === 5 ? "Rendez-vous pris" : PISTE[etape - 1]) : "En préparation"}{attente ? " · à vérifier" : ""}
+                    {p.statut === "identifie" && <Exclusion jeton={jeton} siren={p.siren} exclu={false} />}
+                  </span>
                 </summary>
                 <div className="dedans">
                   {(p.accord || p.rendez_vous) && (
@@ -207,7 +224,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
 
                   {b && (
                     <details className="pli">
-                      <summary>Briefing complet : qui il est, ses questions, la rencontre</summary>
+                      <summary>Sa fiche complète : qui il est, ce qu'il vous demandera, comment préparer la rencontre</summary>
                       <div className="brief">
                         {b.quiIlEst.length > 0 && <section><h3>Qui il est, d'après ses comptes</h3><ul className="serre">{b.quiIlEst.map((x) => <li key={x}>{x}</li>)}</ul></section>}
                         {(p.signaux?.length ?? 0) > 0 && (
@@ -216,7 +233,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                           </section>
                         )}
                         {b.questions.length > 0 && <section><h3>Ce qu'il vous demandera</h3><ul>{b.questions.map((x) => <li key={x}>{x}</li>)}</ul></section>}
-                        {b.aborder.length > 0 && <section><h3>Comment aborder la rencontre</h3><ul>{b.aborder.map((x) => <li key={x}>{x}</li>)}</ul></section>}
+                        {b.aborder.length > 0 && <section><h3>Pour préparer la rencontre</h3><ul>{b.aborder.map((x) => <li key={x}>{x}</li>)}</ul></section>}
                         {b.comparables && <section><h3>Ce que des fonds comparables se sont vendus</h3><p className="mention">{b.comparables}</p></section>}
                         <p className="mention">Les chiffres viennent des comptes publiés. Les raisons, les questions et les conseils sont une analyse rédigée par une intelligence artificielle : à vérifier avec lui, pas à prendre pour acquis.</p>
                       </div>
@@ -231,14 +248,21 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                   <p className="source">
                     <a href={`https://annuaire-entreprises.data.gouv.fr/entreprise/${p.siren}`} target="_blank" rel="noreferrer">Fiche publique</a>
                     {p.score ? ` · Note ${p.score} sur 100` : ""}
-                    {p.statut === "identifie" && !p.canal && <> · <Exclusion jeton={jeton} siren={p.siren} exclu={p.exclu} /></>}
                   </p>
                 </div>
               </details>
             );
           })}
           {sortis.length > 0 && (
-            <p className="source sortis">Sortis de la course : {sortis.map((p) => `${nomLisible(p.nom)} (${p.exclu ? "rayé à votre demande" : p.canal === "refus_demarchage" ? "ne veut pas être démarché" : "sans suite"})`).join(", ")}.</p>
+            <ul className="sortis">
+              {sortis.map((p) => (
+                <li key={p.siren}>
+                  <span>{nomLisible(p.nom)}</span>
+                  <small>{p.exclu ? "retiré à votre demande" : p.canal === "refus_demarchage" ? "a demandé à ne pas être démarché" : "sans suite"}</small>
+                  {p.exclu && p.statut === "identifie" && <Exclusion jeton={jeton} siren={p.siren} exclu />}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
 
@@ -260,6 +284,25 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           </section>
         )}
 
+        <section className="interlocuteur">
+          <h2>Votre interlocuteur</h2>
+          <div className="personne">
+            <p><b>{CONTACT.nom}</b><span>{CONTACT.role}</span></p>
+            {(CONTACT.telephone || CONTACT.courriel) && (
+              <p className="joindre">
+                {CONTACT.telephone && <a href={`tel:${CONTACT.telephone.replace(/[^+\d]/g, "")}`}>{CONTACT.telephone}</a>}
+                {CONTACT.courriel && <a href={`mailto:${CONTACT.courriel}`}>{CONTACT.courriel}</a>}
+              </p>
+            )}
+          </div>
+          <p className="mention">Shlomo est une intelligence artificielle ; une personne relit son travail et répond de ce qu'elle fait.</p>
+          <p className="mention"><b>Rien à payer avant la vente.</b> La commission est de 5 % du prix, avec un minimum de 5 000 €, seulement si la vente se fait avec un repreneur présenté par Shlomo.</p>
+          <p className="mention">
+            <a href={`mailto:?subject=${encodeURIComponent("Cession de ma société avec Shlomo.ai")}&body=${encodeURIComponent(`Bonjour,\n\nJ'ai confié à Shlomo.ai la recherche d'un repreneur pour ma société. Cette page explique leur méthode, ce qu'ils font et ce qui reste de votre ressort :\n${origine}/expert-comptable\n\nJ'aimerais votre avis.\n`)}`}>En parler à mon expert-comptable</a>
+            {" · "}<a href="/expert-comptable" target="_blank" rel="noreferrer">Voir la page qui lui est destinée</a>
+          </p>
+        </section>
+
         <section className="journal-agents">
           <h2>Journal</h2>
           <ol>
@@ -279,7 +322,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
             {autorise ? "Chaque message est relu par l'équipe Shlomo avant envoi. Vous seul décidez de donner votre nom et de répondre à une offre." : "Pour lancer l'approche, il faudra signer un mandat qui l'autorise."}
           </p>
           <p>
-            {autorise && <a href={`/atelier?d=${jeton}`}>Voir les agents préparer les approches</a>}
+            {autorise && <a href={`/atelier?d=${jeton}`}>Voir Shlomo préparer les messages</a>}
             {autorise && suivi.jeton_fiche && <> · <a href={`/fiche?f=${suivi.jeton_fiche}`} target="_blank" rel="noreferrer">Présentation anonyme remise aux repreneurs</a></>}
             {" · "}Gardez l'adresse de cette page : c'est votre accès.
           </p>

@@ -872,3 +872,23 @@ small { line-height: 1.45; }
 @media (prefers-reduced-motion: reduce) { .etape-col .pts a, .voyant.actif i { animation: none; } }
 .console .repreneur-piste .qui { border: 0; padding: 0; margin: 0; }
 .console .repreneur-piste .rang { color: var(--gris); }
+
+/* Choisir à qui on écrit, et savoir à qui parler. */
+.choisir { margin: 0 0 22px; font-size: 15px; line-height: 1.55; color: var(--gris); max-width: 44em; }
+.choisir b { color: var(--encre); font-weight: 600; }
+.console .ou-piste { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.retirer { font-size: 13px; color: var(--gris); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); }
+.retirer:hover { color: var(--encre); }
+ul.sortis { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px; }
+ul.sortis li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: 14px; color: var(--gris); }
+ul.sortis li span { text-decoration: line-through; }
+.interlocuteur { gap: 14px !important; }
+.interlocuteur h2 { margin-bottom: 8px; }
+.personne { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px 32px; padding: 22px 0; border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait); }
+.personne p { margin: 0; }
+.personne b { display: block; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.personne span { font-size: 14px; color: var(--gris); }
+.personne .joindre { display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 16px; }
+.personne .joindre a, .interlocuteur .mention a { color: var(--encre); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--contour); }
+.interlocuteur .mention { margin: 0; font-size: 14px; line-height: 1.55; color: var(--gris); max-width: 46em; }
+.interlocuteur .mention b { color: var(--encre); font-weight: 600; }

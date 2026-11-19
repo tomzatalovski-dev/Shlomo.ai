@@ -11,7 +11,7 @@ export function Exclusion({ jeton, siren, exclu }: { jeton: string; siren: strin
 
   return (
     <button
-      className="lien"
+      className="lien retirer"
       type="button"
       disabled={attente}
       onClick={async () => {
@@ -27,7 +27,7 @@ export function Exclusion({ jeton, siren, exclu }: { jeton: string; siren: strin
         else setRate(true);
       }}
     >
-      {rate ? "Échec, réessayer" : exclu ? "Rétablir" : "Ne pas contacter"}
+      {rate ? "Échec, réessayer" : exclu ? "Remettre dans la liste" : "Retirer"}
     </button>
   );
 }
