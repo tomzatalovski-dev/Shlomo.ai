@@ -46,6 +46,6 @@ describe("briefings", () => {
     expect(lirePrix(annonce("acquis par apport au montant évalué à 125417.00 euros"))).toBeNull();
     expect(fourchetteDe([50000, 90000])).toBeNull();
     expect(fourchetteDe([50000, 90000, 120000, 195000, 300000])).toEqual({ bas: 90000, median: 120000, haut: 195000 });
-    expect(direComparables({ ventes: 12, bas: 90000, median: 120000, haut: 195000, depuis: 2023, ou: "region", mots: ["menuiserie"] }, "Bretagne")).toContain("12 ventes de fonds « menuiserie » publiées en Bretagne depuis 2023");
+    expect(direComparables({ ventes: 12, bas: 90000, median: 120000, haut: 195000, depuis: 2023, ou: "region", mots: ["menuiserie"] }, "Bretagne")).toContain("Les 12 dernières ventes de fonds « menuiserie » publiées en Bretagne avec leur prix, depuis 2023");
   });
 });

@@ -41,14 +41,17 @@ export function fourchetteDe(prix: number[]): { bas: number; median: number; hau
   return { bas: a(0.25), median: a(0.5), haut: a(0.75) };
 }
 
-async function ventes(mots: string[], region: string | undefined, depuis: string): Promise<number[]> {
+async function ventes(mots: string[], region: string | undefined, depuis: string): Promise<{ prix: number[]; plusAncienne?: number }> {
   const ou = mots.map((m) => `search(listeetablissements,"${m.replace(/"/g, "")}")`).join(" or ");
   const where = `familleavis="vente"${region ? ` and region_code=${Number(region)}` : ""} and dateparution>="${depuis}" and (${ou})`;
-  const url = `${BASE}/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?limit=100&order_by=${encodeURIComponent("dateparution desc")}&select=listeetablissements&where=${encodeURIComponent(where)}`;
+  const url = `${BASE}/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?limit=100&order_by=${encodeURIComponent("dateparution desc")}&select=${encodeURIComponent("dateparution,listeetablissements")}&where=${encodeURIComponent(where)}`;
   const r = await fetch(url, { signal: AbortSignal.timeout(8_000), cache: "no-store" });
-  if (!r.ok) return [];
+  if (!r.ok) return { prix: [] };
   const lu = (await r.json()) as { results?: Record<string, unknown>[] };
-  return (lu.results ?? []).map(lirePrix).filter((p): p is number => p !== null);
+  const lignes = lu.results ?? [];
+  // On ne lit que les cent annonces les plus récentes : la période dite à l'écran est celle qu'elles couvrent vraiment.
+  const annee = Number(String(lignes.at(-1)?.dateparution ?? "").slice(0, 4));
+  return { prix: lignes.map(lirePrix).filter((p): p is number => p !== null), plusAncienne: annee > 2000 ? annee : undefined };
 }
 
 /** Les ventes du métier, dans la région d'abord, en France sinon. Rend null si le bulletin ne répond pas ou s'il y a trop peu de ventes. */
@@ -61,9 +64,9 @@ export async function chercherComparables(metiers: Metier[], region: string | un
   try {
     for (const ou of ["region", "france"] as const) {
       if (ou === "region" && (!region || !/^\d+$/.test(region))) continue;
-      const prix = await ventes(mots, ou === "region" ? region : undefined, depuis);
+      const { prix, plusAncienne } = await ventes(mots, ou === "region" ? region : undefined, depuis);
       const f = fourchetteDe(prix);
-      if (f) return { ventes: prix.length, ...f, depuis: debut.getFullYear(), ou, mots };
+      if (f) return { ventes: prix.length, ...f, depuis: plusAncienne ?? debut.getFullYear(), ou, mots };
     }
   } catch {
     // Le bulletin ne répond pas : pas de repère.
@@ -76,5 +79,5 @@ const k = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace
 /** La phrase montrée à l'écran, avec son périmètre et sa limite. */
 export function direComparables(c: Comparables, region?: string): string {
   const lieu = c.ou === "region" && region ? `en ${region}` : "en France";
-  return `${c.ventes} ventes de fonds « ${c.mots.join(", ")} » publiées ${lieu} depuis ${c.depuis} : la moitié se sont conclues entre ${k(c.bas)} et ${k(c.haut)}, prix médian ${k(c.median)}. Source : bulletin officiel. Ce sont des ventes de fonds, pas de sociétés entières.`;
+  return `Les ${c.ventes} dernières ventes de fonds « ${c.mots.join(", ")} » publiées ${lieu} avec leur prix, depuis ${c.depuis} : la moitié se sont conclues entre ${k(c.bas)} et ${k(c.haut)}, prix médian ${k(c.median)}. Source : bulletin officiel. Ce sont des ventes de fonds, pas de sociétés entières.`;
 }
