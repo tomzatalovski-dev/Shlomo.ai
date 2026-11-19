@@ -12,7 +12,7 @@ import { Offres } from "./Offres";
 import { direCreneau } from "@/lib/creneaux";
 import { chercherSociete } from "@/lib/registre";
 import { estimer } from "@/lib/estimation";
-import { ordonner, prioriteDe } from "@/lib/priorite";
+import { prioriteDe } from "@/lib/priorite";
 
 export const dynamic = "force-dynamic";
 // L'adresse de cette page contient le jeton secret du dossier : ni indexation, ni fuite vers d'autres sites.
@@ -79,7 +79,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
   const travail: Travail = await lireTravail(jeton).catch(() => ({}));
   const actifs = suivi.presentations.filter((p) => !p.exclu);
   // Les plus avancés d'abord : c'est là que le cédant regarde.
-  const enCourse = ordonner(suivi.presentations).filter((p) => !horsCourse(p)).sort((a, b) => etapeDe(b) - etapeDe(a));
+  const enCourse = suivi.presentations.filter((p) => !horsCourse(p)).sort((a, b) => etapeDe(b) - etapeDe(a) || a.rang - b.rang);
   const sortis = suivi.presentations.filter(horsCourse);
   const autorise = suivi.mandat?.autorisation_approche === true;
   const aDecider = actifs.filter((p) => p.accord && !p.revelation);

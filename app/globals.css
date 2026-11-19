@@ -870,3 +870,5 @@ small { line-height: 1.45; }
   .journal-agents li { grid-template-columns: 1fr; gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { .etape-col .pts a, .voyant.actif i { animation: none; } }
+.console .repreneur-piste .qui { border: 0; padding: 0; margin: 0; }
+.console .repreneur-piste .rang { color: var(--gris); }
