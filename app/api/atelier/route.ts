@@ -1,7 +1,11 @@
 import { chercherSociete } from "@/lib/registre";
 import { clore, ouvrir } from "@/lib/compteur";
 import { noterConsommation } from "@/lib/base";
-import { BaseIndisponible, enregistrerApproche, enregistrerPresentation, jetonValide, lireSuivi, mesurer, type Presentation } from "@/lib/base";
+import { BaseIndisponible, enregistrerApproche, enregistrerBriefings, enregistrerPresentation, jetonValide, lireSuivi, lireTravail, mesurer, type Presentation } from "@/lib/base";
+import { briefingRepreneurSur, ecrireBriefings, type VendeurBriefing } from "@/lib/briefing";
+import { chercherComparables, direComparables } from "@/lib/comparables";
+import { REGIONS } from "@/lib/fiche";
+import type { Signal, Societe } from "@/lib/types";
 import { presenter } from "@/lib/fiche";
 import { lireSite } from "@/lib/site";
 import { choisirDecideur, redigerEtRelire, MENTION_PROSPECTION } from "@/lib/approche";
@@ -61,6 +65,25 @@ export async function GET(requete: Request) {
         const aFaire = suivi.presentations.filter((p) => etatDe(p) === "a_faire");
         const interdits = [suivi.societe.nom, suivi.fiche?.ville ?? ""].filter(Boolean);
 
+        // Les deux briefings de chaque rapprochement partent des mêmes faits : les comptes du cédant, lus une fois, et les prix de vente publiés pour son métier.
+        const ficheVendeur = await chercherSociete(suivi.societe.siren).catch(() => null);
+        const repere = suivi.fiche?.activite ? await chercherComparables([{ code: suivi.fiche.codeActivite ?? "", libelle: suivi.fiche.activite, lien: "meme" }], suivi.fiche.region ?? undefined) : null;
+        const comparables = repere ? direComparables(repere, REGIONS[suivi.fiche?.region ?? ""]) : undefined;
+        const cedant: VendeurBriefing = {
+          nom: suivi.societe.nom, siren: suivi.societe.siren, ville: suivi.fiche?.ville, site: suivi.fiche?.site, metier: suivi.fiche?.activite,
+          presentation: suivi.presentation, region: suivi.fiche?.region, effectif: suivi.fiche?.effectif, anneeCreation: suivi.fiche?.anneeCreation, finances: ficheVendeur?.finances ?? [],
+        };
+        const briefer = async (agent: number, p: Presentation, fiche: Societe | null, signaux: Signal[]) => {
+          if (!iaActive()) return;
+          dire({ type: "etape", agent, siren: p.siren, etape: "briefing" });
+          const b = await ecrireBriefings(cedant, { societe: fiche, nom: p.nom, raisons: p.raisons ?? [], signaux, profil: p.profil }, comparables);
+          // Dernier contrôle : la partie lue par le repreneur avant l'accord ne nomme pas le cédant. Dans le doute, elle n'est pas enregistrée.
+          if (briefingRepreneurSur(b.repreneur, cedant)) await enregistrerBriefings(jeton, p.siren, b).catch(() => false);
+        };
+        // Dossiers préparés avant l'arrivée des briefings : on les complète, sans refaire l'approche.
+        const dejaEcrits = await lireTravail(jeton).catch(() => ({}) as Awaited<ReturnType<typeof lireTravail>>);
+        const aCompleter = suivi.presentations.filter((p) => !p.exclu && p.canal !== "refus_demarchage" && etatDe(p) !== "a_faire" && !dejaEcrits[p.siren]?.briefing);
+
         const travailler = async (agent: number) => {
           for (let p = aFaire.shift(); p; p = aFaire.shift()) {
             try {
@@ -103,10 +126,15 @@ export async function GET(requete: Request) {
 
               dire({ type: "etape", agent, siren: p.siren, etape: "enregistrement" });
               const garde = await enregistrerApproche(jeton, p.siren, { decideur: decideur?.nom, qualite, message: texte, site: veille?.site, signaux: veille?.signaux });
+              if (garde) await briefer(agent, p, fiche, veille?.signaux ?? []).catch(() => undefined);
               dire(garde ? { type: "pret", agent, siren: p.siren } : { type: "echec", agent, siren: p.siren });
             } catch {
               dire({ type: "echec", agent, siren: p.siren });
             }
+          }
+          for (let p = aCompleter.shift(); p; p = aCompleter.shift()) {
+            const fiche = await chercherSociete(p.siren).catch(() => null);
+            await briefer(agent, p, fiche, p.signaux ?? []).catch(() => undefined);
           }
         };
         // En parallèle des agents : la présentation anonyme de la société, écrite une fois à partir de son site.

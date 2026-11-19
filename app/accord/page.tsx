@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { lireAccord } from "@/lib/base";
+import { lireAccord, lireBriefingRepreneur } from "@/lib/base";
 import { REGIONS } from "@/lib/fiche";
 import Signer from "./Signer";
 import { Creneau, DeposerOffre } from "./Suite";
@@ -7,7 +7,7 @@ import { direCreneau, euros, poids } from "@/lib/creneaux";
 
 export const dynamic = "force-dynamic";
 // L'adresse contient le jeton propre à ce repreneur : ni indexation, ni fuite vers d'autres sites.
-export const metadata: Metadata = { title: "Accord de confidentialité — Shlomo.ai", robots: { index: false, follow: false }, referrer: "no-referrer" };
+export const metadata: Metadata = { title: "Une société à reprendre — Shlomo.ai", robots: { index: false, follow: false }, referrer: "no-referrer" };
 
 const ARTICLES = [
   { titre: "Objet", texte: "Shlomo.ai vous communique des informations sur une société à céder, à commencer par son nom, afin que vous puissiez étudier son rachat. Ces informations ne servent à rien d'autre." },
@@ -22,6 +22,9 @@ const date = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "nume
 export default async function Page({ searchParams }: { searchParams: Promise<{ a?: string }> }) {
   const jeton = (await searchParams).a ?? "";
   const a = await lireAccord(jeton).catch(() => null);
+  // Le briefing écrit pour ce repreneur : anonyme, lisible avant toute signature.
+  const b = a ? await lireBriefingRepreneur(jeton).catch(() => null) : null;
+  const brief = b && (b.pourquoiVous?.length || b.societe?.length) ? b : null;
   const cession = a ? [a.cession.activite, REGIONS[a.cession.region ?? ""], a.cession.effectif].filter(Boolean).join(" · ") : "";
 
   return (
@@ -34,7 +37,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
           ) : (
             <>
               <div>
-                <h1>{a.cedant ? "Voici la société à céder." : a.accord ? "Accord signé." : "Un accord, puis le nom."}</h1>
+                <h1>{a.cedant ? "Voici la société à céder." : a.accord ? "Accord signé." : brief ? "Une société à reprendre, choisie pour vous." : "Un accord, puis le nom."}</h1>
                 <p className="sous">
                   {a.cedant
                     ? "Vous avez signé l'accord de confidentialité et le cédant a donné son feu vert."
@@ -42,9 +45,30 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                       ? a.revelation === "refusee"
                         ? "Le cédant n'a pas souhaité que son nom vous soit communiqué. L'équipe Shlomo revient vers vous."
                         : "Le cédant est prévenu. Son nom s'affichera sur cette page dès qu'il aura donné son feu vert : gardez cette adresse."
-                      : "Une page, quatre articles. Le cédant ne se nomme qu'auprès des repreneurs qui s'engagent à la discrétion."}
+                      : brief
+                        ? brief.accroche || "Shlomo a comparé cette société à celles qui pourraient la reprendre. Voici pourquoi la vôtre est sur la liste."
+                        : "Une page, quatre articles. Le cédant ne se nomme qu'auprès des repreneurs qui s'engagent à la discrétion."}
                 </p>
               </div>
+
+              {brief && !a.cedant && (
+                <div className="carte brief apparait">
+                  {brief.pourquoiVous.length > 0 && (
+                    <section><h3>Pourquoi {a.repreneur}</h3><ul>{brief.pourquoiVous.map((x) => <li key={x}>{x}</li>)}</ul></section>
+                  )}
+                  {brief.societe.length > 0 && (
+                    <section><h3>La société, sans son nom</h3><ul className="serre">{brief.societe.map((x) => <li key={x}>{x}</li>)}</ul></section>
+                  )}
+                  {brief.rapprochement.length > 0 && (
+                    <section><h3>Ce que le rachat donnerait</h3><ul>{brief.rapprochement.map((x) => <li key={x}>{x}</li>)}</ul></section>
+                  )}
+                  {brief.comparables && <section><h3>Ce que des fonds comparables se sont vendus</h3><p className="mention">{brief.comparables}</p></section>}
+                  <p className="mention">
+                    Shlomo.ai agit pour le compte du cédant. Les chiffres viennent des comptes publiés et sont arrondis ; les raisons sont une analyse rédigée par une intelligence artificielle à partir de sources publiques, pas un conseil d'achat.
+                    {a.accord ? "" : " Le nom de la société vous est communiqué après signature de l'accord ci-dessous et feu vert du cédant."}
+                  </p>
+                </div>
+              )}
 
               {a.cedant && (
                 <div className="carte apparait">

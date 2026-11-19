@@ -175,7 +175,7 @@ export type LigneAtelier = {
 /** Événements envoyés au navigateur pendant la préparation des approches. */
 export type EvenementAtelier =
   | { type: "plan"; societe: string; lignes: LigneAtelier[] }
-  | { type: "etape"; agent: number; siren: string; etape: "registre" | "veille" | "redaction" | "relecture" | "enregistrement" }
+  | { type: "etape"; agent: number; siren: string; etape: "registre" | "veille" | "redaction" | "relecture" | "enregistrement" | "briefing" }
   | { type: "relecture"; agent: number; siren: string; issue: "valide" | "corrige" | "remplace" | "modele" | "non_relu"; problemes: string[] }
   | { type: "presentation"; etat: "debut" | "prete" | "sans"; texte?: string }
   | { type: "signaux"; agent: number; siren: string; site?: string; signaux: Signal[]; requetes?: string[]; pages?: PageLue[]; ecartes?: number }

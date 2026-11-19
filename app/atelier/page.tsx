@@ -75,6 +75,7 @@ function Atelier() {
       if (e.etape === "redaction") regler(e.agent, { etat: "rédige le message" });
       if (e.etape === "relecture") regler(e.agent, { etat: "fait relire le message par un second agent" });
       if (e.etape === "enregistrement") regler(e.agent, { etat: "range l'approche dans votre suivi" });
+      if (e.etape === "briefing") regler(e.agent, { etat: "écrit les deux briefings : le vôtre et celui du repreneur" });
       await attendre(e.etape === "registre" || e.etape === "veille" ? 650 : 350);
     } else if (e.type === "signaux") {
       // On rejoue ce que la recherche a réellement fait : ses requêtes, les pages reçues, les faits retenus.

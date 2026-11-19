@@ -1,3 +1,4 @@
+import type { BriefingRepreneur, BriefingVendeur, Briefings } from "./briefing";
 import type { Signal } from "./types";
 /**
  * Mémoire du site : base Supabase, appelée uniquement depuis le serveur.
@@ -70,7 +71,7 @@ export type Suivi = {
   societe: { siren: string; nom: string };
   jeton_fiche?: string;
   presentation?: string | null;
-  fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null; site?: string | null; activite?: string | null; anneeCreation?: number | null } | null;
+  fiche?: { ville?: string | null; effectif?: string | null; codeActivite?: string | null; site?: string | null; activite?: string | null; anneeCreation?: number | null; region?: string | null } | null;
   mandat: { signataire: string; signe_le: string; autorisation_approche: boolean; version: string; numero?: number; echeance?: string } | null;
   presentations: Presentation[];
   evenements: { texte: string; cree_le: string }[];
@@ -420,4 +421,24 @@ export async function lireProspects(code: string): Promise<{ siren: string; cour
 export async function validerQualite(code: string, dossier: string, etat: "a_verifier" | "validee" | "refusee"): Promise<boolean> {
   if (!jetonValide(code) || !jetonValide(dossier)) return false;
   return appeler<boolean>("valider_qualite", { p_code: code, p_dossier: dossier, p_etat: etat });
+}
+
+/** Enregistre les deux briefings d'un repreneur : celui qu'il lira, anonyme, et celui du cédant. */
+export async function enregistrerBriefings(jeton: string, siren: string, briefings: Briefings): Promise<boolean> {
+  if (!jetonValide(jeton) || !SIREN.test(siren)) return false;
+  return appeler<boolean>("enregistrer_briefings", { p_jeton: jeton, p_siren: siren, p_briefings: briefings });
+}
+
+/** Ce que le repreneur lit avant de signer l'accord. La base ne rend que la partie anonyme. */
+export async function lireBriefingRepreneur(jetonAccord: string): Promise<BriefingRepreneur | null> {
+  if (!jetonValide(jetonAccord)) return null;
+  return appeler<BriefingRepreneur | null>("lire_briefing_repreneur", { p_jeton: jetonAccord });
+}
+
+export type Travail = Record<string, { briefing?: BriefingVendeur | null; prepare_le?: string | null; statut_le?: string | null; echanges: { de: "repreneur" | "shlomo"; texte: string; le: string }[] }>;
+
+/** Par repreneur : le briefing du cédant et les messages réellement reçus et envoyés. */
+export async function lireTravail(jeton: string): Promise<Travail> {
+  if (!jetonValide(jeton)) return {};
+  return (await appeler<Travail | null>("lire_travail", { p_jeton: jeton })) ?? {};
 }

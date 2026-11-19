@@ -740,3 +740,57 @@ small { line-height: 1.45; }
 .filtres label { display: grid; gap: 6px; font-size: 13px; color: var(--gris); }
 .filtres input, .filtres select { font: inherit; font-size: 15px; color: var(--encre); background: var(--carte, #fff); border: 1px solid var(--contour); border-radius: 12px; padding: 10px 12px; min-width: 150px; }
 .flux-ligne .note.mot { font-size: 14px; font-weight: 500; }
+
+/* Briefings : une analyse lue comme une page, pas comme un tableau. */
+.brief { gap: 32px; }
+.brief section { display: grid; gap: 10px; }
+.brief h3 { margin: 0; font-size: 13px; font-weight: 500; color: var(--gris); letter-spacing: 0; }
+.brief ul { list-style: none; margin: 0; padding: 0; }
+.brief li { padding: 13px 0; border-top: 1px solid var(--trait); font-size: 16px; line-height: 1.5; color: var(--texte); text-wrap: pretty; }
+.brief li:first-child { border-top: 0; padding-top: 2px; }
+.brief ul.serre { display: flex; flex-wrap: wrap; gap: 8px; }
+.brief ul.serre li { border: 1px solid var(--trait); border-radius: 999px; padding: 7px 14px; font-size: 14px; }
+.brief ul.serre li:first-child { padding-top: 7px; border-top: 1px solid var(--trait); }
+.brief .mention { margin: 0; font-size: 13px; line-height: 1.55; color: var(--gris); max-width: 46em; }
+
+/* Page des agents : ce qui se passe, puis chaque repreneur sur sa piste. */
+.direct { display: grid; gap: 10px; padding: 22px 0; border-top: 1px solid var(--trait); border-bottom: 1px solid var(--trait); }
+.direct p { margin: 0; }
+.direct-fait { display: flex; align-items: baseline; gap: 12px; font-size: 16px; color: var(--texte); animation: direct-entre 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.direct-fait i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--encre); transform: translateY(-2px); animation: direct-pouls 2.4s ease-in-out infinite; }
+.direct-fait span { flex: 1 1 auto; }
+.direct-fait small { flex: none; color: var(--gris); font-size: 13px; font-variant-numeric: tabular-nums; }
+.direct-suite { font-size: 14px; color: var(--gris); padding-left: 19px; }
+.direct-suite b { font-weight: 500; color: var(--encre); margin-right: 6px; }
+@keyframes direct-entre { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes direct-pouls { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.parcours { display: grid; gap: 0; }
+.parcours h2 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: var(--gris); }
+.repreneur-piste { border-top: 1px solid var(--trait); }
+.repreneur-piste:last-of-type { border-bottom: 1px solid var(--trait); }
+.repreneur-piste > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(120px, 1fr) minmax(0, 0.9fr); align-items: center; gap: 24px; padding: 22px 0; }
+.repreneur-piste > summary::-webkit-details-marker { display: none; }
+.repreneur-piste .qui b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repreneur-piste .qui small { display: block; margin-top: 3px; font-size: 13px; color: var(--gris); }
+.piste { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.piste i { height: 3px; border-radius: 2px; background: var(--trait); transition: background 0.6s ease; }
+.piste i.fait { background: var(--encre); opacity: 0.35; }
+.piste i.ici { background: var(--encre); position: relative; }
+.piste i.ici::after { content: ""; position: absolute; right: -1px; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: var(--encre); transform: translate(50%, -50%); box-shadow: 0 0 0 4px var(--fond, #fff); }
+.ou-piste { font-size: 14px; color: var(--texte); text-align: right; }
+.repreneur-piste[open] > summary .qui b { white-space: normal; }
+.repreneur-piste .dedans { display: grid; gap: 22px; padding: 4px 0 32px; max-width: 46em; }
+.echanges { display: grid; gap: 12px; }
+.echanges h3 { margin: 0; font-size: 13px; font-weight: 500; color: var(--gris); }
+.echange { max-width: 88%; padding: 14px 18px; border-radius: 18px; border: 1px solid var(--trait); }
+.echange.recu { background: var(--voile); border-color: transparent; justify-self: start; border-bottom-left-radius: 6px; }
+.echange.envoye { justify-self: end; border-bottom-right-radius: 6px; }
+.echange small { display: block; font-size: 12px; color: var(--gris); margin-bottom: 4px; }
+.echange p { margin: 0; font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+@media (max-width: 720px) {
+  .repreneur-piste > summary { grid-template-columns: 1fr auto; gap: 10px 16px; }
+  .repreneur-piste .piste { grid-column: 1 / -1; order: 3; }
+  .echange { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .direct-fait, .direct-fait i { animation: none; } }
