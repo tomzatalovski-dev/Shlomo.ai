@@ -70,7 +70,7 @@ export async function GET(requete: Request) {
         const repere = suivi.fiche?.activite ? await chercherComparables([{ code: suivi.fiche.codeActivite ?? "", libelle: suivi.fiche.activite, lien: "meme" }], suivi.fiche.region ?? undefined) : null;
         const comparables = repere ? direComparables(repere, REGIONS[suivi.fiche?.region ?? ""]) : undefined;
         const cedant: VendeurBriefing = {
-          nom: suivi.societe.nom, siren: suivi.societe.siren, ville: suivi.fiche?.ville, site: suivi.fiche?.site, metier: suivi.fiche?.activite,
+          nom: suivi.societe.nom, siren: suivi.societe.siren, codeActivite: suivi.fiche?.codeActivite, ville: suivi.fiche?.ville, site: suivi.fiche?.site, metier: suivi.fiche?.activite,
           presentation: suivi.presentation, region: suivi.fiche?.region, effectif: suivi.fiche?.effectif, anneeCreation: suivi.fiche?.anneeCreation, finances: ficheVendeur?.finances ?? [],
         };
         const briefer = async (agent: number, p: Presentation, fiche: Societe | null, signaux: Signal[]) => {
@@ -82,7 +82,7 @@ export async function GET(requete: Request) {
         };
         // Dossiers préparés avant l'arrivée des briefings : on les complète, sans refaire l'approche.
         const dejaEcrits = await lireTravail(jeton).catch(() => ({}) as Awaited<ReturnType<typeof lireTravail>>);
-        const aCompleter = suivi.presentations.filter((p) => !p.exclu && p.canal !== "refus_demarchage" && etatDe(p) !== "a_faire" && !dejaEcrits[p.siren]?.briefing);
+        const aCompleter = suivi.presentations.filter((p) => !p.exclu && p.canal !== "refus_demarchage" && etatDe(p) !== "a_faire" && !dejaEcrits[p.siren]?.briefing?.pourquoiVous?.length);
 
         const travailler = async (agent: number) => {
           for (let p = aFaire.shift(); p; p = aFaire.shift()) {

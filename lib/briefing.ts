@@ -11,7 +11,7 @@ export type BriefingRepreneur = { accroche: string; pourquoiVous: string[]; soci
 export type BriefingVendeur = { quiIlEst: string[]; pourquoiVous: string[]; questions: string[]; aborder: string[]; comparables?: string };
 export type Briefings = { repreneur: BriefingRepreneur; vendeur: BriefingVendeur; ecrit_le: string };
 
-export type VendeurBriefing = { nom: string; ville?: string | null; site?: string | null; siren: string; metier?: string | null; presentation?: string | null; region?: string | null; effectif?: string | null; anneeCreation?: number | null; finances: ExerciceFinancier[] };
+export type VendeurBriefing = { codeActivite?: string | null; nom: string; ville?: string | null; site?: string | null; siren: string; metier?: string | null; presentation?: string | null; region?: string | null; effectif?: string | null; anneeCreation?: number | null; finances: ExerciceFinancier[] };
 export type RepreneurBriefing = { societe: Societe | null; nom: string; raisons: string[]; signaux: Signal[]; profil?: string | null };
 
 const k = (n: number) => (Math.abs(n) >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(".", ",").replace(",0", "")} M€` : `${Math.round(n / 1000)} k€`);
@@ -109,12 +109,13 @@ export async function ecrireBriefings(v: VendeurBriefing, r: RepreneurBriefing, 
     ecrit_le: new Date().toISOString(),
   };
   const elements = JSON.stringify({
-    societe_a_vendre: { ce_qu_on_peut_en_dire: societe, sa_presentation: (v.presentation ?? "").slice(0, 1500) || undefined },
+    societe_a_vendre: { ce_qu_on_peut_en_dire: societe, code_d_activite: v.codeActivite ?? undefined, sa_presentation: (v.presentation ?? "").slice(0, 1500) || undefined },
     repreneur: { ce_que_disent_ses_comptes: lui, constats: r.raisons, ce_qu_il_a_annonce_publiquement: r.signaux.filter((s) => s.genre !== "alerte").map((s) => s.texte), activite: r.societe?.codeActivite },
     ce_que_le_rachat_donnerait: ensemble,
   });
   try {
-    const texte = await ecrire(CONSIGNE, elements, 1100);
+    // Cinq listes en français : le plafond doit laisser la réponse entière, une réponse coupée est jetée.
+    const texte = await ecrire(CONSIGNE, elements, 2600);
     const objet = texte?.match(/\{[\s\S]*\}/);
     if (!objet) return base;
     const lu = JSON.parse(objet[0]) as { pour_le_repreneur?: Record<string, unknown>; pour_le_cedant?: Record<string, unknown> };
