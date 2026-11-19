@@ -25,3 +25,9 @@ export function direVille(ville?: string, departement?: string, codePostal?: str
   const nom = code ? DEPARTEMENTS[code.toUpperCase()] : undefined;
   return nom && nom.toLowerCase() !== propre.toLowerCase() ? `${propre} (${nom})` : propre;
 }
+
+/** Un nom de société écrit tout en capitales par le registre se lit mieux en minuscules ; un nom déjà composé est laissé tel quel. */
+export function nomLisible(nom: string): string {
+  if (nom !== nom.toUpperCase() || nom.length < 5) return nom;
+  return nom.split(/(\s+|\(|\))/).map((mot) => (/[.&\d]/.test(mot) ? mot : enMinuscules(mot))).join("").replace(/\b(Sas|Sarl|Sa|Eurl|Sci|Snc)\b/g, (m) => m.toUpperCase());
+}

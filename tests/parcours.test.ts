@@ -21,7 +21,7 @@ describe("parcours d'un repreneur", () => {
     expect(phraseEtat(suivi([p({ statut: "contacte" }), p({ siren: "2", statut: "contacte" })]))).toBe("2 repreneurs contactés. Shlomo attend leurs réponses.");
     expect(phraseEtat(suivi([p({ statut: "interesse" })]))).toBe("Shlomo discute avec un repreneur.");
     expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" } })]))).toBe("Un repreneur a signé l'accord de confidentialité. À vous de décider s'il apprend votre nom.");
-    expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" }, revelation: "autorisee", rendez_vous: "2026-12-01T10:00" })]))).toBe("Shlomo discute avec un repreneur. Vous rencontrez GIRAUD mardi 1 décembre à 10 h 00.");
+    expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" }, revelation: "autorisee", rendez_vous: "2026-12-01T10:00" })]))).toBe("Shlomo discute avec un repreneur. Vous rencontrez Giraud mardi 1 décembre à 10 h 00.");
     expect(phraseEtat(suivi([p({ offres: [{ id: 1, prix: 1, deposee_le: "" }] })]))).toBe("Une offre attend votre réponse.");
   });
   it("annonce la suite sans promettre de date", () => {

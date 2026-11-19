@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { lireAccord, lireBriefingRepreneur } from "@/lib/base";
 import { REGIONS } from "@/lib/fiche";
 import Signer from "./Signer";
+import { nomLisible } from "@/lib/lieu";
 import { Creneau, DeposerOffre } from "./Suite";
 import { direCreneau, euros, poids } from "@/lib/creneaux";
 
@@ -54,7 +55,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
               {brief && !a.cedant && (
                 <div className="carte brief apparait">
                   {brief.pourquoiVous.length > 0 && (
-                    <section><h3>Pourquoi {a.repreneur}</h3><ul>{brief.pourquoiVous.map((x) => <li key={x}>{x}</li>)}</ul></section>
+                    <section><h3>Pourquoi {nomLisible(a.repreneur)}</h3><ul>{brief.pourquoiVous.map((x) => <li key={x}>{x}</li>)}</ul></section>
                   )}
                   {brief.societe.length > 0 && (
                     <section><h3>La société, sans son nom</h3><ul className="serre">{brief.societe.map((x) => <li key={x}>{x}</li>)}</ul></section>

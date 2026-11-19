@@ -3,7 +3,7 @@ import { argumentsDuRegistre, composerArguments } from "@/lib/arguments";
 import { direAdministration, lireAnnonce } from "@/lib/bodacc";
 import { annuaire } from "@/lib/enquete";
 import { sansAveu } from "@/lib/ia";
-import { direVille } from "@/lib/lieu";
+import { direVille, nomLisible } from "@/lib/lieu";
 import { sansDoublon } from "@/lib/registre";
 import type { Societe } from "@/lib/types";
 
@@ -16,6 +16,9 @@ describe("société sans site", () => {
     expect(sansDoublon("DUPONT ET FILS (DEF)")).toBe("DUPONT ET FILS (DEF)");
     expect(direVille("TOURNES", "08")).toBe("Tournes (Ardennes)");
     expect(direVille("PARIS 8", "75")).toBe("Paris");
+    expect(nomLisible("ETABLISSEMENTS PIERRE GIRAUD")).toBe("Etablissements Pierre Giraud");
+    expect(nomLisible("S.G.T.E. SALMON")).toBe("S.G.T.E. Salmon");
+    expect(nomLisible("Circus")).toBe("Circus");
     expect(direVille("SAINT-MARTIN-DE-RE", undefined, "17410")).toBe("Saint-Martin-de-Re (Charente-Maritime)");
   });
   it("tire ses arguments du registre d'abord", () => {

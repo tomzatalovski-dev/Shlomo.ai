@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BaseIndisponible, lireSuivi, lireTravail, type Presentation, type StatutPresentation, type Travail } from "@/lib/base";
 import { PISTE, etapeDe, horsCourse, phraseEtat, prochaineEtape } from "@/lib/parcours";
 import Direct from "./Direct";
+import { direVille, nomLisible } from "@/lib/lieu";
 import { Exclusion } from "./Exclusion";
 import { Prix } from "./Prix";
 import { Revelation } from "./Revelation";
@@ -131,9 +132,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
           {offres.length > 0 && <Offres jeton={jeton} offres={offres} fourchette={suivi.fourchette ?? null} />}
 
           {autorise && <Prix jeton={jeton} validee={suivi.fourchette ?? null} repere={repere} />}
-          {autorise && <Documents jeton={jeton} documents={suivi.documents ?? []} />}
-          {autorise && <Creneaux jeton={jeton} creneaux={suivi.creneaux ?? []} pris={actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }))} />}
-
           <section className="parcours">
             <h2>Vos repreneurs, un par un</h2>
             {enCourse.map((p) => {
@@ -144,7 +142,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
               return (
                 <details key={p.siren} className="repreneur-piste" open={etape >= 3 && enCourse.filter((x) => etapeDe(x) >= 3).length === 1}>
                   <summary>
-                    <span className="qui"><b>{p.nom}</b><small>{[p.ville, p.effectif].filter(Boolean).join(" · ")}</small></span>
+                    <span className="qui"><b>{nomLisible(p.nom)}</b><small>{[direVille(p.ville ?? undefined), p.effectif].filter(Boolean).join(" · ")}</small></span>
                     <span className="piste" role="img" aria-label={etape ? `Étape ${etape} sur 6 : ${PISTE[etape - 1]}` : "Approche en préparation"}>
                       {PISTE.map((nom, i) => <i key={nom} className={i < etape - 1 ? "fait" : i === etape - 1 ? "ici" : ""} />)}
                     </span>
@@ -163,7 +161,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                         <h3>La conversation</h3>
                         {t!.echanges.map((e, i) => (
                           <div key={i} className={e.de === "repreneur" ? "echange recu" : "echange envoye"}>
-                            <small>{e.de === "repreneur" ? p.nom : "Shlomo, pour vous"} · {date(e.le)}</small>
+                            <small>{e.de === "repreneur" ? nomLisible(p.nom) : "Shlomo, pour vous"} · {date(e.le)}</small>
                             <p>{e.texte}</p>
                           </div>
                         ))}
@@ -207,6 +205,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
               </p>
             )}
           </section>
+
+          {autorise && <Documents jeton={jeton} documents={suivi.documents ?? []} />}
+          {autorise && <Creneaux jeton={jeton} creneaux={suivi.creneaux ?? []} pris={actifs.filter((p) => p.rendez_vous).map((p) => ({ creneau: p.rendez_vous!, nom: p.nom }))} />}
+
 
           <div className="carte">
             <p className="message">

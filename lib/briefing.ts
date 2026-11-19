@@ -95,6 +95,8 @@ Réponds uniquement par un objet JSON :
    "aborder": ["trois conseils au plus pour la première rencontre avec ce repreneur précis, concrets"]}}
 Règles pour "pour_le_repreneur" : il est lu AVANT tout accord de confidentialité. Ne nomme jamais le cédant, ni sa ville, ni son département, ni ses dirigeants, ni ses clients, ni ses marques : écris « cette société ». Sa région est permise. Reste factuel : pas de conseil d'achat, pas de superlatif, pas de « opportunité unique ».
 Règles pour "pour_le_cedant" : parle du repreneur à la troisième personne (« il », « cette société »). Ne lui prête aucune intention qui ne découle pas d'un élément fourni ; écris « sans doute » ou « pourrait » pour ce qui est une analyse.
+Ne cite jamais un code d'activité (« 43.32A ») : dis le métier en mots courants. Ne redis pas une ligne fournie telle quelle : relie deux éléments.
+Pour "aborder" : la rencontre a lieu APRÈS l'accord de confidentialité, quand le repreneur connaît déjà le nom du cédant. Les conseils portent sur ce qu'il faut montrer, dire et demander pendant la rencontre, jamais sur l'anonymat.
 Une liste vide vaut mieux qu'une raison générale du type « même secteur » ou « synergies ».`;
 
 /** Écrit les deux briefings. Sans IA ou en cas d'échec, rend les seules parties calculées : rien n'est inventé pour combler. */
@@ -120,12 +122,13 @@ export async function ecrireBriefings(v: VendeurBriefing, r: RepreneurBriefing, 
     if (!objet) return base;
     const lu = JSON.parse(objet[0]) as { pour_le_repreneur?: Record<string, unknown>; pour_le_cedant?: Record<string, unknown> };
     // Côté repreneur : rien qui nomme le cédant, aucun chiffre hors des éléments.
-    const sur = (t: string) => !nomme(t, interdits) && chiffresConnus(t, elements);
+    const sansCode = (t: string) => !/\b\d{2}\.\d{2}[A-Z]\b/.test(t);
+    const sur = (t: string) => !nomme(t, interdits) && chiffresConnus(t, elements) && sansCode(t);
     const accroche = ligne(lu.pour_le_repreneur?.accroche, 240);
     base.repreneur.accroche = accroche.length >= 25 && sur(accroche) ? accroche : "";
     base.repreneur.pourquoiVous = liste(lu.pour_le_repreneur?.pourquoi_vous, 260).filter(sur);
     // Côté cédant : aucun chiffre hors des éléments.
-    const juste = (t: string) => chiffresConnus(t, elements);
+    const juste = (t: string) => chiffresConnus(t, elements) && sansCode(t);
     base.vendeur.pourquoiVous = liste(lu.pour_le_cedant?.pourquoi_vous, 280).filter(juste);
     base.vendeur.questions = liste(lu.pour_le_cedant?.questions, 320).filter(juste);
     base.vendeur.aborder = liste(lu.pour_le_cedant?.aborder, 320).filter(juste);

@@ -1,5 +1,6 @@
 import type { Presentation, Suivi } from "./base";
 import { direCreneau } from "./creneaux";
+import { nomLisible } from "./lieu";
 
 /** Les six étapes d'un repreneur, telles que le cédant les voit avancer. Chacune correspond à un fait enregistré en base. */
 export const PISTE = ["Approche prête", "Contacté", "A répondu", "Accord signé", "Rendez-vous", "Offre"] as const;
@@ -30,7 +31,7 @@ export function phraseEtat(suivi: Suivi): string {
   if (aNommer) return `${n(aNommer, "repreneur a signé", "repreneurs ont signé")} l'accord de confidentialité. À vous de décider s'il${aNommer > 1 ? "s apprennent" : " apprend"} votre nom.`;
   const rendezVous = actifs.filter((p) => p.rendez_vous).sort((a, b) => a.rendez_vous!.localeCompare(b.rendez_vous!))[0];
   const discussions = actifs.filter((p) => etapeDe(p) >= 3).length;
-  if (rendezVous) return `Shlomo discute avec ${discussions > 1 ? `${discussions} repreneurs` : "un repreneur"}. Vous rencontrez ${rendezVous.nom} ${direCreneau(rendezVous.rendez_vous!)}.`;
+  if (rendezVous) return `Shlomo discute avec ${discussions > 1 ? `${discussions} repreneurs` : "un repreneur"}. Vous rencontrez ${nomLisible(rendezVous.nom)} ${direCreneau(rendezVous.rendez_vous!)}.`;
   if (discussions) return `Shlomo discute avec ${discussions > 1 ? `${discussions} repreneurs` : "un repreneur"}.`;
   const contactes = actifs.filter((p) => etapeDe(p) === 2).length;
   if (contactes) return `${n(contactes, "repreneur contacté", "repreneurs contactés")}. Shlomo attend ${contactes > 1 ? "leurs réponses" : "sa réponse"}.`;
