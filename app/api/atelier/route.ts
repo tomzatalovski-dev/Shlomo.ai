@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const AGENTS = 3;
+const AGENTS = 5;
 
 function etatDe(p: Presentation): LigneAtelier["etat"] {
   if (p.exclu) return "raye";
@@ -75,8 +75,11 @@ export async function GET(requete: Request) {
           nom: suivi.societe.nom, siren: suivi.societe.siren, codeActivite: suivi.fiche?.codeActivite, ville: suivi.fiche?.ville, site: suivi.fiche?.site, metier: suivi.fiche?.activite,
           presentation: suivi.presentation, region: suivi.fiche?.region, effectif: suivi.fiche?.effectif, anneeCreation: suivi.fiche?.anneeCreation, finances: ficheVendeur?.finances ?? [],
         };
+        // La présentation anonyme s'écrit en parallèle ; les briefings l'attendent, car c'est elle qui dit ce que fait la société.
+        let presentationPrete: Promise<string | null> = Promise.resolve(suivi.presentation ?? null);
         const briefer = async (agent: number, p: Presentation, fiche: Societe | null, signaux: Signal[]) => {
           if (!iaActive()) return;
+          cedant.presentation = (await presentationPrete.catch(() => null)) ?? cedant.presentation;
           dire({ type: "etape", agent, siren: p.siren, etape: "briefing" });
           const b = await ecrireBriefings(cedant, { societe: fiche, nom: p.nom, raisons: p.raisons ?? [], signaux, profil: p.profil }, comparables);
           // Dernier contrôle : la partie lue par le repreneur avant l'accord ne nomme pas le cédant. Dans le doute, elle est vidée.
@@ -142,16 +145,22 @@ export async function GET(requete: Request) {
           }
         };
         // En parallèle des agents : la présentation anonyme de la société, écrite une fois à partir de son site.
-        const presentation = async () => {
-          if (suivi.presentation || !suivi.fiche?.site || !iaActive()) return;
+        const presentation = async (): Promise<string | null> => {
+          if (suivi.presentation) return suivi.presentation;
+          if (!suivi.fiche?.site || !iaActive()) return null;
           dire({ type: "presentation", etat: "debut" });
           const site = await lireSite(suivi.fiche.site).catch(() => null);
           const texte = site ? await presenter(site.texte, { nom: suivi.societe.nom, ville: suivi.fiche.ville, site: suivi.fiche.site, activite: suivi.fiche.activite }) : null;
-          if (texte && (await enregistrerPresentation(jeton, texte).catch(() => false))) dire({ type: "presentation", etat: "prete", texte });
-          else dire({ type: "presentation", etat: "sans" });
+          if (texte && (await enregistrerPresentation(jeton, texte).catch(() => false))) {
+            dire({ type: "presentation", etat: "prete", texte });
+            return texte;
+          }
+          dire({ type: "presentation", etat: "sans" });
+          return null;
         };
 
-        await Promise.all([presentation(), ...Array.from({ length: AGENTS }, (_, i) => travailler(i + 1))]);
+        presentationPrete = presentation().catch(() => null);
+        await Promise.all([presentationPrete, ...Array.from({ length: AGENTS }, (_, i) => travailler(i + 1))]);
         await mesurer("approches_pretes", suivi.societe.siren);
         dire({ type: "fin" });
       } catch (e) {

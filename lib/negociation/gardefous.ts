@@ -6,6 +6,8 @@ export type Dossier = {
   activite: string;
   region: string;
   effectif: string;
+  /** Ce que fait la société, dit sans la nommer : la présentation anonyme remise aux repreneurs. Peut être dite avant tout accord. */
+  presentation?: string;
   /** Fourchette de prix validée par le vendeur. Sans elle, aucun montant ne peut être annoncé. */
   fourchette: { bas: number; haut: number } | null;
   /** L'accord de confidentialité est-il signé par ce repreneur ? */

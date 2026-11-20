@@ -52,6 +52,7 @@ function vue(dossier: Dossier) {
     activite: dossier.activite,
     region: dossier.region,
     effectif: dossier.effectif,
+    ce_que_fait_la_societe: dossier.presentation ?? "non décrit au dossier : dis que tu le vérifies auprès du cédant",
     fourchette_validee_par_le_vendeur: dossier.fourchette ? `${dossier.fourchette.bas.toLocaleString("fr-FR")} € à ${dossier.fourchette.haut.toLocaleString("fr-FR")} €` : null,
     confidentialite: dossier.accordSigne
       ? "Accord signé et feu vert du cédant : le repreneur a déjà reçu le nom de la société, sur la page de l'accord. Ne dis plus que le nom viendra plus tard. La suite est un rendez-vous avec le cédant."

@@ -1,4 +1,4 @@
-import { BaseIndisponible, changerStatut, fixerCourrielRepreneur, lireEnvois, lirePoste, noterEnvoi, marquerEssai, opposer, purgerContacts, validerQualite, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
+import { BaseIndisponible, changerStatut, lireFiche, fixerCourrielRepreneur, lireEnvois, lirePoste, noterEnvoi, marquerEssai, opposer, purgerContacts, validerQualite, lirePosteDossier, proposerReponse, rattacherInteret, recevoirReponse, traiterEchange, type StatutPresentation } from "@/lib/base";
 import { iaActive } from "@/lib/ia";
 import { verifier } from "@/lib/negociation/gardefous";
 import { VERSION } from "@/lib/negociation/manuel";
@@ -99,7 +99,7 @@ export async function POST(requete: Request) {
       // Le texte a pu être retouché à la main : il repasse par les mêmes garde-fous que celui de l'IA.
       const envoye = texte(c?.texte, 6000);
       const d = await lirePosteDossier(code, dossier);
-      const faits = d && dossierPour(d, siren);
+      const faits = d && dossierPour(d, siren, d.jeton_fiche ? (await lireFiche(d.jeton_fiche).catch(() => null))?.presentation : null);
       if (!d || !faits) return refus("Accès refusé ou repreneur introuvable.", 403);
       if (d.qualite !== "validee") return refus("Envoi verrouillé : validez d'abord la qualité du signataire du mandat, en haut du dossier.", 423);
       const recu = [...conversation(d.presentations.find((p) => p.siren === siren)!)].reverse().find((t) => t.de === "repreneur")?.texte ?? "";
@@ -116,7 +116,7 @@ export async function POST(requete: Request) {
       // Relecture après l'enregistrement : les faits (étape, nombre de repreneurs en discussion) tiennent compte de cette réponse.
       const d = await lirePosteDossier(code, dossier);
       const lui = d?.presentations.find((p) => p.siren === siren);
-      const faits = d && dossierPour(d, siren);
+      const faits = d && dossierPour(d, siren, d.jeton_fiche ? (await lireFiche(d.jeton_fiche).catch(() => null))?.presentation : null);
       if (!d || !lui || !faits) return refus("Repreneur introuvable.", 404);
       // Le cédant apprend qu'une réponse est arrivée : c'est un fait réel, il le retrouve sur sa page.
       if (lui.jeton_accord) await prevenirVendeur(lui.jeton_accord, new URL(requete.url).origin, (n) => `${n} a répondu`, (n) => `${n} a répondu à notre message. Shlomo prépare la suite ; l'échange est sur votre page.`);

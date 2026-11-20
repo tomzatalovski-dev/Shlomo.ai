@@ -26,7 +26,7 @@ const EN_DISCUSSION: StatutPresentation[] = ["a_repondu", "interesse", "confiden
  * La fourchette est celle que le vendeur a validée lui-même ; sans elle, aucun montant ne peut partir.
  * Le nom du vendeur n'est permis que si ce repreneur a signé l'accord et que le vendeur a donné son feu vert.
  */
-export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
+export function dossierPour(d: DossierPoste, siren: string, presentation?: string | null): Dossier | null {
   const lui = d.presentations.find((p) => p.siren === siren && !p.exclu);
   if (!lui) return null;
   const autres = d.presentations.filter((p) => !p.exclu && p.siren !== siren);
@@ -37,6 +37,7 @@ export function dossierPour(d: DossierPoste, siren: string): Dossier | null {
     // Le registre donne un code de région : le négociateur reçoit le nom.
     region: REGIONS[d.fiche?.region ?? ""] ?? "",
     effectif: d.fiche?.effectif ?? "",
+    ...(presentation ? { presentation: presentation.slice(0, 1800) } : {}),
     fourchette: d.fourchette && d.fourchette.bas > 0 && d.fourchette.haut >= d.fourchette.bas ? { bas: d.fourchette.bas, haut: d.fourchette.haut } : null,
     accordSigne: Boolean(lui.accord) && lui.revelation === "autorisee",
     accordEnAttente: Boolean(lui.accord) && lui.revelation !== "autorisee",
