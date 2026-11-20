@@ -195,3 +195,21 @@ export async function rechercher(consigne: string, contenu: string, recherches =
   const texte = blocs.filter((b) => b.type === "text").map((b) => b.text ?? "").join("").trim();
   return { texte: texte || null, requetes, pages };
 }
+
+/** Vérifie que le modèle fin répond à cette clé : un appel minimal, dont on ne garde que le statut et le modèle qui a répondu. */
+export async function sonderModeleFin(): Promise<{ statut: number; modele?: string; erreur?: string } | null> {
+  const cle = process.env.ANTHROPIC_API_KEY;
+  if (!cle) return null;
+  try {
+    const rep = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
+      signal: AbortSignal.timeout(20_000),
+      body: JSON.stringify({ model: MODELE_FIN, max_tokens: 2600, system: [{ type: "text", text: "Réponds par le seul mot : oui.", cache_control: { type: "ephemeral" } }], messages: [{ role: "user", content: "Es-tu là ?" }] }),
+    });
+    const lu = (await rep.json().catch(() => null)) as { model?: string; error?: { type?: string } } | null;
+    return { statut: rep.status, modele: lu?.model, erreur: lu?.error?.type };
+  } catch (e) {
+    return { statut: 0, erreur: e instanceof Error ? e.name : "inconnue" };
+  }
+}

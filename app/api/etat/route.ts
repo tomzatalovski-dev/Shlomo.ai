@@ -2,7 +2,7 @@ import { cleServeurValide, lireConsommations, lirePoste } from "@/lib/base";
 import { cout, PRIX } from "@/lib/compteur";
 import { courrielActif } from "@/lib/courriel";
 import { bilanActif } from "@/lib/bilan";
-import { iaActive } from "@/lib/ia";
+import { iaActive, modeles, sonderModeleFin } from "@/lib/ia";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,5 +25,8 @@ export async function GET(requete: Request) {
     courriel: courrielActif(),
     cle_serveur: !cle ? "absente" : (await cleServeurValide(cle)) ? "bonne" : "fausse",
     bilans_inpi: bilanActif(),
+    modeles: modeles(),
+    // Sur demande seulement (`&sonde=1`) : un appel minimal au modèle fin, pour savoir s'il répond à cette clé.
+    modele_fin: new URL(requete.url).searchParams.get("sonde") === "1" ? await sonderModeleFin() : undefined,
   });
 }
