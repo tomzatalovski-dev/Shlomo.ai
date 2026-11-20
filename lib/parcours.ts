@@ -25,6 +25,8 @@ const n = (k: number, un: string, plusieurs: string) => (k > 1 ? `${k} ${plusieu
 /** La phrase en haut de la page : ce qui compte maintenant, en une ligne. */
 export function phraseEtat(suivi: Suivi): string {
   const actifs = suivi.presentations.filter((p) => !horsCourse(p));
+  const accepte = actifs.find((p) => (p.offres ?? []).some((o) => o.reponse === "acceptee"));
+  if (accepte) return `Vous avez accepté l'offre de ${nomLisible(accepte.nom)}. L'équipe Shlomo organise la suite avec vous.`;
   const enAttente = actifs.flatMap((p) => p.offres ?? []).filter((o) => !o.reponse).length;
   if (enAttente) return enAttente > 1 ? `${enAttente} offres attendent votre réponse.` : "Une offre attend votre réponse.";
   const aNommer = actifs.filter((p) => p.accord && !p.revelation).length;
@@ -46,6 +48,7 @@ export function prochaineEtape(suivi: Suivi): string {
   if (!suivi.mandat?.autorisation_approche) return "Aucune approche n'est autorisée par votre mandat.";
   if (suivi.qualite === "refusee") return "Votre qualité de dirigeant n'a pas pu être confirmée : écrivez-nous.";
   if (suivi.qualite !== "validee") return "Vérification de votre qualité de dirigeant, sous 24 heures. Aucun message ne part avant.";
+  if (actifs.some((p) => (p.offres ?? []).some((o) => o.reponse === "acceptee"))) return "Préparation de la vente avec votre expert-comptable et votre avocat : lettre d'intention, vérifications, acte.";
   if (!suivi.fourchette && actifs.some((p) => etapeDe(p) >= 3)) return "Fixez votre fourchette de prix : des repreneurs vont la demander.";
   if (actifs.some((p) => etapeDe(p) === 0)) return "Préparation des messages restants : le bon interlocuteur, ce qu'on sait de lui, le message.";
   const prets = actifs.filter((p) => etapeDe(p) === 1).length;
@@ -55,4 +58,14 @@ export function prochaineEtape(suivi: Suivi): string {
   if (actifs.some((p) => etapeDe(p) === 4 && p.revelation === "autorisee" && !p.rendez_vous)) return (suivi.creneaux?.length ?? 0) ? "Choix d'un rendez-vous par le repreneur qui connaît votre nom." : "Indiquez vos disponibilités : un repreneur peut vous rencontrer.";
   if (actifs.some((p) => etapeDe(p) === 5)) return "Rencontre, puis offre du repreneur.";
   return "Shlomo suit chaque repreneur et vous prévient à chaque étape.";
+}
+
+/** L'étape dite en mots, pour la ligne d'un repreneur. */
+export function direEtape(p: Presentation): string {
+  const etape = etapeDe(p);
+  if (etape === 6) {
+    const derniere = [...(p.offres ?? [])].sort((a, b) => a.deposee_le.localeCompare(b.deposee_le)).at(-1);
+    return derniere?.reponse === "acceptee" ? "Offre acceptée" : derniere?.reponse === "refusee" ? "Offre refusée" : derniere?.reponse === "a_ameliorer" ? "Meilleure offre attendue" : "Offre remise";
+  }
+  return etape === 5 ? "Rendez-vous pris" : etape ? PISTE[etape - 1] : "En préparation";
 }

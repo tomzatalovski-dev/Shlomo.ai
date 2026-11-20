@@ -67,7 +67,9 @@ export async function GET(requete: Request) {
 
         // Les deux briefings de chaque rapprochement partent des mêmes faits : les comptes du cédant, lus une fois, et les prix de vente publiés pour son métier.
         const ficheVendeur = await chercherSociete(suivi.societe.siren).catch(() => null);
-        const repere = suivi.fiche?.activite ? await chercherComparables([{ code: suivi.fiche.codeActivite ?? "", libelle: suivi.fiche.activite, lien: "meme" }], suivi.fiche.region ?? undefined) : null;
+        // Les prix publiés sont ceux de fonds de commerce : ils ne disent rien d'une société de vingt salariés ou plus.
+        const petite = Number((suivi.fiche?.effectif ?? "").match(/\d+/)?.[0] ?? 0) < 20;
+        const repere = petite && suivi.fiche?.activite ? await chercherComparables([{ code: suivi.fiche.codeActivite ?? "", libelle: suivi.fiche.activite, lien: "meme" }], suivi.fiche.region ?? undefined) : null;
         const comparables = repere ? direComparables(repere, REGIONS[suivi.fiche?.region ?? ""]) : undefined;
         const cedant: VendeurBriefing = {
           nom: suivi.societe.nom, siren: suivi.societe.siren, codeActivite: suivi.fiche?.codeActivite, ville: suivi.fiche?.ville, site: suivi.fiche?.site, metier: suivi.fiche?.activite,

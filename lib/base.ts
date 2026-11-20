@@ -464,7 +464,7 @@ export async function lireEnvois(code: string, dossier: string): Promise<Record<
 
 export type RepreneurOrchestre = {
   siren: string; nom: string; statut: StatutPresentation; statut_le?: string | null; canal?: string | null; relances: number; a_courriel: boolean; courriel?: string | null;
-  code_court: string; decideur?: string | null; pret: boolean; accord: boolean; revelation?: string | null; a_relire: number; premier_le?: string | null;
+  code_court: string; decideur?: string | null; pret: boolean; accord: boolean; revelation?: string | null; a_relire: number; offre_acceptee?: boolean; premier_le?: string | null;
 };
 export type DossierOrchestre = { id: string; nom: string; essai: boolean; qualite?: "a_verifier" | "validee" | "refusee"; signe_le: string; presentations: RepreneurOrchestre[] };
 

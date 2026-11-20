@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { etapeDe, phraseEtat, prochaineEtape } from "@/lib/parcours";
+import { direEtape, etapeDe, phraseEtat, prochaineEtape } from "@/lib/parcours";
 import type { Presentation, Suivi } from "@/lib/base";
 
 const p = (plus: Partial<Presentation>): Presentation => ({ siren: "1", nom: "GIRAUD", rang: 1, raisons: [], statut: "identifie", exclu: false, presente_le: "", ...plus }) as Presentation;
@@ -23,6 +23,12 @@ describe("parcours d'un repreneur", () => {
     expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" } })]))).toBe("Un repreneur a signé l'accord de confidentialité. À vous de décider s'il apprend votre nom.");
     expect(phraseEtat(suivi([p({ accord: { signataire: "a", signe_le: "" }, revelation: "autorisee", rendez_vous: "2026-12-01T10:00" })]))).toBe("Shlomo discute avec un repreneur. Vous rencontrez Giraud mardi 1 décembre à 10 h 00.");
     expect(phraseEtat(suivi([p({ offres: [{ id: 1, prix: 1, deposee_le: "" }] })]))).toBe("Une offre attend votre réponse.");
+  });
+  it("dit qu'une offre est acceptée", () => {
+    const accepte = suivi([p({ offres: [{ id: 1, prix: 1, deposee_le: "", reponse: "acceptee" }] })]);
+    expect(phraseEtat(accepte)).toBe("Vous avez accepté l'offre de Giraud. L'équipe Shlomo organise la suite avec vous.");
+    expect(prochaineEtape(accepte)).toContain("lettre d'intention");
+    expect(direEtape(accepte.presentations[0])).toBe("Offre acceptée");
   });
   it("annonce la suite sans promettre de date", () => {
     expect(prochaineEtape(suivi([p({ canal: "a_envoyer" })], { qualite: "a_verifier" }))).toContain("Vérification de votre qualité");

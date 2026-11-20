@@ -10,7 +10,7 @@ export const JOURS_AVANT_SECONDE = 6;
 export const JOURS_AVANT_CLASSEMENT = 10;
 
 export type Action =
-  | "verifier_qualite" | "saisir_adresse" | "premier_message" | "relance_1" | "relance_2" | "classer_sans_suite" | "reponse_a_relire" | "decision_du_cedant";
+  | "verifier_qualite" | "saisir_adresse" | "premier_message" | "relance_1" | "relance_2" | "classer_sans_suite" | "reponse_a_relire" | "decision_du_cedant" | "organiser_la_vente";
 export type AFaire = { dossier: string; nomDossier: string; essai: boolean; siren?: string; nom?: string; action: Action; depuisJours?: number };
 
 const JOUR = 86_400_000;
@@ -18,6 +18,7 @@ const jours = (iso: string | null | undefined, maintenant: Date) => (iso ? Math.
 
 function pour(p: RepreneurOrchestre, maintenant: Date): { action: Action; depuisJours?: number } | null {
   if (p.canal === "refus_demarchage" || p.statut === "sans_suite" || p.statut === "conclu") return null;
+  if (p.offre_acceptee) return { action: "organiser_la_vente" };
   if (p.a_relire > 0) return { action: "reponse_a_relire" };
   if (p.accord && !p.revelation) return { action: "decision_du_cedant", depuisJours: jours(p.statut_le, maintenant) };
   const depuis = jours(p.statut_le, maintenant);
@@ -56,6 +57,7 @@ const DIRE: Record<Action, (x: AFaire) => string> = {
   relance_2: (x) => `Dernière relance à ${x.nom}, sans réponse depuis ${x.depuisJours} jours`,
   classer_sans_suite: (x) => `Classer ${x.nom} sans suite : deux relances, ${x.depuisJours} jours de silence`,
   reponse_a_relire: (x) => `Relire et envoyer la réponse proposée à ${x.nom}`,
+  organiser_la_vente: (x) => `Le cédant a accepté l'offre de ${x.nom} : appeler les deux parties et lancer la suite`,
   decision_du_cedant: (x) => `Le cédant doit dire s'il se nomme auprès de ${x.nom}`,
 };
 export const direAFaire = (x: AFaire) => DIRE[x.action](x);

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { BaseIndisponible, lireSuivi, lireTravail, type Presentation, type StatutPresentation, type Travail } from "@/lib/base";
-import { PISTE, etapeDe, horsCourse, phraseEtat, prochaineEtape } from "@/lib/parcours";
+import { PISTE, direEtape, etapeDe, horsCourse, phraseEtat, prochaineEtape } from "@/lib/parcours";
 import Direct from "./Direct";
 import { direVille, nomLisible } from "@/lib/lieu";
 import { Exclusion } from "./Exclusion";
@@ -192,7 +192,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
                     {PISTE.map((nom, i) => <i key={nom} className={i < etape - 1 ? "fait" : i === etape - 1 ? "ici" : ""} />)}
                   </span>
                   <span className="ou-piste">
-                    {etape ? (etape === 6 ? "Offre remise" : etape === 5 ? "Rendez-vous pris" : PISTE[etape - 1]) : "En préparation"}{attente ? " · à vérifier" : ""}
+                    {direEtape(p)}{attente ? " · à vérifier" : ""}
                     {p.statut === "identifie" && <Exclusion jeton={jeton} siren={p.siren} exclu={false} />}
                   </span>
                 </summary>

@@ -116,7 +116,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
                   </div>
 
                   <div className="carte">
-                    <p className="message"><b>Votre offre.</b> Quand vous êtes prêt, déposez un prix et vos conditions.</p>
+                    <p className="message"><b>Votre offre.</b> {(a.dossier?.offres ?? []).some((o) => o.reponse === "acceptee") ? "Le cédant l'a acceptée. L'équipe Shlomo vous contacte pour organiser la suite." : (a.dossier?.offres ?? []).length ? "Le cédant y répond sur cette page." : "Quand vous êtes prêt, déposez un prix et vos conditions."}</p>
                     {a.dossier.offres.map((o) => (
                       <div key={o.id} className="ligne">
                         <span className="quoi"><b>{euros(o.prix)}</b><small>{[o.financement, o.calendrier, o.conditions].filter(Boolean).join(" · ")}</small></span>
