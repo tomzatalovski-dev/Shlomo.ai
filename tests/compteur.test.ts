@@ -9,7 +9,8 @@ describe("compteur", () => {
         (async () => { await new Promise((x) => setTimeout(x, 5)); compter({ input_tokens: 500, cache_read_input_tokens: 100, output_tokens: 50 }); })(),
       ]);
     });
-    expect(r).toMatchObject({ appels: 2, entree: 1600, sortie: 250, recherches: 2 });
+    // Une lecture en cache coûte un dixième d'un jeton lu : 100 jetons en cache comptent pour 10.
+    expect(r).toMatchObject({ appels: 2, entree: 1510, sortie: 250, recherches: 2 });
     expect(r.duree_ms).toBeGreaterThanOrEqual(4);
   });
 
@@ -22,5 +23,13 @@ describe("compteur", () => {
   it("chiffre un relevé au prix du modèle par défaut, et se tait pour un autre modèle", () => {
     expect(cout({ entree: 1_000_000, sortie: 100_000, recherches: 3 }, "claude-haiku-5-5")).toBeCloseTo(0.18, 5);
     expect(cout({ entree: 1, sortie: 1, recherches: 0 }, "autre-modele")).toBeNull();
+  });
+  it("pèse le modèle fin à son prix", async () => {
+    const r = await relever(async () => {
+      compter({ input_tokens: 1000, output_tokens: 100 }, 20);
+      compter({ input_tokens: 100, cache_read_input_tokens: 4000, output_tokens: 100 }, 20);
+    });
+    // 1000 × 20, puis 100 × 20 + 4000 lus en cache au vingtième du prix (× 20 × 0,05 = × 1).
+    expect(r).toMatchObject({ appels: 2, entree: 20000 + 2000 + 4000, sortie: 4000 });
   });
 });

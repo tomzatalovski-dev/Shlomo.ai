@@ -98,7 +98,7 @@ export async function redigerMessage(f: FaitsApproche): Promise<string> {
 
 async function brouillon(f: FaitsApproche): Promise<{ texte: string; ia: boolean }> {
   try {
-    const texte = await ecrire(CONSIGNE, `<faits>${JSON.stringify(faitsPour(f))}</faits>`, 500);
+    const texte = await ecrire(CONSIGNE, `<faits>${JSON.stringify(faitsPour(f))}</faits>`, 500, true);
     return acceptable(texte, f) ? { texte, ia: true } : { texte: messageModele(f), ia: false };
   } catch {
     return { texte: messageModele(f), ia: false };
@@ -163,6 +163,7 @@ export async function redigerEtRelire(f: FaitsApproche): Promise<{ texte: string
       CONSIGNE,
       `<faits>${JSON.stringify(faitsPour(f))}</faits>\n<premiere_version>${premier.texte}</premiere_version>\n<defauts_a_corriger>${JSON.stringify(avis.problemes)}</defauts_a_corriger>\nRéécris le message en corrigeant ces défauts.`,
       500,
+      true,
     );
     if (acceptable(corrige, f)) {
       const second = await relire(corrige, f);

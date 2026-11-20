@@ -1,20 +1,26 @@
 import { nettoyerMetiers } from "./metiers";
 import type { ResumeIA, Societe } from "./types";
 import { lireTaille } from "./taille";
-import { compter } from "./compteur";
+import { POIDS_FIN, compter } from "./compteur";
 
 /**
  * Seul endroit du projet qui appelle un modèle d'IA.
  * Sans clé ANTHROPIC_API_KEY, les fonctions renvoient null et le parcours continue sans IA.
  */
 const MODELE = process.env.ANTHROPIC_MODEL ?? "claude-haiku-5-5";
+/**
+ * Le modèle des textes que quelqu'un lira et sur lesquels il agira : premier message, réponses du négociateur, fiches d'acheteur.
+ * Vingt fois plus cher que le modèle courant, donc réservé à ces trois usages.
+ */
+const MODELE_FIN = process.env.ANTHROPIC_MODEL_FIN ?? "claude-sonnet-5-5";
+export const modeles = () => ({ courant: MODELE, fin: MODELE_FIN });
 
-/** Appelle le modèle et inscrit ce que la réponse a consommé dans le relevé en cours. */
-async function interroger(init: RequestInit): Promise<Response> {
+/** Appelle le modèle et inscrit ce que la réponse a consommé dans le relevé en cours. `poids` : prix de ce modèle rapporté au modèle courant. */
+async function interroger(init: RequestInit, poids = 1): Promise<Response> {
   const rep = await fetch("https://api.anthropic.com/v1/messages", init);
   if (rep.ok) {
     const lu = (await rep.clone().json().catch(() => null)) as { usage?: Parameters<typeof compter>[0] } | null;
-    compter(lu?.usage);
+    compter(lu?.usage, poids);
   }
   return rep;
 }
@@ -97,16 +103,32 @@ export function sansAveu(description: string): string {
 }
 
 /** Demande un texte libre au modèle. Renvoie null sans clé. Lève une erreur si le modèle ne répond pas. */
-export async function ecrire(consigne: string, contenu: string, maximum = 600): Promise<string | null> {
+export async function ecrire(consigne: string, contenu: string, maximum = 600, fin = false): Promise<string | null> {
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) return null;
-  const rep = await interroger({
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
-    signal: AbortSignal.timeout(25_000),
-    // Marge pour la réflexion du modèle, qui compte dans le plafond.
-    body: JSON.stringify({ model: MODELE, max_tokens: maximum + 2500, system: consigne, messages: [{ role: "user", content: contenu }] }),
-  });
+  const appel = (modele: string, soigne: boolean) =>
+    interroger(
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": cle, "anthropic-version": "2023-06-01" },
+        signal: AbortSignal.timeout(soigne ? 60_000 : 25_000),
+        body: JSON.stringify({
+          model: modele,
+          // Marge pour la réflexion du modèle, qui compte dans le plafond.
+          max_tokens: maximum + 2500,
+          // Sur le modèle fin, la consigne est mise en cache : elle est longue et identique d'un appel à l'autre.
+          system: soigne ? [{ type: "text", text: consigne, cache_control: { type: "ephemeral" } }] : consigne,
+          messages: [{ role: "user", content: contenu }],
+        }),
+      },
+      soigne ? POIDS_FIN : 1,
+    );
+  let rep = await appel(fin ? MODELE_FIN : MODELE, fin && MODELE_FIN !== MODELE);
+  // Si le modèle fin n'est pas ouvert à cette clé ou refuse la requête, le texte s'écrit quand même, avec le modèle courant.
+  if (fin && !rep.ok && rep.status >= 400 && rep.status < 500 && rep.status !== 429 && MODELE_FIN !== MODELE) {
+    console.error("Modèle fin refusé :", rep.status);
+    rep = await appel(MODELE, false);
+  }
   if (!rep.ok) throw new Error(`Modèle d'IA : réponse ${rep.status}`);
   const json = (await rep.json()) as { content?: { type: string; text?: string }[]; stop_reason?: string };
   // Une réponse coupée par le plafond est incomplète : mieux vaut pas de texte qu'un texte tronqué.

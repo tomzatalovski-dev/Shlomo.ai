@@ -121,7 +121,7 @@ export async function ecrireBriefings(v: VendeurBriefing, r: RepreneurBriefing, 
   });
   try {
     // Cinq listes en français : le plafond doit laisser la réponse entière, une réponse coupée est jetée.
-    const texte = await ecrire(CONSIGNE, elements, 2600);
+    const texte = await ecrire(CONSIGNE, elements, 2600, true);
     const objet = texte?.match(/\{[\s\S]*\}/);
     if (!objet) return base;
     const lu = JSON.parse(objet[0]) as { pour_le_repreneur?: Record<string, unknown>; pour_le_cedant?: Record<string, unknown> };

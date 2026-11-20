@@ -85,7 +85,7 @@ export async function repondre(dossier: Dossier, echanges: Tour[]): Promise<Repo
 
   for (let essai = 0; essai < 2; essai++) {
     const lu = lire(
-      await ecrire(CONSIGNE + texteManuel(), essai === 0 ? contenu : `${contenu}\n<defauts_de_ta_premiere_reponse>${JSON.stringify(defauts.map((f) => f.detail))}</defauts_de_ta_premiere_reponse>\nRéécris ta réponse sans ces défauts.`, 700).catch(() => null),
+      await ecrire(CONSIGNE + texteManuel(), essai === 0 ? contenu : `${contenu}\n<defauts_de_ta_premiere_reponse>${JSON.stringify(defauts.map((f) => f.detail))}</defauts_de_ta_premiere_reponse>\nRéécris ta réponse sans ces défauts.`, 700, true).catch(() => null),
     );
     if (!lu) continue;
     const fautes = verifier(lu.reponse, dossier, dernier);
